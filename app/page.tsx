@@ -32,6 +32,34 @@ const initialForm: FormState = {
   role: "member",
 };
 
+const summaryCards = [
+  { label: "Active riders", value: "1,248", change: "+8.4%" },
+  { label: "Batteries in fleet", value: "3,420", change: "+2.1%" },
+  { label: "Swaps today", value: "486", change: "+12.7%" },
+  { label: "Revenue", value: "KES 2.84M", change: "+6.9%" },
+];
+
+const inventory = [
+  { id: "BAT-1042", status: "Available", station: "Goma Central", soc: 92 },
+  { id: "BAT-2018", status: "Assigned", station: "Goma West", soc: 64 },
+  { id: "BAT-3011", status: "Charging", station: "Goma South", soc: 38 },
+  { id: "BAT-4871", status: "Faulty", station: "Goma Hub", soc: 11 },
+];
+
+const swaps = [
+  { rider: "A. Marie", bike: "KDG 834P", battery: "BAT-1042", time: "08:15", status: "Completed" },
+  { rider: "M. Romain", bike: "KBA 412X", battery: "BAT-2018", time: "08:42", status: "In progress" },
+  { rider: "P. Quentin", bike: "KCC 774M", battery: "BAT-3011", time: "09:05", status: "Assigned" },
+  { rider: "J.  Rosalinda", bike: "KDL 219Y", battery: "BAT-4871", time: "09:28", status: "Retry" },
+];
+
+const stations = [
+  { name: "Goma Central", online: true, throughput: "96%", available: 24 },
+  { name: "Goma West", online: true, throughput: "89%", available: 18 },
+  { name: "Goma South", online: false, throughput: "62%", available: 9 },
+  { name: "Goma Hub", online: true, throughput: "91%", available: 17 },
+];
+
 export default function Home() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -108,106 +136,138 @@ export default function Home() {
 
   return (
     <div className={styles.page}>
+      <aside className={styles.sidebar}>
+        <div className={styles.brand}>
+          <div className={styles.brandMark}>M</div>
+          <div>
+            <strong>MWANGA</strong>
+            <span>Station ops</span>
+          </div>
+        </div>
+
+        <nav className={styles.nav}>
+          <a className={styles.active}>Overview</a>
+          <a>Riders</a>
+          <a>Bikes</a>
+          <a>Batteries</a>
+          <a>Stations</a>
+          <a>Swaps</a>
+          <a>Wallets</a>
+        </nav>
+      </aside>
+
       <main className={styles.main}>
-        <section className={styles.panel}>
-          <p className={styles.badge}>User management</p>
-          <h1>MWANGA users</h1>
+        <header className={styles.topbar}>
+          <div>
+            <p className={styles.label}>Operations dashboard</p>
+            <h1>Battery swap command center</h1>
+          </div>
+          <button className={styles.primaryButton}>Dispatch battery</button>
+        </header>
 
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.fieldRow}>
-              <label>
-                Name
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  placeholder="Jane Doe"
-                  required
-                />
-              </label>
+        <section className={styles.summaryGrid}>
+          {summaryCards.map((card) => (
+            <article key={card.label} className={styles.card}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <em>{card.change}</em>
+            </article>
+          ))}
+        </section>
 
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => setForm({ ...form, email: event.target.value })}
-                  placeholder="jane@example.com"
-                  required
-                />
-              </label>
+        <section className={styles.contentGrid}>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Battery inventory</h2>
+              <a href="#">View all</a>
             </div>
 
-            <div className={styles.fieldRow}>
-              <label>
-                Role
-                <select
-                  value={form.role}
-                  onChange={(event) => setForm({ ...form, role: event.target.value })}
-                >
-                  <option value="member">Member</option>
-                  <option value="admin">Admin</option>
-                  <option value="editor">Editor</option>
-                </select>
-              </label>
-            </div>
-
-            <button type="submit" disabled={submitting} className={styles.primaryButton}>
-              {submitting ? "Creating..." : "Create user"}
-            </button>
-          </form>
-
-          {error && <p className={styles.error}>{error}</p>}
-
-          <div className={styles.tableWrap}>
-            {loading ? (
-              <p className={styles.status}>Loading users...</p>
-            ) : users.length === 0 ? (
-              <p className={styles.status}>No users yet.</p>
-            ) : (
-              <table className={styles.table}>
+            <div className={styles.tableWrap}>
+              <table>
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
+                    <th>Battery</th>
                     <th>Status</th>
+                    <th>Station</th>
+                    <th>SOC</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td>{user.name}</td>
-                      <td>{user.email}</td>
-                      <td>{user.role}</td>
-                      <td>{user.isActive ? "Active" : "Inactive"}</td>
+                  {inventory.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.id}</td>
+                      <td>
+                        <span className={`${styles.badge} ${styles[item.status.toLowerCase().replace(/\s+/g, "-")]}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td>{item.station}</td>
+                      <td>{item.soc}%</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
+            </div>
           </div>
 
-          {health && (
-            <div className={styles.card}>
-              <div className={styles.row}>
-                <span>Backend</span>
-                <strong>{health.ok ? "Healthy" : "Unhealthy"}</strong>
-              </div>
-              <div className={styles.row}>
-                <span>Database</span>
-                <strong>{health.database}</strong>
-              </div>
-              <div className={styles.row}>
-                <span>Users</span>
-                <strong>{health.userCount}</strong>
-              </div>
-              <div className={styles.row}>
-                <span>Last check</span>
-                <strong>{new Date(health.timestamp).toLocaleString()}</strong>
-              </div>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Live swap queue</h2>
+              <a href="#">Open queue</a>
             </div>
-          )}
+
+            {swaps.map((swap) => (
+              <div key={`${swap.rider}-${swap.time}`} className={styles.swapRow}>
+                <div>
+                  <strong>{swap.rider}</strong>
+                  <span>
+                    {swap.bike} · {swap.battery}
+                  </span>
+                </div>
+                <div className={styles.swapMeta}>
+                  <span>{swap.time}</span>
+                  <em>{swap.status}</em>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.bottomGrid}>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Station status</h2>
+              <a href="#">Map</a>
+            </div>
+
+            <div className={styles.stationList}>
+              {stations.map((station) => (
+                <div key={station.name} className={styles.stationItem}>
+                  <div>
+                    <strong>{station.name}</strong>
+                    <span>{station.available} batteries available</span>
+                  </div>
+                  <div className={styles.stationMeta}>
+                    <span className={station.online ? styles.online : styles.offline}>
+                      {station.online ? "Online" : "Offline"}
+                    </span>
+                    <em>{station.throughput}</em>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Operational notes</h2>
+            </div>
+            <ul className={styles.notesList}>
+              <li>Battery rotation policy updated for north corridor stations.</li>
+              <li>Two stations require maintenance check after high SOC variance.</li>
+              <li>Rider wallet top-up window is scheduled for 18:00 local time.</li>
+            </ul>
+          </div>
         </section>
       </main>
     </div>
