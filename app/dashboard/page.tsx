@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiResourcePanel } from "../../components/api-resource-panel";
+import { AccountMenu } from "../../components/account-menu";
 import { SidebarNav } from "../../components/sidebar-nav";
-import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight, IconLogOut, IconMoon, IconSun, NavIcon } from "../../components/icons/icon";
+import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight, NavIcon } from "../../components/icons/icon";
 import { Badge } from "../../components/badge";
 import { BarChart, ProgressBar } from "../../components/bars";
 import { DataTable, type Column } from "../../components/data-table";
@@ -13,17 +14,10 @@ import { Modal } from "../../components/modal";
 import { useTheme } from "../../components/theme";
 import { useToast } from "../../components/toast";
 import { getApiUrl } from "../../lib/api";
-import { authFetch, clearSession, displayName, getAccessToken, getStoredUser } from "../../lib/auth";
+import { userMessageForStatus } from "../../lib/api-errors";
+import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../../lib/auth";
 import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../../lib/nav";
-import { batteries, hourlySwaps, notices, riders, stations, type BatteryRow } from "../../lib/ops-data";
-
-type UserRow = {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-};
+import { batteries, hourlySwaps, notices, stations, type BatteryRow } from "../../lib/ops-data";
 
 type HealthResponse = {
   ok: boolean;
@@ -38,50 +32,22 @@ const sectionCopy: Record<Section, { eyebrow: string; title: string }> = Object.
 
 const apiUrl = getApiUrl();
 
-type ApiUser = {
-  id: number;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  isActive: boolean;
-  role?: { name: string };
-};
-
-function mapUser(row: ApiUser): UserRow {
-  const name = [row.firstName, row.lastName].filter(Boolean).join(" ") || row.email;
-
-  return {
-    id: row.id,
-    name,
-    email: row.email,
-    role: row.role?.name ?? "member",
-    isActive: row.isActive,
-  };
-}
-
 export default function DashboardPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { notify } = useToast();
-  const [sessionUser] = useState(() => getStoredUser());
+  const [sessionUser, setSessionUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    setSessionUser(getStoredUser());
+  }, []);
   const [section, setSection] = useState<Section>("overview");
-  const [query, setQuery] = useState("");
   const [noticesOpen, setNoticesOpen] = useState(false);
-  const [dispatchOpen, setDispatchOpen] = useState(false);
-  const [operatorOpen, setOperatorOpen] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [detail, setDetail] = useState<{ title: string; rows: [string, string][] } | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [usersList, setUsersList] = useState<UserRow[]>([]);
-  const [operatorForm, setOperatorForm] = useState({ name: "", email: "", role: "member" });
-  const [savingOperator, setSavingOperator] = useState(false);
-  const [dispatchForm, setDispatchForm] = useState({
-    rider: riders[0]?.name ?? "",
-    station: stations[0]?.name ?? "",
-    notes: "",
-  });
 
   useEffect(() => {
     if (!getAccessToken()) {
@@ -117,10 +83,7 @@ export default function DashboardPage() {
       }
 
       try {
-        const [healthResponse, usersResponse] = await Promise.all([
-          fetch(`${apiUrl}/health`),
-          authFetch("/users"),
-        ]);
+        const [healthResponse] = await Promise.all([fetch(`${apiUrl}/health`)]);
 
         if (!healthResponse.ok) {
           throw new Error("The operations API did not respond.");
@@ -133,7 +96,7 @@ export default function DashboardPage() {
         setHealth((await healthResponse.json()) as HealthResponse);
 
         const countResults = await Promise.all(
-          API_MENU_ITEMS.filter((item) => item.id !== "users").map(async (item) => {
+          API_MENU_ITEMS.map(async (item) => {
             const response = await authFetch(item.apiPath);
 
             if (!response.ok) {
@@ -145,22 +108,7 @@ export default function DashboardPage() {
           }),
         );
 
-        const nextCounts = Object.fromEntries(countResults) as Partial<Record<Section, number>>;
-
-        if (usersResponse.ok) {
-          const users = (await usersResponse.json()) as ApiUser[];
-          setUsersList(users.map(mapUser));
-          nextCounts.users = users.length;
-        } else if (usersResponse.status === 401) {
-          clearSession();
-          router.replace("/");
-          return;
-        } else {
-          setUsersList([]);
-          nextCounts.users = 0;
-        }
-
-        setCounts(nextCounts);
+        setCounts(Object.fromEntries(countResults) as Partial<Record<Section, number>>);
 
         setApiError(null);
       } catch (error) {
@@ -185,79 +133,17 @@ export default function DashboardPage() {
     router.replace("/");
   };
 
-  const needle = query.trim().toLowerCase();
-  const matches = (values: string[]) => values.join(" ").toLowerCase().includes(needle);
-
-  const visibleBatteries = useMemo(
-    () => batteries.filter((row) => !needle || matches([row.id, row.status, row.station])),
-    [needle],
-  );
   const handleForbidden = () => {
     clearSession();
     router.replace("/");
   };
 
-  const visibleUsers = useMemo(
-    () => usersList.filter((row) => !needle || matches([row.name, row.email, row.role])),
-    [needle, usersList],
-  );
-
-  const openDispatch = () => setDispatchOpen(true);
-
-  const submitDispatch = (event: FormEvent) => {
-    event.preventDefault();
-    setDispatchOpen(false);
-    notify({
-      title: "Battery assigned",
-      message: `${dispatchForm.rider} is queued at ${dispatchForm.station}. Payment stays pending until the swap is confirmed.`,
-      tone: "success",
-    });
-  };
-
-  const submitOperator = async (event: FormEvent) => {
-    event.preventDefault();
-    setSavingOperator(true);
-
-    try {
-      const response = await authFetch("/users", {
-        method: "POST",
-        body: JSON.stringify(operatorForm),
-      });
-
-      if (!response.ok) {
-        throw new Error("The API rejected this operator.");
-      }
-
-      const created = mapUser((await response.json()) as ApiUser);
-      setUsersList((current) => [created, ...current]);
-      setCounts((current) => ({ ...current, users: (current.users ?? 0) + 1 }));
-      setOperatorForm({ name: "", email: "", role: "member" });
-      setOperatorOpen(false);
-      notify({ title: "User added", message: `${created.name} can sign in as ${created.role}.`, tone: "success" });
-    } catch (error) {
-      notify({
-        title: "Could not save user",
-        message: error instanceof Error ? error.message : "Request failed.",
-        tone: "error",
-      });
-    } finally {
-      setSavingOperator(false);
-    }
-  };
-
   const batteryColumns: Column<BatteryRow>[] = [
-    { key: "id", header: "Serial", render: (row) => row.id },
-    { key: "status", header: "Status", render: (row) => <Badge status={row.status} /> },
-    { key: "station", header: "Station", render: (row) => row.station },
-    { key: "soc", header: "SOC", align: "right", render: (row) => `${row.soc}%` },
-    { key: "soh", header: "SOH", align: "right", render: (row) => `${row.soh}%` },
-  ];
-
-  const userColumns: Column<UserRow>[] = [
-    { key: "name", header: "Name", render: (row) => row.name },
-    { key: "email", header: "Email", render: (row) => row.email },
-    { key: "role", header: "Role", render: (row) => row.role },
-    { key: "status", header: "Status", render: (row) => <Badge status={row.isActive ? "Active" : "Offline"} /> },
+    { key: "id", header: "Serial", sortValue: (row) => row.id, render: (row) => row.id },
+    { key: "status", header: "Status", sortValue: (row) => row.status, render: (row) => <Badge status={row.status} /> },
+    { key: "station", header: "Station", sortValue: (row) => row.station, render: (row) => row.station },
+    { key: "soc", header: "SOC", align: "right", sortValue: (row) => row.soc, render: (row) => `${row.soc}%` },
+    { key: "soh", header: "SOH", align: "right", sortValue: (row) => row.soh, render: (row) => `${row.soh}%` },
   ];
 
   const copy = sectionCopy[section];
@@ -314,22 +200,6 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="topbar-actions">
-            <input
-              className="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search serial, rider, station"
-              aria-label="Search"
-            />
-            <span className="session-chip">{displayName(sessionUser)}</span>
-            <button type="button" className="btn icon-text" onClick={toggleTheme}>
-              {theme === "dark" ? <IconSun size={16} /> : <IconMoon size={16} />}
-              {theme === "dark" ? "Light" : "Dark"}
-            </button>
-            <button type="button" className="btn ghost icon-text" onClick={signOut}>
-              <IconLogOut size={16} />
-              Sign out
-            </button>
             <div className="notice-panel">
               <button type="button" className="icon-button" onClick={() => setNoticesOpen((open) => !open)} aria-label="Open notifications">
                 <IconBell size={18} />
@@ -354,15 +224,13 @@ export default function DashboardPage() {
                 </div>
               ) : null}
             </div>
-            {section === "users" ? (
-              <button type="button" className="btn primary" onClick={() => setOperatorOpen(true)}>
-                Add user
-              </button>
-            ) : (
-              <button type="button" className="btn primary" onClick={openDispatch}>
-                Dispatch battery
-              </button>
-            )}
+            <AccountMenu
+              user={sessionUser}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onSignOut={signOut}
+              onManageUsers={() => setSection("users")}
+            />
           </div>
         </header>
 
@@ -440,7 +308,10 @@ export default function DashboardPage() {
                 </div>
                 <DataTable
                   columns={batteryColumns}
-                  rows={visibleBatteries.slice(0, 4)}
+                  rows={batteries}
+                  defaultPageSize={4}
+                  pageSizeOptions={[4, 10, 25]}
+                  searchPlaceholder="Search batteries…"
                   rowKey={(row) => row.id}
                   onRowClick={(row) =>
                     setDetail({
@@ -475,127 +346,19 @@ export default function DashboardPage() {
           </>
         ) : null}
 
-        {activeMenu.apiPath && section !== "overview" && section !== "users" ? (
+        {activeMenu.apiPath && section !== "overview" ? (
           <ApiResourcePanel
+            section={section}
             apiPath={activeMenu.apiPath}
             title={activeMenu.title}
-            query={query}
             onForbidden={handleForbidden}
             onDetail={setDetail}
+            onRecordsChange={(count) => setCounts((current) => ({ ...current, [section]: count }))}
+            onCreateError={() => notify({ title: "Create failed", message: userMessageForStatus("create", 500), tone: "error" })}
+            onCreateSuccess={() => notify({ title: "Created", message: `${activeMenu.title} saved.`, tone: "success" })}
           />
         ) : null}
-
-        {section === "users" ? (
-          <article className="card panel">
-            <div className="panel-head">
-              <h2>User accounts</h2>
-              <span>{visibleUsers.length} from the API</span>
-            </div>
-            <DataTable
-              columns={userColumns}
-              rows={visibleUsers}
-              rowKey={(row) => row.id}
-              empty={needle ? "No users match this search." : "No users yet. Add one when the API is reachable."}
-              onRowClick={(row) =>
-                setDetail({
-                  title: row.name,
-                  rows: [
-                    ["Email", row.email],
-                    ["Role", row.role],
-                    ["Active", row.isActive ? "Yes" : "No"],
-                  ],
-                })
-              }
-            />
-          </article>
-        ) : null}
       </main>
-
-      <Modal
-        open={dispatchOpen}
-        title="Dispatch a battery"
-        description="Assignment stays pending until the executive confirms collection and installation."
-        onClose={() => setDispatchOpen(false)}
-      >
-        <form className="form" onSubmit={submitDispatch}>
-          <label className="field">
-            <span>Rider</span>
-            <select value={dispatchForm.rider} onChange={(event) => setDispatchForm({ ...dispatchForm, rider: event.target.value })}>
-              {riders.map((rider) => (
-                <option key={rider.id}>{rider.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Station</span>
-            <select value={dispatchForm.station} onChange={(event) => setDispatchForm({ ...dispatchForm, station: event.target.value })}>
-              {stations.map((station) => (
-                <option key={station.id}>{station.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Note</span>
-            <textarea
-              rows={3}
-              value={dispatchForm.notes}
-              onChange={(event) => setDispatchForm({ ...dispatchForm, notes: event.target.value })}
-              placeholder="Optional reason for a manual assignment"
-            />
-          </label>
-          <div className="modal-actions">
-            <button type="button" className="btn" onClick={() => setDispatchOpen(false)}>
-              Cancel
-            </button>
-            <button type="submit" className="btn primary">
-              Assign battery
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal
-        open={operatorOpen}
-        title="Add user"
-        description="Creates a user on the Mwanga API."
-        onClose={() => setOperatorOpen(false)}
-      >
-        <form className="form" onSubmit={submitOperator}>
-          <label className="field">
-            <span>Name</span>
-            <input
-              required
-              value={operatorForm.name}
-              onChange={(event) => setOperatorForm({ ...operatorForm, name: event.target.value })}
-            />
-          </label>
-          <label className="field">
-            <span>Email</span>
-            <input
-              required
-              type="email"
-              value={operatorForm.email}
-              onChange={(event) => setOperatorForm({ ...operatorForm, email: event.target.value })}
-            />
-          </label>
-          <label className="field">
-            <span>Role</span>
-            <select value={operatorForm.role} onChange={(event) => setOperatorForm({ ...operatorForm, role: event.target.value })}>
-              <option value="member">member</option>
-              <option value="admin">admin</option>
-              <option value="executive">executive</option>
-            </select>
-          </label>
-          <div className="modal-actions">
-            <button type="button" className="btn" onClick={() => setOperatorOpen(false)}>
-              Cancel
-            </button>
-            <button type="submit" className="btn primary" disabled={savingOperator}>
-              {savingOperator ? "Saving" : "Save user"}
-            </button>
-          </div>
-        </form>
-      </Modal>
 
       <Modal open={detail !== null} title={detail?.title ?? "Detail"} onClose={() => setDetail(null)}>
         <div className="detail-list">

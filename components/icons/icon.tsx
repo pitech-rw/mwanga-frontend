@@ -217,6 +217,23 @@ export function IconChevronRight(props: IconProps) {
   );
 }
 
+export function IconChevronDown(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </IconBase>
+  );
+}
+
+export function IconPlus(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
+    </IconBase>
+  );
+}
+
 const NAV_ICON_MAP = {
   overview: IconLayoutDashboard,
   batteries: IconBatteryCharging,
@@ -257,4 +274,6 @@ export const icons = {
   search: IconSearch,
   chevronLeft: IconChevronLeft,
   chevronRight: IconChevronRight,
+  chevronDown: IconChevronDown,
+  plus: IconPlus,
 };

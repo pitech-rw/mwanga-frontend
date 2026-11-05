@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { userMessageForNetwork, userMessageForStatus } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
+import type { Section } from "../lib/nav";
 import { Badge } from "./badge";
+import { CreateResourceButton } from "./create-resource-button";
 import { DataTable, type Column } from "./data-table";
 
 type Row = Record<string, unknown>;
@@ -69,7 +72,14 @@ function statusLike(key: string, value: unknown): boolean {
 
 function buildColumns(rows: Row[]): Column<Row>[] {
   if (rows.length === 0) {
-    return [{ key: "id", header: "ID", render: (row) => cellValue(row.id) }];
+    return [
+      {
+        key: "id",
+        header: "ID",
+        sortValue: (row) => Number(row.id ?? 0),
+        render: (row) => cellValue(row.id),
+      },
+    ];
   }
 
   const keys = Object.keys(rows[0]).filter((key) => !SKIP_KEYS.has(key) && typeof rows[0][key] !== "object");
@@ -81,6 +91,11 @@ function buildColumns(rows: Row[]): Column<Row>[] {
   return ordered.map((key) => ({
     key,
     header: key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()),
+    sortValue: (row) => {
+      const value = row[key];
+      return typeof value === "number" ? value : String(value ?? "");
+    },
+    searchValue: (row) => cellValue(row[key]),
     render: (row) => {
       const value = row[key];
 
@@ -93,22 +108,42 @@ function buildColumns(rows: Row[]): Column<Row>[] {
   }));
 }
 
-function rowMatches(row: Row, needle: string): boolean {
-  return Object.values(row).some((value) => cellValue(value).toLowerCase().includes(needle));
-}
-
 type ApiResourcePanelProps = {
+  section: Section;
   apiPath: string;
   title: string;
-  query: string;
   onForbidden?: () => void;
   onDetail?: (payload: { title: string; rows: [string, string][] }) => void;
+  onRecordsChange?: (count: number) => void;
+  onCreateError?: (message: string) => void;
+  onCreateSuccess?: () => void;
 };
 
-export function ApiResourcePanel({ apiPath, title, query, onForbidden, onDetail }: ApiResourcePanelProps) {
+export function ApiResourcePanel({
+  section,
+  apiPath,
+  title,
+  onForbidden,
+  onDetail,
+  onRecordsChange,
+  onCreateError,
+  onCreateSuccess,
+}: ApiResourcePanelProps) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const onForbiddenRef = useRef(onForbidden);
+  const onRecordsChangeRef = useRef(onRecordsChange);
+
+  useEffect(() => {
+    onForbiddenRef.current = onForbidden;
+    onRecordsChangeRef.current = onRecordsChange;
+  });
+
+  const reload = useCallback(() => {
+    setReloadToken((value) => value + 1);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -121,20 +156,26 @@ export function ApiResourcePanel({ apiPath, title, query, onForbidden, onDetail 
         const response = await authFetch(apiPath);
 
         if (response.status === 401) {
-          onForbidden?.();
+          onForbiddenRef.current?.();
           return;
         }
 
         if (response.status === 403) {
           if (active) {
             setRows([]);
-            setError("You do not have permission to view this resource.");
+            setError(userMessageForStatus("load", response.status));
+            onRecordsChangeRef.current?.(0);
           }
           return;
         }
 
         if (!response.ok) {
-          throw new Error("Could not load records.");
+          if (active) {
+            setRows([]);
+            setError(userMessageForStatus("load", response.status));
+            onRecordsChangeRef.current?.(0);
+          }
+          return;
         }
 
         const data = (await response.json()) as unknown;
@@ -143,14 +184,17 @@ export function ApiResourcePanel({ apiPath, title, query, onForbidden, onDetail 
           return;
         }
 
-        setRows(Array.isArray(data) ? (data as Row[]) : []);
-      } catch (loadError) {
+        const nextRows = Array.isArray(data) ? (data as Row[]) : [];
+        setRows(nextRows);
+        onRecordsChangeRef.current?.(nextRows.length);
+      } catch {
         if (!active) {
           return;
         }
 
         setRows([]);
-        setError(loadError instanceof Error ? loadError.message : "Request failed.");
+        setError(userMessageForNetwork("load"));
+        onRecordsChangeRef.current?.(0);
       } finally {
         if (active) {
           setLoading(false);
@@ -163,26 +207,35 @@ export function ApiResourcePanel({ apiPath, title, query, onForbidden, onDetail 
     return () => {
       active = false;
     };
-  }, [apiPath, onForbidden]);
+  }, [apiPath, reloadToken]);
 
-  const needle = query.trim().toLowerCase();
-  const visibleRows = useMemo(() => (needle ? rows.filter((row) => rowMatches(row, needle)) : rows), [needle, rows]);
-  const columns = useMemo(() => buildColumns(visibleRows.length > 0 ? visibleRows : rows), [rows, visibleRows]);
+  const columns = useMemo(() => buildColumns(rows), [rows]);
 
   return (
     <article className="card panel">
       <div className="panel-head">
         <h2>{title}</h2>
-        <span>
-          {loading ? "Loading…" : error ? "Unavailable" : `${visibleRows.length} shown`}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span>
+            {loading && rows.length > 0 ? "Refreshing…" : loading ? "Loading…" : error ? "Unavailable" : `${rows.length} records`}
+          </span>
+          <CreateResourceButton
+            section={section}
+            onCreated={() => {
+              reload();
+              onCreateSuccess?.();
+            }}
+            onError={onCreateError}
+          />
+        </div>
       </div>
       {error ? <p className="resource-error">{error}</p> : null}
       <DataTable
         columns={columns}
-        rows={visibleRows}
+        rows={rows}
+        loading={loading}
         rowKey={(row) => String(row.id ?? JSON.stringify(row))}
-        empty={loading ? "Loading records…" : needle ? "No rows match this search." : "No records yet."}
+        empty={error ? "Unable to load records." : "No records yet."}
         onRowClick={
           onDetail
             ? (row) => {

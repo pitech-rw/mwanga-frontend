@@ -1,4 +1,5 @@
 import { getApiUrl } from "./api";
+import { userMessageForStatus } from "./api-errors";
 
 const TOKEN_KEY = "mwanga-access-token";
 const USER_KEY = "mwanga-user";
@@ -77,7 +78,7 @@ export async function authFetch(path: string, init?: RequestInit): Promise<Respo
     headers.set("Content-Type", "application/json");
   }
 
-  const token = getAccessToken();
+  const token = getAccessToken()
 
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
@@ -97,16 +98,7 @@ export async function login(identifier: string, password: string): Promise<Login
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { message?: string | string[] } | null;
-    let message = "Sign in failed.";
-
-    if (typeof body?.message === "string") {
-      message = body.message;
-    } else if (Array.isArray(body?.message)) {
-      message = body.message.join(" ");
-    }
-
-    throw new Error(message);
+    throw new Error(userMessageForStatus("signIn", response.status));
   }
 
   return (await response.json()) as LoginResponse;
