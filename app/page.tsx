@@ -1,215 +1,132 @@
 "use client";
 
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import styles from "./page.module.css";
+import { useTheme } from "../components/theme";
+import { displayName, getAccessToken, login, setSession } from "../lib/auth";
 
-type HealthResponse = {
-  ok: boolean;
-  database: string;
-  userCount: number;
-  timestamp: string;
-};
-
-type User = {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type FormState = {
-  name: string;
-  email: string;
-  role: string;
-};
-
-const initialForm: FormState = {
-  name: "",
-  email: "",
-  role: "member",
-};
-
-export default function Home() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [form, setForm] = useState<FormState>(initialForm);
+export default function HomePage() {
+  const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3005";
-
-  const loadUsers = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/users`);
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-      }
-
-      const data = (await response.json()) as User[];
-      setUsers(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load users");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    const fetchHealth = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/health`);
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
-        }
+    if (getAccessToken()) {
+      router.replace("/dashboard");
+      return;
+    }
 
-        const data = (await response.json()) as HealthResponse;
-        setHealth(data);
-      } catch (err) {
-        setError((current) => current ?? (err instanceof Error ? err.message : "Unable to reach backend"));
-      }
-    };
+    setCheckingSession(false);
+  }, [router]);
 
-    void fetchHealth();
-    void loadUsers();
-  }, [apiUrl]);
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    setSubmitting(true);
     setError(null);
+    setSubmitting(true);
 
     try {
-      const response = await fetch(`${apiUrl}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail || "Unable to create user");
-      }
-
-      setForm(initialForm);
-      await loadUsers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to create user");
+      const response = await login(identifier.trim(), password);
+      setSession(response);
+      router.replace("/dashboard");
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Sign in failed.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (checkingSession) {
+    return (
+      <div className="landing-shell landing-loading">
+        <p className="brand-tagline">Loading…</p>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <section className={styles.panel}>
-          <p className={styles.badge}>User management</p>
-          <h1>MWANGA users</h1>
+    <div className="landing-shell">
+      <section className="landing-hero">
+        <div className="landing-hero-inner">
+          <Image
+            src="/assets/mwanga-high-res-logo-grayscale.png"
+            alt="Mwanga"
+            width={200}
+            height={56}
+            className="landing-logo"
+            priority
+          />
+          <p className="eyebrow">Renewable energy</p>
+          <h1>Battery swap operations for electric mobility</h1>
+          <p className="landing-lead">
+            Monitor stations, dispatch packs, and keep riders moving with a single operations workspace built for the Mwanga network.
+          </p>
+          <ul className="landing-points">
+            <li>Batteries, bikes, stations, and swaps</li>
+            <li>Riders, cards, wallets, and owners</li>
+            <li>Users, roles, and violations</li>
+          </ul>
+        </div>
+      </section>
 
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.fieldRow}>
-              <label>
-                Name
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  placeholder="Jane Doe"
-                  required
-                />
-              </label>
+      <section className="landing-panel">
+        <div className="login-card card">
+          <div className="login-card-head">
+            <h2>Sign in</h2>
+            <p>Use your username or email and password.</p>
+          </div>
 
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => setForm({ ...form, email: event.target.value })}
-                  placeholder="jane@example.com"
-                  required
-                />
-              </label>
-            </div>
+          <form className="form" onSubmit={submit}>
+            {error ? (
+              <div className="login-error" role="alert">
+                {error}
+              </div>
+            ) : null}
 
-            <div className={styles.fieldRow}>
-              <label>
-                Role
-                <select
-                  value={form.role}
-                  onChange={(event) => setForm({ ...form, role: event.target.value })}
-                >
-                  <option value="member">Member</option>
-                  <option value="admin">Admin</option>
-                  <option value="editor">Editor</option>
-                </select>
-              </label>
-            </div>
+            <label className="field">
+              <span>Username or email</span>
+              <input
+                required
+                autoComplete="username"
+                value={identifier}
+                onChange={(event) => setIdentifier(event.target.value)}
+                placeholder="you@mwanga.com"
+              />
+            </label>
 
-            <button type="submit" disabled={submitting} className={styles.primaryButton}>
-              {submitting ? "Creating..." : "Create user"}
+            <label className="field">
+              <span>Password</span>
+              <input
+                required
+                type="password"
+                autoComplete="current-password"
+                minLength={8}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="At least 8 characters"
+              />
+            </label>
+
+            <button type="submit" className="btn primary login-submit" disabled={submitting}>
+              {submitting ? "Signing in…" : "Continue to dashboard"}
             </button>
           </form>
 
-          {error && <p className={styles.error}>{error}</p>}
-
-          <div className={styles.tableWrap}>
-            {loading ? (
-              <p className={styles.status}>Loading users...</p>
-            ) : users.length === 0 ? (
-              <p className={styles.status}>No users yet.</p>
-            ) : (
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td>{user.name}</td>
-                      <td>{user.email}</td>
-                      <td>{user.role}</td>
-                      <td>{user.isActive ? "Active" : "Inactive"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+          <div className="login-foot">
+            <button type="button" className="btn ghost theme-toggle" onClick={toggleTheme}>
+              {theme === "dark" ? "Light mode" : "Dark mode"}
+            </button>
           </div>
+        </div>
 
-          {health && (
-            <div className={styles.card}>
-              <div className={styles.row}>
-                <span>Backend</span>
-                <strong>{health.ok ? "Healthy" : "Unhealthy"}</strong>
-              </div>
-              <div className={styles.row}>
-                <span>Database</span>
-                <strong>{health.database}</strong>
-              </div>
-              <div className={styles.row}>
-                <span>Users</span>
-                <strong>{health.userCount}</strong>
-              </div>
-              <div className={styles.row}>
-                <span>Last check</span>
-                <strong>{new Date(health.timestamp).toLocaleString()}</strong>
-              </div>
-            </div>
-          )}
-        </section>
-      </main>
+        <p className="landing-note">
+          Need access? Contact your administrator — staff accounts are created in the operations console.
+        </p>
+      </section>
     </div>
   );
 }
