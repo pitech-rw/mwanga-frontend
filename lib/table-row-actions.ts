@@ -9,6 +9,8 @@ import type { Section } from "./nav";
 export const TABLE_ROW_ACTION_IDS = {
   attachBatteryStation: "attach-battery-station",
   attachBatteryBike: "attach-battery-bike",
+  attachBikeRider: "attach-bike-rider",
+  assignCardRider: "assign-card-rider",
   assignSwapperStation: "assign-swapper-station",
   walletTopUp: "wallet-top-up",
   walletEdit: "wallet-edit",
@@ -68,8 +70,24 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericEdit(PERMISSIONS.batteries.write),
     genericDelete(PERMISSIONS.batteries.delete),
   ],
-  bikes: [genericEdit(PERMISSIONS.bikes.write), genericDelete(PERMISSIONS.bikes.delete)],
-  cards: [genericEdit(PERMISSIONS.cards.write), genericDelete(PERMISSIONS.cards.delete)],
+  bikes: [
+    {
+      id: TABLE_ROW_ACTION_IDS.attachBikeRider,
+      label: "Assign rider",
+      permission: PERMISSIONS.bikes.write,
+    },
+    genericEdit(PERMISSIONS.bikes.write),
+    genericDelete(PERMISSIONS.bikes.delete),
+  ],
+  cards: [
+    {
+      id: TABLE_ROW_ACTION_IDS.assignCardRider,
+      label: "Assign rider",
+      permission: PERMISSIONS.cards.write,
+    },
+    genericEdit(PERMISSIONS.cards.write),
+    genericDelete(PERMISSIONS.cards.delete),
+  ],
   roles: [genericEdit(PERMISSIONS.roles.write), genericDelete(PERMISSIONS.roles.delete)],
   stations: [genericEdit(PERMISSIONS.stations.write), genericDelete(PERMISSIONS.stations.delete)],
   swaps: [genericEdit(PERMISSIONS.swaps.write), genericDelete(PERMISSIONS.swaps.delete)],
