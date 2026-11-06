@@ -749,6 +749,93 @@ a {
   color: var(--text);
 }
 
+.table-actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.table-actions-placeholder {
+  color: var(--text-soft);
+}
+
+.table-actions-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  justify-content: flex-end;
+}
+
+.table-actions-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--brand-mint) 55%, var(--border));
+  background: var(--surface);
+  color: var(--charge);
+  cursor: pointer;
+  line-height: 0;
+}
+
+.table-actions-trigger:hover,
+.table-actions-trigger:focus-visible {
+  border-color: var(--brand-mint);
+  box-shadow: 0 0 0 2px var(--ring);
+  outline: none;
+}
+
+.table-actions-trigger-dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.table-actions-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.table-actions-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  min-width: 180px;
+  padding: 8px 0;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.table-actions-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 11px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.table-actions-dropdown-item:hover,
+.table-actions-dropdown-item:focus-visible {
+  background: color-mix(in srgb, var(--brand-mint) 10%, transparent);
+  color: var(--text);
+  outline: none;
+}
+
 .data-table-foot {
   display: flex;
   align-items: center;
@@ -829,6 +916,22 @@ table.data th {
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.data-table-panel table.data thead th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="light"] .data-table-panel table.data thead th {
+  background: color-mix(in srgb, #6ec4df 14%, var(--brand-white));
+  color: color-mix(in srgb, var(--brand-forest) 38%, var(--brand-mint));
+}
+
+[data-theme="dark"] .data-table-panel table.data thead th {
+  background: color-mix(in srgb, var(--brand-mint) 12%, var(--surface));
+  color: color-mix(in srgb, var(--brand-white) 55%, var(--brand-mint));
 }
 
 table.data tbody tr {
@@ -980,6 +1083,14 @@ table.data th.right {
   padding: 8px;
 }
 
+.notice-empty {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 .notice-item,
 .toast {
   display: grid;
@@ -1118,6 +1229,11 @@ table.data th.right {
   border: 1px solid var(--border);
   background: var(--surface);
   outline: none;
+}
+
+.field select.station-picker {
+  min-height: 140px;
+  padding: 8px 10px;
 }
 
 .modal-actions {

@@ -27,6 +27,8 @@ type DataTableProps<T> = {
   defaultPageSize?: number;
   toolbarActions?: ReactNode;
   showSearch?: boolean;
+  /** Extra class on the outer `.data-table` wrapper (e.g. panel table styling). */
+  className?: string;
 };
 
 function defaultSearchValue<T>(row: T, column: Column<T>): string {
@@ -85,6 +87,7 @@ export function DataTable<T>({
   defaultPageSize = 10,
   toolbarActions,
   showSearch = true,
+  className,
 }: DataTableProps<T>) {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -156,7 +159,7 @@ export function DataTable<T>({
   const rangeEnd = Math.min(sortedRows.length, (safePage + 1) * pageSize);
 
   return (
-    <div className="data-table">
+    <div className={className ? `data-table ${className}` : "data-table"}>
       <div className="data-table-toolbar">
         {showSearch ? (
           <label className="data-table-search">
