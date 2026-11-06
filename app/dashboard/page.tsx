@@ -5,10 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiResourcePanel } from "../../components/api-resource-panel";
 import { AccountMenu } from "../../components/account-menu";
-import type { BatteryAttachTarget } from "../../components/attach-battery-station-modal";
-import type { BatteryBikeAttachTarget } from "../../components/attach-battery-bike-modal";
-import type { SwapperAssignTarget } from "../../components/assign-swapper-station-modal";
-import type { WalletTopUpTarget } from "../../components/wallet-top-up-modal";
 import { SidebarNav } from "../../components/sidebar-nav";
 import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight, NavIcon } from "../../components/icons/icon";
 import { RecordDetailModal } from "../../components/record-detail-modal";
@@ -18,8 +14,6 @@ import { getApiUrl } from "../../lib/api";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../../lib/auth";
 import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../../lib/nav";
 import type { ResourceDetailPayload } from "../../lib/resource-detail";
-import { TABLE_ROW_ACTION_IDS, type TableRowActionId } from "../../lib/table-row-actions";
-import { walletDeleteLabelFromRow, walletEditTargetFromRow, walletTopUpTargetFromRow } from "../../lib/wallet-row-helpers";
 type HealthResponse = {
   ok: boolean;
   database: string;
@@ -47,13 +41,6 @@ export default function DashboardPage() {
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [detail, setDetail] = useState<ResourceDetailPayload | null>(null);
-  const [detailPermissions, setDetailPermissions] = useState<string[]>([]);
-  const [openAssignSwapper, setOpenAssignSwapper] = useState<SwapperAssignTarget | null>(null);
-  const [openAttachBatteryStation, setOpenAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
-  const [openAttachBatteryBike, setOpenAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
-  const [openWalletTopUp, setOpenWalletTopUp] = useState<WalletTopUpTarget | null>(null);
-  const [openWalletEdit, setOpenWalletEdit] = useState<WalletTopUpTarget | null>(null);
-  const [openWalletDelete, setOpenWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
   const [resourceReloadKey, setResourceReloadKey] = useState(0);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -150,94 +137,6 @@ export default function DashboardPage() {
   const bumpResourceReload = useCallback(() => {
     setResourceReloadKey((k) => k + 1);
   }, []);
-
-  const clearExternalModals = useCallback(() => {
-    setOpenAttachBatteryStation(null);
-    setOpenAttachBatteryBike(null);
-    setOpenAssignSwapper(null);
-    setOpenWalletTopUp(null);
-    setOpenWalletEdit(null);
-    setOpenWalletDelete(null);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    const loadPerms = async () => {
-      try {
-        const response = await authFetch("/auth/me");
-        if (!response.ok) {
-          if (active) {
-            setDetailPermissions([]);
-          }
-          return;
-        }
-        const data = (await response.json()) as AuthUser;
-        if (active) {
-          setDetailPermissions(Array.isArray(data.permissions) ? [...data.permissions] : []);
-        }
-      } catch {
-        if (active) {
-          setDetailPermissions([]);
-        }
-      }
-    };
-
-    void loadPerms();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleDetailRowAction = useCallback(
-    (actionId: TableRowActionId, row: Record<string, unknown>) => {
-      setDetail(null);
-      if (actionId === TABLE_ROW_ACTION_IDS.attachBatteryStation) {
-        const id = row.id;
-        if (typeof id !== "number") {
-          return;
-        }
-        const serial = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
-        setOpenAttachBatteryStation({ id, serialNumber: serial });
-        return;
-      }
-      if (actionId === TABLE_ROW_ACTION_IDS.attachBatteryBike) {
-        const id = row.id;
-        if (typeof id !== "number") {
-          return;
-        }
-        const serial = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
-        setOpenAttachBatteryBike({ id, serialNumber: serial });
-        return;
-      }
-      if (actionId === TABLE_ROW_ACTION_IDS.assignSwapperStation) {
-        setOpenAssignSwapper(row as unknown as SwapperAssignTarget);
-        return;
-      }
-      if (actionId === TABLE_ROW_ACTION_IDS.walletTopUp) {
-        const target = walletTopUpTargetFromRow(row);
-        if (target) {
-          setOpenWalletTopUp(target);
-        }
-        return;
-      }
-      if (actionId === TABLE_ROW_ACTION_IDS.walletEdit) {
-        const target = walletEditTargetFromRow(row);
-        if (target) {
-          setOpenWalletEdit(target);
-        }
-        return;
-      }
-      if (actionId === TABLE_ROW_ACTION_IDS.walletDelete) {
-        const id = row.id;
-        if (typeof id !== "number") {
-          return;
-        }
-        setOpenWalletDelete({ id, ownerLabel: walletDeleteLabelFromRow(row) });
-      }
-    },
-    [],
-  );
 
   const copy = sectionCopy[section];
   const activeMenu = getMenuItem(section);
@@ -353,13 +252,6 @@ export default function DashboardPage() {
             apiPath={activeMenu.apiPath}
             title={activeMenu.title}
             reloadKey={resourceReloadKey}
-            openAttachBatteryStation={openAttachBatteryStation}
-            openAttachBatteryBike={openAttachBatteryBike}
-            openAssignSwapper={openAssignSwapper}
-            openWalletTopUp={openWalletTopUp}
-            openWalletEdit={openWalletEdit}
-            openWalletDelete={openWalletDelete}
-            onExternalFlowOpened={clearExternalModals}
             onForbidden={handleForbidden}
             onDetail={setDetail}
             onRecordsChange={(count) => setCounts((current) => ({ ...current, [section]: count }))}
@@ -394,17 +286,21 @@ export default function DashboardPage() {
               notify({ title: "Wallet deleted", message: "Wallet removed.", tone: "success" });
             }}
             onWalletDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}
+            onResourceEditSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Record updated", message: "Changes saved.", tone: "success" });
+            }}
+            onResourceEditError={(message) => notify({ title: "Update failed", message, tone: "error" })}
+            onResourceDeleteSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Record deleted", message: "Removed from the list.", tone: "success" });
+            }}
+            onResourceDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}
           />
         ) : null}
       </main>
 
-      <RecordDetailModal
-        open={detail !== null}
-        payload={detail}
-        permissions={sessionUser?.permissions ?? detailPermissions}
-        onClose={() => setDetail(null)}
-        onRowAction={handleDetailRowAction}
-      />
+      <RecordDetailModal open={detail !== null} payload={detail} onClose={() => setDetail(null)} />
 
     </div>
   );

@@ -816,6 +816,14 @@ a {
   box-shadow: var(--shadow);
 }
 
+/* Portaled menu: escapes .table-wrap overflow clipping (overflow-x: auto clips overflow-y). */
+.table-actions-dropdown.table-actions-dropdown-portal {
+  position: fixed;
+  top: auto;
+  right: auto;
+  z-index: 200;
+}
+
 .table-actions-dropdown-item {
   display: block;
   width: 100%;
