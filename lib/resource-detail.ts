@@ -172,7 +172,28 @@ export function buildResourceDetailPayload(
     }
     case "wallets": {
       headingTitle = `Wallet · #${idStr}`;
-      description = "Balance and currency for the linked user.";
+      description = "Balance and currency for the linked user. Top up from the row actions when permitted.";
+      const user = row.user;
+      if (user && typeof user === "object") {
+        const u = user as Record<string, unknown>;
+        usedKeys.add("userId");
+        usedKeys.add("user");
+        const first = typeof u.firstName === "string" ? u.firstName : "";
+        const last = typeof u.lastName === "string" ? u.lastName : "";
+        const name = [first, last].filter(Boolean).join(" ").trim();
+        const uname = typeof u.username === "string" ? u.username : "";
+        const type = typeof u.type === "string" ? u.type.replace(/_/g, " ") : "";
+        summary.push([
+          "Owner",
+          name && uname ? `${name} (@${uname})` : name || (uname ? `@${uname}` : cellText(user)),
+        ]);
+        if (type) {
+          summary.push(["Type", type]);
+        }
+      } else if (row.userId != null) {
+        usedKeys.add("userId");
+        summary.push(["User ID", String(row.userId)]);
+      }
       if (row.balance != null) {
         usedKeys.add("balance");
         summary.push(["Balance", cellText(row.balance)]);

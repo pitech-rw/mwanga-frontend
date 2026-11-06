@@ -1382,6 +1382,18 @@ table.data th.right {
   min-width: 0;
 }
 
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--brand-white);
+}
+
+.btn-danger:hover,
+.btn-danger:focus-visible {
+  filter: brightness(1.08);
+  outline: none;
+}
+
 .record-detail-fields {
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1483,6 +1495,24 @@ table.data th.right {
 .field select.station-picker {
   min-height: 140px;
   padding: 8px 10px;
+}
+
+.create-wallet-selection {
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+.wallet-owner-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  vertical-align: middle;
+}
+
+.wallet-owner-name {
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .modal-actions {
