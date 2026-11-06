@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  async redirects() {
+    return [
+      { source: "/dashboard", destination: "/account", permanent: true },
+      { source: "/dashboard/:path*", destination: "/account/:path*", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

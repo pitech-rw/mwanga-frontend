@@ -1,5 +1,11 @@
 :root {
-  --brand-forest: #023c27;
+  /** Primary brand navy — light-mode text and accents */
+  --brand-ink: #0b1c3a;
+  /** Near-black canvas for dark theme (#0F0F12 range) */
+  --bg-void: #0f0f12;
+  --bg-void-up: #15151a;
+  --bg-void-surface: #1a1a20;
+  --bg-void-surface-2: #222229;
   --brand-mint: #4ab18b;
   --brand-white: #ffffff;
   --radius: 16px;
@@ -8,26 +14,26 @@
 :root,
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #011912;
-  --bg-elevated: #02281b;
-  --surface: #023c27;
-  --surface-2: #034832;
-  --border: rgba(74, 177, 139, 0.18);
+  --bg: var(--bg-void);
+  --bg-elevated: var(--bg-void-up);
+  --surface: var(--bg-void-surface);
+  --surface-2: var(--bg-void-surface-2);
+  --border: rgba(255, 255, 255, 0.09);
   --text: var(--brand-white);
-  --text-soft: color-mix(in srgb, var(--brand-white) 72%, var(--brand-mint));
-  --text-faint: color-mix(in srgb, var(--brand-white) 48%, var(--brand-mint));
+  --text-soft: color-mix(in srgb, var(--brand-white) 74%, var(--brand-mint));
+  --text-faint: color-mix(in srgb, var(--brand-white) 50%, var(--brand-mint));
   --accent: var(--brand-mint);
-  --accent-ink: var(--brand-forest);
+  --accent-ink: var(--bg-void);
   --charge: var(--brand-mint);
-  --charge-ink: var(--brand-forest);
+  --charge-ink: var(--bg-void);
   --info: #6ec4df;
   --warning: #e6a23c;
   --danger: #e85d5d;
-  --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
-  --overlay: rgba(1, 25, 18, 0.78);
-  --ring: rgba(74, 177, 139, 0.42);
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  --overlay: rgba(15, 15, 18, 0.88);
+  --ring: rgba(74, 177, 139, 0.38);
   --bar-track: rgba(255, 255, 255, 0.08);
-  --sidebar: var(--brand-forest);
+  --sidebar: #121215;
 }
 
 [data-theme="light"] {
@@ -36,21 +42,21 @@
   --bg-elevated: var(--brand-white);
   --surface: var(--brand-white);
   --surface-2: color-mix(in srgb, var(--brand-mint) 12%, var(--brand-white));
-  --border: rgba(2, 60, 39, 0.12);
-  --text: var(--brand-forest);
-  --text-soft: color-mix(in srgb, var(--brand-forest) 68%, var(--brand-white));
-  --text-faint: color-mix(in srgb, var(--brand-forest) 48%, var(--brand-white));
+  --border: rgba(11, 28, 58, 0.12);
+  --text: var(--brand-ink);
+  --text-soft: color-mix(in srgb, var(--brand-ink) 68%, var(--brand-white));
+  --text-faint: color-mix(in srgb, var(--brand-ink) 48%, var(--brand-white));
   --accent: var(--brand-mint);
-  --accent-ink: var(--brand-forest);
+  --accent-ink: var(--brand-ink);
   --charge: #2a946f;
-  --charge-ink: var(--brand-forest);
+  --charge-ink: var(--brand-ink);
   --info: #0e7490;
   --warning: #b45309;
   --danger: #c24141;
-  --shadow: 0 16px 36px rgba(2, 60, 39, 0.08);
-  --overlay: rgba(2, 60, 39, 0.45);
+  --shadow: 0 16px 36px rgba(11, 28, 58, 0.08);
+  --overlay: rgba(11, 28, 58, 0.45);
   --ring: rgba(74, 177, 139, 0.35);
-  --bar-track: rgba(2, 60, 39, 0.08);
+  --bar-track: rgba(11, 28, 58, 0.08);
   --sidebar: color-mix(in srgb, var(--brand-mint) 14%, var(--brand-white));
 }
 
@@ -70,7 +76,7 @@ body {
   background:
     radial-gradient(ellipse at top left, color-mix(in srgb, var(--brand-mint) 14%, transparent), transparent 36%),
     var(--bg);
-  font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
+  font-family: var(--font-dm-sans), "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -290,7 +296,7 @@ a {
   padding: 0 3px;
   border-radius: 999px;
   background: var(--brand-mint);
-  color: var(--brand-forest);
+  color: var(--accent-ink);
   font-size: 0.58rem;
   font-weight: 800;
   line-height: 14px;
@@ -371,6 +377,55 @@ a {
   align-items: center;
   gap: 14px;
   min-width: 0;
+}
+
+.topbar-heading {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 16px 14px;
+  margin: -4px 0 0 -4px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, var(--bg));
+}
+
+.topbar-breadcrumb {
+  min-width: 0;
+}
+
+.topbar-breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+}
+
+.topbar-breadcrumb a {
+  color: var(--text-soft);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.topbar-breadcrumb a:hover {
+  color: var(--text);
+}
+
+.topbar-breadcrumb-sep {
+  color: var(--text-faint);
+  user-select: none;
+}
+
+.topbar-breadcrumb-current {
+  color: var(--text-soft);
+  font-weight: 600;
 }
 
 .account-menu {
@@ -521,9 +576,12 @@ a {
 }
 
 .topbar h1 {
-  margin-top: 4px;
-  font-size: clamp(1.45rem, 2vw, 1.9rem);
-  letter-spacing: -0.04em;
+  margin: 0;
+  font-size: clamp(1.12rem, 1.5vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text);
 }
 
 .topbar-actions {
@@ -585,7 +643,7 @@ a {
 
 .btn.primary {
   background: var(--brand-mint);
-  color: var(--brand-forest);
+  color: var(--accent-ink);
   border-color: transparent;
 }
 
@@ -934,7 +992,7 @@ table.data th {
 
 [data-theme="light"] .data-table-panel table.data thead th {
   background: color-mix(in srgb, #6ec4df 14%, var(--brand-white));
-  color: color-mix(in srgb, var(--brand-forest) 38%, var(--brand-mint));
+  color: color-mix(in srgb, var(--brand-ink) 38%, var(--brand-mint));
 }
 
 [data-theme="dark"] .data-table-panel table.data thead th {
@@ -1031,7 +1089,7 @@ table.data th.right {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--brand-mint), var(--brand-forest));
+  background: linear-gradient(90deg, var(--brand-mint), var(--brand-ink));
 }
 
 .track.warn > span {
@@ -1068,7 +1126,7 @@ table.data th.right {
   width: 100%;
   max-width: 36px;
   border-radius: 8px 8px 4px 4px;
-  background: linear-gradient(180deg, var(--brand-mint), var(--brand-forest));
+  background: linear-gradient(180deg, var(--brand-mint), var(--brand-ink));
   min-height: 6px;
 }
 
@@ -1636,10 +1694,29 @@ table.data th.right {
   display: flex;
   align-items: center;
   padding: clamp(32px, 6vw, 72px);
+  /* Green-tinted charcoal (no navy) — mint wash over near-black */
   background:
-    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--brand-mint) 28%, transparent), transparent 42%),
-    var(--brand-forest);
+    radial-gradient(circle at 18% 20%, color-mix(in srgb, var(--brand-mint) 42%, transparent), transparent 46%),
+    radial-gradient(ellipse at 88% 92%, color-mix(in srgb, var(--brand-mint) 18%, transparent), transparent 52%),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--brand-mint) 12%, #121215) 0%,
+      color-mix(in srgb, var(--brand-mint) 7%, #0f0f12) 48%,
+      #0c0e0d 100%
+    );
   color: var(--brand-white);
+}
+
+[data-theme="dark"] .landing-hero {
+  background:
+    radial-gradient(circle at 18% 20%, color-mix(in srgb, var(--brand-mint) 36%, transparent), transparent 46%),
+    radial-gradient(ellipse at 88% 92%, color-mix(in srgb, var(--brand-mint) 14%, transparent), transparent 52%),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--brand-mint) 10%, #101012) 0%,
+      var(--bg-void) 55%,
+      color-mix(in srgb, var(--brand-mint) 6%, #0a0b0a) 100%
+    );
 }
 
 .landing-hero .eyebrow {
@@ -1698,7 +1775,7 @@ table.data th.right {
 
 [data-theme="light"] .login-card {
   background: var(--brand-white);
-  color: var(--brand-forest);
+  color: var(--brand-ink);
 }
 
 .login-card-head h2 {
@@ -1725,16 +1802,6 @@ table.data th.right {
   color: var(--danger);
   font-size: 0.86rem;
   font-weight: 600;
-}
-
-.login-foot {
-  display: flex;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.theme-toggle {
-  font-size: 0.82rem;
 }
 
 .landing-note {
