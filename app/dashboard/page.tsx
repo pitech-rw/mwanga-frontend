@@ -2,23 +2,22 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ApiResourcePanel } from "../../components/api-resource-panel";
 import { AccountMenu } from "../../components/account-menu";
+import type { BatteryAttachTarget } from "../../components/attach-battery-station-modal";
+import type { BatteryBikeAttachTarget } from "../../components/attach-battery-bike-modal";
+import type { SwapperAssignTarget } from "../../components/assign-swapper-station-modal";
 import { SidebarNav } from "../../components/sidebar-nav";
 import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight, NavIcon } from "../../components/icons/icon";
-import { Badge } from "../../components/badge";
-import { BarChart, ProgressBar } from "../../components/bars";
-import { DataTable, type Column } from "../../components/data-table";
-import { Modal } from "../../components/modal";
+import { RecordDetailModal } from "../../components/record-detail-modal";
 import { useTheme } from "../../components/theme";
 import { useToast } from "../../components/toast";
 import { getApiUrl } from "../../lib/api";
-import { userMessageForStatus } from "../../lib/api-errors";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../../lib/auth";
 import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../../lib/nav";
-import { batteries, hourlySwaps, notices, stations, type BatteryRow } from "../../lib/ops-data";
-
+import type { ResourceDetailPayload } from "../../lib/resource-detail";
+import { TABLE_ROW_ACTION_IDS, type TableRowActionId } from "../../lib/table-row-actions";
 type HealthResponse = {
   ok: boolean;
   database: string;
@@ -45,7 +44,12 @@ export default function DashboardPage() {
   const [noticesOpen, setNoticesOpen] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [detail, setDetail] = useState<{ title: string; rows: [string, string][] } | null>(null);
+  const [detail, setDetail] = useState<ResourceDetailPayload | null>(null);
+  const [detailPermissions, setDetailPermissions] = useState<string[]>([]);
+  const [openAssignSwapper, setOpenAssignSwapper] = useState<SwapperAssignTarget | null>(null);
+  const [openAttachBatteryStation, setOpenAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
+  const [openAttachBatteryBike, setOpenAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
+  const [resourceReloadKey, setResourceReloadKey] = useState(0);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -138,13 +142,72 @@ export default function DashboardPage() {
     router.replace("/");
   };
 
-  const batteryColumns: Column<BatteryRow>[] = [
-    { key: "id", header: "Serial", sortValue: (row) => row.id, render: (row) => row.id },
-    { key: "status", header: "Status", sortValue: (row) => row.status, render: (row) => <Badge status={row.status} /> },
-    { key: "station", header: "Station", sortValue: (row) => row.station, render: (row) => row.station },
-    { key: "soc", header: "SOC", align: "right", sortValue: (row) => row.soc, render: (row) => `${row.soc}%` },
-    { key: "soh", header: "SOH", align: "right", sortValue: (row) => row.soh, render: (row) => `${row.soh}%` },
-  ];
+  const bumpResourceReload = useCallback(() => {
+    setResourceReloadKey((k) => k + 1);
+  }, []);
+
+  const clearExternalModals = useCallback(() => {
+    setOpenAttachBatteryStation(null);
+    setOpenAttachBatteryBike(null);
+    setOpenAssignSwapper(null);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPerms = async () => {
+      try {
+        const response = await authFetch("/auth/me");
+        if (!response.ok) {
+          if (active) {
+            setDetailPermissions([]);
+          }
+          return;
+        }
+        const data = (await response.json()) as AuthUser;
+        if (active) {
+          setDetailPermissions(Array.isArray(data.permissions) ? [...data.permissions] : []);
+        }
+      } catch {
+        if (active) {
+          setDetailPermissions([]);
+        }
+      }
+    };
+
+    void loadPerms();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleDetailRowAction = useCallback(
+    (actionId: TableRowActionId, row: Record<string, unknown>) => {
+      setDetail(null);
+      if (actionId === TABLE_ROW_ACTION_IDS.attachBatteryStation) {
+        const id = row.id;
+        if (typeof id !== "number") {
+          return;
+        }
+        const serial = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
+        setOpenAttachBatteryStation({ id, serialNumber: serial });
+        return;
+      }
+      if (actionId === TABLE_ROW_ACTION_IDS.attachBatteryBike) {
+        const id = row.id;
+        if (typeof id !== "number") {
+          return;
+        }
+        const serial = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
+        setOpenAttachBatteryBike({ id, serialNumber: serial });
+        return;
+      }
+      if (actionId === TABLE_ROW_ACTION_IDS.assignSwapperStation) {
+        setOpenAssignSwapper(row as unknown as SwapperAssignTarget);
+      }
+    },
+    [],
+  );
 
   const copy = sectionCopy[section];
   const activeMenu = getMenuItem(section);
@@ -207,20 +270,7 @@ export default function DashboardPage() {
               </button>
               {noticesOpen ? (
                 <div className="notice-pop card">
-                  {notices.map((notice) => (
-                    <button
-                      key={notice.id}
-                      type="button"
-                      className="notice-item"
-                      onClick={() => {
-                        setNoticesOpen(false);
-                        notify({ title: notice.title, message: notice.message, tone: notice.tone });
-                      }}
-                    >
-                      <strong>{notice.title}</strong>
-                      <p>{notice.message}</p>
-                    </button>
-                  ))}
+                  <p className="notice-empty">No notifications</p>
                 </div>
               ) : null}
             </div>
@@ -238,7 +288,7 @@ export default function DashboardPage() {
           <div className="banner" role="status">
             <div>
               <strong>Live data is unavailable.</strong>
-              <p>{apiError} Fleet tables below use the station sample set.</p>
+              <p>{apiError}</p>
             </div>
             <button type="button" className="btn" onClick={() => notify({ title: "Still offline", message: apiError, tone: "warning" })}>
               Notify
@@ -247,103 +297,24 @@ export default function DashboardPage() {
         ) : null}
 
         {section === "overview" ? (
-          <>
-            <section className="stats">
-              <article className="card stat">
-                <span>Active riders</span>
-                <strong>1,248</strong>
-                <em>+8.4% this week</em>
-              </article>
-              <article className="card stat">
-                <span>Batteries in fleet</span>
-                <strong>3,420</strong>
-                <em>+2.1% charged</em>
-              </article>
-              <article className="card stat">
-                <span>Swaps today</span>
-                <strong>486</strong>
-                <em>+12.7% vs yesterday</em>
-              </article>
-              <article className="card stat">
-                <span>Revenue</span>
-                <strong>CDF 2.84M</strong>
-                <em>+6.9% captured</em>
-              </article>
-            </section>
-
-            <section className="grid-2">
-              <article className="card panel">
-                <div className="panel-head">
-                  <h2>Swap volume</h2>
-                  <span>Today, local time</span>
-                </div>
-                <BarChart items={hourlySwaps} />
-              </article>
-              <article className="card panel">
-                <div className="panel-head">
-                  <h2>Station charge</h2>
-                  <span>Available share</span>
-                </div>
-                <div className="bars">
-                  {stations.map((station) => (
-                    <ProgressBar
-                      key={station.id}
-                      label={station.name}
-                      value={station.available}
-                      max={station.capacity}
-                      tone={station.online ? "charge" : "danger"}
-                    />
-                  ))}
-                </div>
-              </article>
-            </section>
-
-            <section className="grid-2">
-              <article className="card panel">
-                <div className="panel-head">
-                  <h2>Battery inventory</h2>
-                  <button type="button" className="btn ghost" onClick={() => setSection("batteries")}>
-                    View all
-                  </button>
-                </div>
-                <DataTable
-                  columns={batteryColumns}
-                  rows={batteries}
-                  defaultPageSize={4}
-                  pageSizeOptions={[4, 10, 25]}
-                  searchPlaceholder="Search batteries…"
-                  rowKey={(row) => row.id}
-                  onRowClick={(row) =>
-                    setDetail({
-                      title: row.id,
-                      rows: [
-                        ["Status", row.status],
-                        ["Station", row.station],
-                        ["State of charge", `${row.soc}%`],
-                        ["State of health", `${row.soh}%`],
-                      ],
-                    })
-                  }
-                />
-              </article>
-              <article className="card panel">
-                <div className="panel-head">
-                  <h2>Pack health</h2>
-                  <span>State of charge</span>
-                </div>
-                <div className="bars">
-                  {batteries.map((battery) => (
-                    <ProgressBar
-                      key={battery.id}
-                      label={battery.id}
-                      value={battery.soc}
-                      tone={battery.soc < 20 ? "danger" : battery.soc < 50 ? "warn" : "charge"}
-                    />
-                  ))}
-                </div>
-              </article>
-            </section>
-          </>
+          <section className="stats">
+            <article className="card stat">
+              <span>Batteries</span>
+              <strong>{counts.batteries != null ? counts.batteries.toLocaleString() : "—"}</strong>
+            </article>
+            <article className="card stat">
+              <span>Bikes</span>
+              <strong>{counts.bikes != null ? counts.bikes.toLocaleString() : "—"}</strong>
+            </article>
+            <article className="card stat">
+              <span>Swaps</span>
+              <strong>{counts.swaps != null ? counts.swaps.toLocaleString() : "—"}</strong>
+            </article>
+            <article className="card stat">
+              <span>Stations</span>
+              <strong>{counts.stations != null ? counts.stations.toLocaleString() : "—"}</strong>
+            </article>
+          </section>
         ) : null}
 
         {activeMenu.apiPath && section !== "overview" ? (
@@ -351,30 +322,42 @@ export default function DashboardPage() {
             section={section}
             apiPath={activeMenu.apiPath}
             title={activeMenu.title}
+            reloadKey={resourceReloadKey}
+            openAttachBatteryStation={openAttachBatteryStation}
+            openAttachBatteryBike={openAttachBatteryBike}
+            openAssignSwapper={openAssignSwapper}
+            onExternalFlowOpened={clearExternalModals}
             onForbidden={handleForbidden}
             onDetail={setDetail}
             onRecordsChange={(count) => setCounts((current) => ({ ...current, [section]: count }))}
-            onCreateError={() => notify({ title: "Create failed", message: userMessageForStatus("create", 500), tone: "error" })}
+            onCreateError={(message) => notify({ title: "Create failed", message, tone: "error" })}
             onCreateSuccess={() => notify({ title: "Created", message: `${activeMenu.title} saved.`, tone: "success" })}
+            onAssignSuccess={() =>
+              notify({ title: "Assignment saved", message: "Swapper station assignment updated.", tone: "success" })
+            }
+            onAssignError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
+            onBatteryStationSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Station updated", message: "Battery attached to the selected station.", tone: "success" });
+            }}
+            onBatteryStationError={(message) => notify({ title: "Attach failed", message, tone: "error" })}
+            onBatteryBikeSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Bike updated", message: "Battery attached to the selected bike.", tone: "success" });
+            }}
+            onBatteryBikeError={(message) => notify({ title: "Attach failed", message, tone: "error" })}
           />
         ) : null}
       </main>
 
-      <Modal open={detail !== null} title={detail?.title ?? "Detail"} onClose={() => setDetail(null)}>
-        <div className="detail-list">
-          {detail?.rows.map(([label, value]) => (
-            <div key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </div>
-          ))}
-        </div>
-        <div className="modal-actions">
-          <button type="button" className="btn primary" onClick={() => setDetail(null)}>
-            Close
-          </button>
-        </div>
-      </Modal>
+      <RecordDetailModal
+        open={detail !== null}
+        payload={detail}
+        permissions={sessionUser?.permissions ?? detailPermissions}
+        onClose={() => setDetail(null)}
+        onRowAction={handleDetailRowAction}
+      />
+
     </div>
   );
 }

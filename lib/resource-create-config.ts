@@ -57,8 +57,7 @@ const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
       { name: "serialNumber", label: "Serial number", type: "text", required: true },
       { name: "model", label: "Model", type: "text", required: true },
       { name: "chassisNumber", label: "Chassis number", type: "text" },
-      { name: "ownerId", label: "Owner ID", type: "number" },
-      { name: "riderId", label: "Rider ID", type: "number" },
+      { name: "userId", label: "Rider user ID", type: "number" },
     ],
   },
   cards: {
@@ -72,33 +71,7 @@ const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
       { name: "serialNumber", label: "Serial number", type: "text", required: true },
       { name: "type", label: "Type", type: "text", required: true, placeholder: "nfc" },
       { name: "status", label: "Status", type: "text" },
-      { name: "riderId", label: "Rider ID", type: "number" },
-    ],
-  },
-  owners: {
-    section: "owners",
-    apiPath: "/owners",
-    title: "Add owner",
-    description: "Creates a fleet or partner owner record.",
-    submitLabel: "Create owner",
-    fields: [
-      { name: "name", label: "Name", type: "text", required: true },
-      { name: "phone", label: "Phone", type: "text" },
-      { name: "email", label: "Email", type: "email" },
-      { name: "status", label: "Status", type: "text" },
-    ],
-  },
-  riders: {
-    section: "riders",
-    apiPath: "/riders",
-    title: "Add rider",
-    description: "Registers a customer in the network.",
-    submitLabel: "Create rider",
-    fields: [
-      { name: "fullName", label: "Full name", type: "text", required: true },
-      { name: "phone", label: "Phone", type: "text", required: true, placeholder: "+243 …" },
-      { name: "idNumber", label: "ID number", type: "text" },
-      { name: "ownerId", label: "Owner ID", type: "number" },
+      { name: "userId", label: "Rider user ID", type: "number" },
     ],
   },
   roles: {
@@ -116,10 +89,7 @@ const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
     description: "Registers a swap station on the network.",
     submitLabel: "Create station",
     fields: [
-      { name: "code", label: "Code", type: "text", required: true },
       { name: "name", label: "Name", type: "text", required: true },
-      { name: "type", label: "Type", type: "text", required: true },
-      { name: "model", label: "Model", type: "text", required: true },
       { name: "address", label: "Address", type: "text" },
       { name: "capacity", label: "Capacity", type: "number" },
       { name: "latitude", label: "Latitude", type: "number" },
@@ -133,7 +103,7 @@ const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
     description: "Starts a swap transaction at a station.",
     submitLabel: "Create swap",
     fields: [
-      { name: "riderId", label: "Rider ID", type: "number", required: true },
+      { name: "userId", label: "Rider user ID", type: "number", required: true },
       { name: "bikeId", label: "Bike ID", type: "number", required: true },
       { name: "stationId", label: "Station ID", type: "number", required: true },
       { name: "cardId", label: "Card ID", type: "number", required: true },
@@ -162,6 +132,7 @@ const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
         options: selectOptions(USER_TYPES),
       },
       { name: "phone", label: "Phone", type: "text" },
+      { name: "kycStatus", label: "KYC status", type: "text", placeholder: "pending" },
     ],
   },
   violations: {
@@ -199,7 +170,7 @@ const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
     description: "Opens a rider wallet for swap payments.",
     submitLabel: "Create wallet",
     fields: [
-      { name: "riderId", label: "Rider ID", type: "number", required: true },
+      { name: "userId", label: "Rider user ID", type: "number", required: true },
       { name: "balance", label: "Opening balance", type: "number" },
       { name: "currency", label: "Currency", type: "text", placeholder: "CDF" },
     ],

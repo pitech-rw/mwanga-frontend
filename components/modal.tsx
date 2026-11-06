@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, type ReactNode } from "react";
 
 type ModalProps = {
   open: boolean;
@@ -8,9 +8,13 @@ type ModalProps = {
   description?: string;
   onClose: () => void;
   children: React.ReactNode;
+  /** Rendered below the body; use for primary/secondary actions (e.g. Cancel + Save). */
+  footer?: ReactNode;
+  /** Use a denser “panel” layout (header rule, footer rule). */
+  variant?: "default" | "panel";
 };
 
-export function Modal({ open, title, description, onClose, children }: ModalProps) {
+export function Modal({ open, title, description, onClose, children, footer, variant = "default" }: ModalProps) {
   const titleId = useId();
 
   useEffect(() => {
@@ -32,10 +36,39 @@ export function Modal({ open, title, description, onClose, children }: ModalProp
     return null;
   }
 
+  const shellClass = variant === "panel" ? "modal modal-panel card" : "modal card";
+
+  if (variant === "panel") {
+    return (
+      <div className="overlay" onClick={onClose} role="presentation">
+        <div
+          className={shellClass}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <header className="modal-header">
+            <h2 id={titleId}>{title}</h2>
+            {description ? <p className="sub">{description}</p> : null}
+          </header>
+          <hr className="modal-rule" />
+          <div className="modal-body">{children}</div>
+          {footer ? (
+            <>
+              <hr className="modal-rule" />
+              <footer className="modal-footer">{footer}</footer>
+            </>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="overlay" onClick={onClose} role="presentation">
       <div
-        className="modal card"
+        className={shellClass}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

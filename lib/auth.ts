@@ -1,5 +1,5 @@
 import { getApiUrl } from "./api";
-import { userMessageForStatus } from "./api-errors";
+import { userMessageFromResponse } from "./api-errors";
 
 const TOKEN_KEY = "mwanga-access-token";
 const USER_KEY = "mwanga-user";
@@ -98,7 +98,7 @@ export async function login(identifier: string, password: string): Promise<Login
   });
 
   if (!response.ok) {
-    throw new Error(userMessageForStatus("signIn", response.status));
+    throw new Error(await userMessageFromResponse("signIn", response));
   }
 
   return (await response.json()) as LoginResponse;

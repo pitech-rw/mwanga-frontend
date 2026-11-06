@@ -67,7 +67,7 @@ export default function HomePage() {
           </p>
           <ul className="landing-points">
             <li>Batteries, bikes, stations, and swaps</li>
-            <li>Riders, cards, wallets, and owners</li>
+            <li>Riders, cards, and wallets</li>
             <li>Users, roles, and violations</li>
           </ul>
         </div>

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { authFetch } from "../lib/auth";
-import { userMessageForNetwork, userMessageForStatus } from "../lib/api-errors";
+import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
 import type { Section } from "../lib/nav";
 import { Modal } from "./modal";
@@ -49,8 +49,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       });
 
       if (!response.ok) {
-        setError(userMessageForStatus("create", response.status));
-        onError?.(userMessageForStatus("create", response.status));
+        const message = await userMessageFromResponse("create", response);
+        setError(message);
+        onError?.(message);
         return;
       }
 
@@ -64,9 +65,27 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     }
   };
 
+  const formId = `create-resource-${section}`;
+
   return (
-    <Modal open={open} title={config.title} description={config.description} onClose={onClose}>
-      <form className="form" onSubmit={submit}>
+    <Modal
+      open={open}
+      variant="panel"
+      title={config.title}
+      description={config.description}
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" form={formId} className="btn primary" disabled={saving}>
+            {saving ? "Saving…" : config.submitLabel}
+          </button>
+        </>
+      }
+    >
+      <form id={formId} className="form form-modal-panel" onSubmit={submit}>
         {error ? (
           <div className="login-error" role="alert">
             {error}
@@ -120,15 +139,6 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             )}
           </label>
         ))}
-
-        <div className="modal-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="btn primary" disabled={saving}>
-            {saving ? "Saving…" : config.submitLabel}
-          </button>
-        </div>
       </form>
     </Modal>
   );
