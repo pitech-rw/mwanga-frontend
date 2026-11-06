@@ -1,33 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
 import type { ResourceDetailPayload } from "../lib/resource-detail";
-import { getRowActionsForRecord, type TableRowActionId } from "../lib/table-row-actions";
 import { Modal } from "./modal";
 
 type RecordDetailModalProps = {
   open: boolean;
   payload: ResourceDetailPayload | null;
-  permissions: readonly string[];
   onClose: () => void;
-  /** When user picks a row-level action (attach / assign). */
-  onRowAction?: (actionId: TableRowActionId, row: Record<string, unknown>) => void;
 };
 
-export function RecordDetailModal({
-  open,
-  payload,
-  permissions,
-  onClose,
-  onRowAction,
-}: RecordDetailModalProps) {
-  const actions = useMemo(() => {
-    if (!payload) {
-      return [];
-    }
-    return getRowActionsForRecord(payload.section, permissions, payload.row);
-  }, [payload, permissions]);
-
+export function RecordDetailModal({ open, payload, onClose }: RecordDetailModalProps) {
   if (!payload) {
     return null;
   }
@@ -64,24 +46,6 @@ export function RecordDetailModal({
           </div>
         ) : null}
 
-        {actions.length > 0 ? (
-          <div className="record-detail-actions" role="group" aria-label="Actions">
-            <p className="record-detail-actions-label">Actions</p>
-            <div className="record-detail-actions-row">
-              {actions.map((def) => (
-                <button
-                  key={def.id}
-                  type="button"
-                  className="btn primary btn-inline"
-                  onClick={() => onRowAction?.(def.id, payload.row)}
-                >
-                  {def.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
         {payload.rows.length > 0 ? (
           <>
             <p className="record-detail-fields-label">All fields</p>
@@ -99,5 +63,3 @@ export function RecordDetailModal({
     </Modal>
   );
 }
-
-export type { TableRowActionId };

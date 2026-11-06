@@ -5,6 +5,8 @@ import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-error
 import { authFetch, type AuthUser } from "../lib/auth";
 import type { Section } from "../lib/nav";
 import { buildResourceDetailPayload, type ResourceDetailPayload } from "../lib/resource-detail";
+import type { ResourceSection } from "../lib/resource-create-config";
+import { getResourceUpdateFields } from "../lib/resource-update-fields";
 import {
   walletBalanceNumber,
   walletCurrency,
@@ -28,7 +30,9 @@ import { Badge } from "./badge";
 import { CreateResourceButton } from "./create-resource-button";
 import { DataTable, type Column } from "./data-table";
 import { TableRowActionsMenu, type TableRowMenuItem } from "./table-row-actions-menu";
+import { DeleteResourceModal } from "./delete-resource-modal";
 import { DeleteWalletModal } from "./delete-wallet-modal";
+import { EditResourceModal, type EditResourceTarget } from "./edit-resource-modal";
 import { EditWalletModal } from "./edit-wallet-modal";
 import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
 
@@ -374,6 +378,8 @@ function buildRowActionMenuItems(
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openWalletEdit: (wallet: WalletEditTarget) => void,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
+  openResourceEdit: (target: EditResourceTarget) => void,
+  openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
 ): TableRowMenuItem[] {
   const items: TableRowMenuItem[] = [];
 
@@ -480,6 +486,42 @@ function buildRowActionMenuItems(
       });
       continue;
     }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.resourceEdit) {
+      if (section === "wallets" || section === "overview") {
+        continue;
+      }
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      const fields = getResourceUpdateFields(section);
+      if (!fields?.length) {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openResourceEdit({ section, id, row, fields }),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.resourceDelete) {
+      if (section === "wallets" || section === "overview") {
+        continue;
+      }
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openResourceDelete({ section, id, row }),
+      });
+      continue;
+    }
   }
 
   return items;
@@ -497,6 +539,8 @@ function appendActionsColumn(
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openWalletEdit: (wallet: WalletEditTarget) => void,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
+  openResourceEdit: (target: EditResourceTarget) => void,
+  openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
 ): Column<Row>[] {
   return [
     ...baseColumns,
@@ -518,6 +562,8 @@ function appendActionsColumn(
           openWalletTopUp,
           openWalletEdit,
           openWalletDelete,
+          openResourceEdit,
+          openResourceDelete,
         );
         return menuItems.map((item) => item.label).join(" ");
       },
@@ -534,6 +580,8 @@ function appendActionsColumn(
           openWalletTopUp,
           openWalletEdit,
           openWalletDelete,
+          openResourceEdit,
+          openResourceDelete,
         );
 
         if (menuItems.length === 0) {
@@ -571,16 +619,12 @@ type ApiResourcePanelProps = {
   onWalletEditError?: (message: string) => void;
   onWalletDeleteSuccess?: () => void;
   onWalletDeleteError?: (message: string) => void;
+  onResourceEditSuccess?: () => void;
+  onResourceEditError?: (message: string) => void;
+  onResourceDeleteSuccess?: () => void;
+  onResourceDeleteError?: (message: string) => void;
   /** Bumps when parent wants a fresh fetch (e.g. after closing a global modal). */
   reloadKey?: number;
-  /** Open attach/assign flows from outside the table (e.g. record detail dialog). */
-  openAttachBatteryStation?: BatteryAttachTarget | null;
-  openAttachBatteryBike?: BatteryBikeAttachTarget | null;
-  openAssignSwapper?: SwapperAssignTarget | null;
-  openWalletTopUp?: WalletTopUpTarget | null;
-  openWalletEdit?: WalletEditTarget | null;
-  openWalletDelete?: { id: number; ownerLabel: string } | null;
-  onExternalFlowOpened?: () => void;
 };
 
 export function ApiResourcePanel({
@@ -604,14 +648,11 @@ export function ApiResourcePanel({
   onWalletEditError,
   onWalletDeleteSuccess,
   onWalletDeleteError,
+  onResourceEditSuccess,
+  onResourceEditError,
+  onResourceDeleteSuccess,
+  onResourceDeleteError,
   reloadKey = 0,
-  openAttachBatteryStation,
-  openAttachBatteryBike,
-  openAssignSwapper,
-  openWalletTopUp,
-  openWalletEdit,
-  openWalletDelete,
-  onExternalFlowOpened,
 }: ApiResourcePanelProps) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -624,6 +665,8 @@ export function ApiResourcePanel({
   const [walletTopUp, setWalletTopUp] = useState<WalletTopUpTarget | null>(null);
   const [walletEdit, setWalletEdit] = useState<WalletEditTarget | null>(null);
   const [walletDelete, setWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
+  const [resourceEdit, setResourceEdit] = useState<EditResourceTarget | null>(null);
+  const [resourceDelete, setResourceDelete] = useState<{ section: ResourceSection; id: number; row: Row } | null>(null);
   const onForbiddenRef = useRef(onForbidden);
   const onRecordsChangeRef = useRef(onRecordsChange);
 
@@ -676,27 +719,6 @@ export function ApiResourcePanel({
   const reload = useCallback(() => {
     setReloadToken((value) => value + 1);
   }, []);
-
-  useEffect(() => {
-    if (openAttachBatteryStation) {
-      setAttachBatteryStation(openAttachBatteryStation);
-      onExternalFlowOpened?.();
-    }
-  }, [openAttachBatteryStation, onExternalFlowOpened]);
-
-  useEffect(() => {
-    if (openAttachBatteryBike) {
-      setAttachBatteryBike(openAttachBatteryBike);
-      onExternalFlowOpened?.();
-    }
-  }, [openAttachBatteryBike, onExternalFlowOpened]);
-
-  useEffect(() => {
-    if (openAssignSwapper) {
-      setAssignUser(openAssignSwapper);
-      onExternalFlowOpened?.();
-    }
-  }, [openAssignSwapper, onExternalFlowOpened]);
 
   useEffect(() => {
     let active = true;
@@ -786,26 +808,13 @@ export function ApiResourcePanel({
     setWalletDelete(payload);
   }, []);
 
-  useEffect(() => {
-    if (openWalletTopUp) {
-      setWalletTopUp(openWalletTopUp);
-      onExternalFlowOpened?.();
-    }
-  }, [openWalletTopUp, onExternalFlowOpened]);
+  const openResourceEditModal = useCallback((target: EditResourceTarget) => {
+    setResourceEdit(target);
+  }, []);
 
-  useEffect(() => {
-    if (openWalletEdit) {
-      setWalletEdit(openWalletEdit);
-      onExternalFlowOpened?.();
-    }
-  }, [openWalletEdit, onExternalFlowOpened]);
-
-  useEffect(() => {
-    if (openWalletDelete) {
-      setWalletDelete(openWalletDelete);
-      onExternalFlowOpened?.();
-    }
-  }, [openWalletDelete, onExternalFlowOpened]);
+  const openResourceDeleteModal = useCallback((payload: { section: ResourceSection; id: number; row: Row }) => {
+    setResourceDelete(payload);
+  }, []);
 
   const allRowActionsForSection = useMemo(() => getAvailableRowActions(section, sessionPermissions), [section, sessionPermissions]);
 
@@ -834,6 +843,8 @@ export function ApiResourcePanel({
       openWalletTopUpModal,
       openWalletEditModal,
       openWalletDeleteModal,
+      openResourceEditModal,
+      openResourceDeleteModal,
     );
   }, [
     allRowActionsForSection,
@@ -844,6 +855,8 @@ export function ApiResourcePanel({
     openWalletTopUpModal,
     openWalletEditModal,
     openWalletDeleteModal,
+    openResourceEditModal,
+    openResourceDeleteModal,
     rows,
     section,
     title,
@@ -961,6 +974,30 @@ export function ApiResourcePanel({
           onWalletDeleteSuccess?.();
         }}
         onError={onWalletDeleteError}
+      />
+
+      <EditResourceModal
+        open={resourceEdit !== null}
+        target={resourceEdit}
+        onClose={() => setResourceEdit(null)}
+        onSaved={() => {
+          reload();
+          onResourceEditSuccess?.();
+        }}
+        onError={onResourceEditError}
+      />
+
+      <DeleteResourceModal
+        open={resourceDelete !== null}
+        section={resourceDelete?.section ?? null}
+        recordId={resourceDelete?.id ?? null}
+        row={resourceDelete?.row ?? null}
+        onClose={() => setResourceDelete(null)}
+        onDeleted={() => {
+          reload();
+          onResourceDeleteSuccess?.();
+        }}
+        onError={onResourceDeleteError}
       />
     </>
   );

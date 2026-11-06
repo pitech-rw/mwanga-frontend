@@ -13,7 +13,7 @@ export type ResourceDetailPayload = {
   summary: [string, string][];
   /** Remaining fields (label formatted from keys). */
   rows: [string, string][];
-  /** Original API row (for actions opened from this dialog). */
+  /** Original API row (same object as the table row). */
   row: Record<string, unknown>;
 };
 
@@ -48,14 +48,14 @@ export function buildResourceDetailPayload(
 
   const summary: [string, string][] = [];
   let headingTitle = `${resourceTitle} · ${idStr}`;
-  let description = `Record #${idStr}. Open the actions menu on the table row for attach, assign, or other operations.`;
+  let description = `Record #${idStr}. Use the actions menu (⋯) on the table row to attach, edit, or delete.`;
 
   switch (section) {
     case "batteries": {
       const serial = pickString(row, "serialNumber") ?? idStr;
       headingTitle = `Battery · ${serial}`;
       description =
-        "Pack details. A battery is either at a station or on a bike—not both. Use Attach to station / Attach to bike from the row menu to move it.";
+        "Pack details. A battery is either at a station or on a bike—not both.";
       usedKeys.add("serialNumber");
       summary.push(["Serial", serial]);
       const status = pickString(row, "status");
@@ -107,7 +107,7 @@ export function buildResourceDetailPayload(
       const username = pickString(row, "username") ?? idStr;
       const name = [pickString(row, "firstName"), pickString(row, "lastName")].filter(Boolean).join(" ").trim();
       headingTitle = name ? `User · ${name}` : `User · @${username}`;
-      description = "Account overview. Use Assign station from the row menu for swappers.";
+      description = "Account overview.";
       usedKeys.add("username");
       summary.push(["Username", `@${username}`]);
       if (name) {
@@ -172,7 +172,7 @@ export function buildResourceDetailPayload(
     }
     case "wallets": {
       headingTitle = `Wallet · #${idStr}`;
-      description = "Balance and currency for the linked user. Top up from the row actions when permitted.";
+      description = "Balance and currency for the linked user.";
       const user = row.user;
       if (user && typeof user === "object") {
         const u = user as Record<string, unknown>;

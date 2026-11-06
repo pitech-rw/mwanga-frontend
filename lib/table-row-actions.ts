@@ -1,3 +1,5 @@
+import { PERMISSIONS } from "./permission-strings";
+import type { ResourceSection } from "./resource-create-config";
 import type { Section } from "./nav";
 
 /**
@@ -11,6 +13,8 @@ export const TABLE_ROW_ACTION_IDS = {
   walletTopUp: "wallet-top-up",
   walletEdit: "wallet-edit",
   walletDelete: "wallet-delete",
+  resourceEdit: "resource-edit",
+  resourceDelete: "resource-delete",
 } as const;
 
 export type TableRowActionId = (typeof TABLE_ROW_ACTION_IDS)[keyof typeof TABLE_ROW_ACTION_IDS];
@@ -24,6 +28,18 @@ export type TableRowActionDef = {
   visibleForRow?: (row: Record<string, unknown>) => boolean;
 };
 
+const genericEdit = (permission: string): TableRowActionDef => ({
+  id: TABLE_ROW_ACTION_IDS.resourceEdit,
+  label: "Edit",
+  permission,
+});
+
+const genericDelete = (permission: string): TableRowActionDef => ({
+  id: TABLE_ROW_ACTION_IDS.resourceDelete,
+  label: "Delete",
+  permission,
+});
+
 /** All defined row actions per section (source of truth for “possible” actions). */
 function batteryHasStation(row: Record<string, unknown>): boolean {
   return (
@@ -35,44 +51,54 @@ function batteryHasBike(row: Record<string, unknown>): boolean {
   return row.bike != null && typeof row.bike === "object";
 }
 
-export const TABLE_ROW_ACTIONS_BY_SECTION: Partial<Record<Section, readonly TableRowActionDef[]>> = {
+export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly TableRowActionDef[]> = {
   batteries: [
     {
       id: TABLE_ROW_ACTION_IDS.attachBatteryStation,
       label: "Attach to station",
-      permission: "batteries:write",
+      permission: PERMISSIONS.batteries.write,
       visibleForRow: (row) => !batteryHasBike(row),
     },
     {
       id: TABLE_ROW_ACTION_IDS.attachBatteryBike,
       label: "Attach to bike",
-      permission: "batteries:write",
+      permission: PERMISSIONS.batteries.write,
       visibleForRow: (row) => !batteryHasStation(row),
     },
+    genericEdit(PERMISSIONS.batteries.write),
+    genericDelete(PERMISSIONS.batteries.delete),
   ],
+  bikes: [genericEdit(PERMISSIONS.bikes.write), genericDelete(PERMISSIONS.bikes.delete)],
+  cards: [genericEdit(PERMISSIONS.cards.write), genericDelete(PERMISSIONS.cards.delete)],
+  roles: [genericEdit(PERMISSIONS.roles.write), genericDelete(PERMISSIONS.roles.delete)],
+  stations: [genericEdit(PERMISSIONS.stations.write), genericDelete(PERMISSIONS.stations.delete)],
+  swaps: [genericEdit(PERMISSIONS.swaps.write), genericDelete(PERMISSIONS.swaps.delete)],
   users: [
     {
       id: TABLE_ROW_ACTION_IDS.assignSwapperStation,
       label: "Assign station",
-      permission: "users:write",
+      permission: PERMISSIONS.users.write,
       visibleForRow: (row) => row.type === "swapper",
     },
+    genericEdit(PERMISSIONS.users.write),
+    genericDelete(PERMISSIONS.users.delete),
   ],
+  violations: [genericEdit(PERMISSIONS.violations.write), genericDelete(PERMISSIONS.violations.delete)],
   wallets: [
     {
       id: TABLE_ROW_ACTION_IDS.walletTopUp,
       label: "Top up",
-      permission: "wallets:write",
+      permission: PERMISSIONS.wallets.write,
     },
     {
       id: TABLE_ROW_ACTION_IDS.walletEdit,
       label: "Edit wallet",
-      permission: "wallets:write",
+      permission: PERMISSIONS.wallets.write,
     },
     {
       id: TABLE_ROW_ACTION_IDS.walletDelete,
       label: "Delete wallet",
-      permission: "wallets:delete",
+      permission: PERMISSIONS.wallets.delete,
     },
   ],
 };
@@ -89,11 +115,11 @@ export function userMayUsePermission(permissions: readonly string[], required: s
 
 /** Returns which row actions the current user may see for this section (from registry + permissions). */
 export function getAvailableRowActions(section: Section, permissions: readonly string[]): TableRowActionDef[] {
-  const defs = TABLE_ROW_ACTIONS_BY_SECTION[section];
-  if (!defs?.length) {
+  if (section === "overview") {
     return [];
   }
 
+  const defs = TABLE_ROW_ACTIONS_BY_SECTION[section];
   return defs.filter((def) => userMayUsePermission(permissions, def.permission));
 }
 

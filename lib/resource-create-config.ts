@@ -1,6 +1,9 @@
 import type { Section } from "./nav";
 
-export type FieldType = "text" | "email" | "password" | "number" | "select" | "datetime-local" | "textarea";
+/** Every dashboard section that lists API resources (excludes overview). */
+export type ResourceSection = Exclude<Section, "overview">;
+
+export type FieldType = "text" | "email" | "password" | "number" | "select" | "datetime-local" | "textarea" | "checkbox";
 
 export type FieldSpec = {
   name: string;
@@ -29,7 +32,8 @@ function selectOptions(values: readonly string[]) {
   return values.map((value) => ({ value, label: value.replace(/_/g, " ") }));
 }
 
-const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
+/** One create form per resource section — TypeScript requires a key when `Section` gains a new API model. */
+const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
   batteries: {
     section: "batteries",
     apiPath: "/batteries",
@@ -177,7 +181,10 @@ const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
 };
 
 export function getCreateConfig(section: Section): CreateResourceConfig | null {
-  return CONFIGS[section] ?? null;
+  if (section === "overview") {
+    return null;
+  }
+  return CONFIGS[section];
 }
 
 export function buildCreatePayload(config: CreateResourceConfig, values: Record<string, string>): Record<string, unknown> {
