@@ -54,6 +54,7 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
     case "stations":
       return [
         { name: "name", label: "Name", type: "text" },
+        { name: "address", label: "Address", type: "text" },
         { name: "latitude", label: "Latitude", type: "number" },
         { name: "longitude", label: "Longitude", type: "number" },
         { name: "status", label: "Status", type: "text" },

@@ -1505,6 +1505,65 @@ table.data th.right {
   padding: 8px 10px;
 }
 
+.places-picker .places-picker-input-wrap {
+  position: relative;
+}
+
+.places-picker .places-picker-input-wrap input {
+  padding-right: 96px;
+}
+
+.places-picker-status {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  color: var(--text-soft);
+  pointer-events: none;
+}
+
+.places-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.places-picker-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.places-picker-option:hover,
+.places-picker-option:focus-visible {
+  background: var(--border);
+  outline: none;
+}
+
+.places-picker-hint {
+  margin: 0;
+}
+
+.places-picker--missing-key code {
+  font-size: 0.78em;
+}
+
+.places-picker-error {
+  margin: 0;
+}
+
 .create-wallet-selection {
   margin-top: 4px;
   line-height: 1.45;

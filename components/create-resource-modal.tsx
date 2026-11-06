@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
 import type { Section } from "../lib/nav";
+import { PlacesLocationPicker } from "./places-location-picker";
 import { Modal } from "./modal";
 
 type CreateResourceModalProps = {
@@ -123,6 +124,18 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const selectedWalletUser = useMemo(
     () => (walletUserId != null ? walletUsers.find((u) => u.id === walletUserId) : undefined),
     [walletUserId, walletUsers],
+  );
+
+  const onStationPlaceSelected = useCallback(
+    (place: { address: string; latitude: number; longitude: number }) => {
+      setValues((prev) => ({
+        ...prev,
+        address: place.address,
+        latitude: String(place.latitude),
+        longitude: String(place.longitude),
+      }));
+    },
+    [],
   );
 
   if (!config) {
@@ -256,6 +269,10 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </p>
             ) : null}
           </>
+        ) : null}
+
+        {config.section === "stations" ? (
+          <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
         ) : null}
 
         {config.fields.map((field) => (
