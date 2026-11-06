@@ -65,9 +65,27 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     }
   };
 
+  const formId = `create-resource-${section}`;
+
   return (
-    <Modal open={open} title={config.title} description={config.description} onClose={onClose}>
-      <form className="form" onSubmit={submit}>
+    <Modal
+      open={open}
+      variant="panel"
+      title={config.title}
+      description={config.description}
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" form={formId} className="btn primary" disabled={saving}>
+            {saving ? "Saving…" : config.submitLabel}
+          </button>
+        </>
+      }
+    >
+      <form id={formId} className="form form-modal-panel" onSubmit={submit}>
         {error ? (
           <div className="login-error" role="alert">
             {error}
@@ -121,15 +139,6 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             )}
           </label>
         ))}
-
-        <div className="modal-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="btn primary" disabled={saving}>
-            {saving ? "Saving…" : config.submitLabel}
-          </button>
-        </div>
       </form>
     </Modal>
   );

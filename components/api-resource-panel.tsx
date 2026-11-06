@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch, type AuthUser } from "../lib/auth";
 import type { Section } from "../lib/nav";
+import { buildResourceDetailPayload, type ResourceDetailPayload } from "../lib/resource-detail";
 import {
   getAvailableRowActions,
   TABLE_ROW_ACTION_IDS,
@@ -78,18 +79,6 @@ function cellValue(value: unknown): string {
   }
 
   return String(value);
-}
-
-function buildDetailPayload(
-  row: Row,
-  fallbackTitle: string,
-): { title: string; rows: [string, string][] } {
-  const detailRows = Object.entries(row)
-    .filter(([key]) => !SKIP_KEYS.has(key))
-    .slice(0, 12)
-    .map(([key, value]) => [key, cellValue(value)] as [string, string]);
-
-  return { title: cellValue(row.id ?? fallbackTitle), rows: detailRows };
 }
 
 function statusLike(key: string, value: unknown): boolean {
@@ -323,7 +312,8 @@ function buildUserColumns(): Column<Row>[] {
 function buildRowActionMenuItems(
   row: Row,
   available: TableRowActionDef[],
-  onDetail: ((payload: { title: string; rows: [string, string][] }) => void) | undefined,
+  onDetail: ((payload: ResourceDetailPayload) => void) | undefined,
+  section: Section,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
@@ -335,7 +325,8 @@ function buildRowActionMenuItems(
     items.push({
       id: "view",
       label: "View",
-      onSelect: () => onDetail(buildDetailPayload(row, title)),
+      onSelect: () =>
+        onDetail(buildResourceDetailPayload(section, title, row, cellValue)),
     });
   }
 
@@ -391,7 +382,8 @@ function buildRowActionMenuItems(
 function appendActionsColumn(
   baseColumns: Column<Row>[],
   available: TableRowActionDef[],
-  onDetail: ((payload: { title: string; rows: [string, string][] }) => void) | undefined,
+  onDetail: ((payload: ResourceDetailPayload) => void) | undefined,
+  section: Section,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
@@ -409,6 +401,7 @@ function appendActionsColumn(
           row,
           available,
           onDetail,
+          section,
           title,
           openAssign,
           openBatteryStationAttach,
@@ -421,6 +414,7 @@ function appendActionsColumn(
           row,
           available,
           onDetail,
+          section,
           title,
           openAssign,
           openBatteryStationAttach,
@@ -446,7 +440,7 @@ type ApiResourcePanelProps = {
   apiPath: string;
   title: string;
   onForbidden?: () => void;
-  onDetail?: (payload: { title: string; rows: [string, string][] }) => void;
+  onDetail?: (payload: ResourceDetailPayload) => void;
   onRecordsChange?: (count: number) => void;
   onCreateError?: (message: string) => void;
   onCreateSuccess?: () => void;
@@ -456,6 +450,13 @@ type ApiResourcePanelProps = {
   onBatteryStationError?: (message: string) => void;
   onBatteryBikeSuccess?: () => void;
   onBatteryBikeError?: (message: string) => void;
+  /** Bumps when parent wants a fresh fetch (e.g. after closing a global modal). */
+  reloadKey?: number;
+  /** Open attach/assign flows from outside the table (e.g. record detail dialog). */
+  openAttachBatteryStation?: BatteryAttachTarget | null;
+  openAttachBatteryBike?: BatteryBikeAttachTarget | null;
+  openAssignSwapper?: SwapperAssignTarget | null;
+  onExternalFlowOpened?: () => void;
 };
 
 export function ApiResourcePanel({
@@ -473,6 +474,11 @@ export function ApiResourcePanel({
   onBatteryStationError,
   onBatteryBikeSuccess,
   onBatteryBikeError,
+  reloadKey = 0,
+  openAttachBatteryStation,
+  openAttachBatteryBike,
+  openAssignSwapper,
+  onExternalFlowOpened,
 }: ApiResourcePanelProps) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -536,6 +542,27 @@ export function ApiResourcePanel({
   }, []);
 
   useEffect(() => {
+    if (openAttachBatteryStation) {
+      setAttachBatteryStation(openAttachBatteryStation);
+      onExternalFlowOpened?.();
+    }
+  }, [openAttachBatteryStation, onExternalFlowOpened]);
+
+  useEffect(() => {
+    if (openAttachBatteryBike) {
+      setAttachBatteryBike(openAttachBatteryBike);
+      onExternalFlowOpened?.();
+    }
+  }, [openAttachBatteryBike, onExternalFlowOpened]);
+
+  useEffect(() => {
+    if (openAssignSwapper) {
+      setAssignUser(openAssignSwapper);
+      onExternalFlowOpened?.();
+    }
+  }, [openAssignSwapper, onExternalFlowOpened]);
+
+  useEffect(() => {
     let active = true;
 
     const load = async () => {
@@ -597,7 +624,7 @@ export function ApiResourcePanel({
     return () => {
       active = false;
     };
-  }, [apiPath, reloadToken]);
+  }, [apiPath, reloadKey, reloadToken]);
 
   const openAssign = useCallback((user: SwapperAssignTarget) => {
     setAssignUser(user);
@@ -628,6 +655,7 @@ export function ApiResourcePanel({
       base,
       allRowActionsForSection,
       onDetail,
+      section,
       title,
       openAssign,
       openBatteryStationAttach,
@@ -672,7 +700,11 @@ export function ApiResourcePanel({
         rowKey={(row) => String(row.id ?? JSON.stringify(row))}
         empty={error ? "Unable to load records." : "No records yet."}
         searchPlaceholder={searchPlaceholderFromSection}
-        onRowClick={onDetail ? (row) => onDetail(buildDetailPayload(row, title)) : undefined}
+        onRowClick={
+          onDetail
+            ? (row) => onDetail(buildResourceDetailPayload(section, title, row, cellValue))
+            : undefined
+        }
       />
       </article>
 

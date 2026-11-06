@@ -171,14 +171,32 @@ export function AttachBatteryStationModal({
     }
   };
 
+  const formId = "attach-battery-station-form";
+
   return (
     <Modal
       open={open}
+      variant="panel"
       title="Attach to station"
       description={`Choose a station for ${batteryHeading(battery)}. Search by station ID, code, or name.`}
       onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn" onClick={onClose} disabled={saving}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form={formId}
+            className="btn primary"
+            disabled={saving || loadingStations || selectedId == null}
+          >
+            {saving ? "Saving…" : "Attach battery"}
+          </button>
+        </>
+      }
     >
-      <form className="form" onSubmit={submit}>
+      <form id={formId} className="form form-modal-panel" onSubmit={submit}>
         {error ? (
           <div className="login-error" role="alert">
             {error}
@@ -229,15 +247,6 @@ export function AttachBatteryStationModal({
             Selected: <strong>{stationOptionText(selectedStation)}</strong>
           </p>
         ) : null}
-
-        <div className="modal-actions">
-          <button type="button" className="btn" onClick={onClose} disabled={saving}>
-            Cancel
-          </button>
-          <button type="submit" className="btn primary" disabled={saving || loadingStations || selectedId == null}>
-            {saving ? "Saving…" : "Attach battery"}
-          </button>
-        </div>
       </form>
     </Modal>
   );

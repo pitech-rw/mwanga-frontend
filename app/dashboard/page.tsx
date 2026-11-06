@@ -2,17 +2,22 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ApiResourcePanel } from "../../components/api-resource-panel";
 import { AccountMenu } from "../../components/account-menu";
+import type { BatteryAttachTarget } from "../../components/attach-battery-station-modal";
+import type { BatteryBikeAttachTarget } from "../../components/attach-battery-bike-modal";
+import type { SwapperAssignTarget } from "../../components/assign-swapper-station-modal";
 import { SidebarNav } from "../../components/sidebar-nav";
 import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight, NavIcon } from "../../components/icons/icon";
-import { Modal } from "../../components/modal";
+import { RecordDetailModal } from "../../components/record-detail-modal";
 import { useTheme } from "../../components/theme";
 import { useToast } from "../../components/toast";
 import { getApiUrl } from "../../lib/api";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../../lib/auth";
 import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../../lib/nav";
+import type { ResourceDetailPayload } from "../../lib/resource-detail";
+import { TABLE_ROW_ACTION_IDS, type TableRowActionId } from "../../lib/table-row-actions";
 type HealthResponse = {
   ok: boolean;
   database: string;
@@ -39,7 +44,12 @@ export default function DashboardPage() {
   const [noticesOpen, setNoticesOpen] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [detail, setDetail] = useState<{ title: string; rows: [string, string][] } | null>(null);
+  const [detail, setDetail] = useState<ResourceDetailPayload | null>(null);
+  const [detailPermissions, setDetailPermissions] = useState<string[]>([]);
+  const [openAssignSwapper, setOpenAssignSwapper] = useState<SwapperAssignTarget | null>(null);
+  const [openAttachBatteryStation, setOpenAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
+  const [openAttachBatteryBike, setOpenAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
+  const [resourceReloadKey, setResourceReloadKey] = useState(0);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -131,6 +141,73 @@ export default function DashboardPage() {
     clearSession();
     router.replace("/");
   };
+
+  const bumpResourceReload = useCallback(() => {
+    setResourceReloadKey((k) => k + 1);
+  }, []);
+
+  const clearExternalModals = useCallback(() => {
+    setOpenAttachBatteryStation(null);
+    setOpenAttachBatteryBike(null);
+    setOpenAssignSwapper(null);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPerms = async () => {
+      try {
+        const response = await authFetch("/auth/me");
+        if (!response.ok) {
+          if (active) {
+            setDetailPermissions([]);
+          }
+          return;
+        }
+        const data = (await response.json()) as AuthUser;
+        if (active) {
+          setDetailPermissions(Array.isArray(data.permissions) ? [...data.permissions] : []);
+        }
+      } catch {
+        if (active) {
+          setDetailPermissions([]);
+        }
+      }
+    };
+
+    void loadPerms();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleDetailRowAction = useCallback(
+    (actionId: TableRowActionId, row: Record<string, unknown>) => {
+      setDetail(null);
+      if (actionId === TABLE_ROW_ACTION_IDS.attachBatteryStation) {
+        const id = row.id;
+        if (typeof id !== "number") {
+          return;
+        }
+        const serial = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
+        setOpenAttachBatteryStation({ id, serialNumber: serial });
+        return;
+      }
+      if (actionId === TABLE_ROW_ACTION_IDS.attachBatteryBike) {
+        const id = row.id;
+        if (typeof id !== "number") {
+          return;
+        }
+        const serial = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
+        setOpenAttachBatteryBike({ id, serialNumber: serial });
+        return;
+      }
+      if (actionId === TABLE_ROW_ACTION_IDS.assignSwapperStation) {
+        setOpenAssignSwapper(row as unknown as SwapperAssignTarget);
+      }
+    },
+    [],
+  );
 
   const copy = sectionCopy[section];
   const activeMenu = getMenuItem(section);
@@ -245,6 +322,11 @@ export default function DashboardPage() {
             section={section}
             apiPath={activeMenu.apiPath}
             title={activeMenu.title}
+            reloadKey={resourceReloadKey}
+            openAttachBatteryStation={openAttachBatteryStation}
+            openAttachBatteryBike={openAttachBatteryBike}
+            openAssignSwapper={openAssignSwapper}
+            onExternalFlowOpened={clearExternalModals}
             onForbidden={handleForbidden}
             onDetail={setDetail}
             onRecordsChange={(count) => setCounts((current) => ({ ...current, [section]: count }))}
@@ -254,33 +336,28 @@ export default function DashboardPage() {
               notify({ title: "Assignment saved", message: "Swapper station assignment updated.", tone: "success" })
             }
             onAssignError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
-            onBatteryStationSuccess={() =>
-              notify({ title: "Station updated", message: "Battery attached to the selected station.", tone: "success" })
-            }
+            onBatteryStationSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Station updated", message: "Battery attached to the selected station.", tone: "success" });
+            }}
             onBatteryStationError={(message) => notify({ title: "Attach failed", message, tone: "error" })}
-            onBatteryBikeSuccess={() =>
-              notify({ title: "Bike updated", message: "Battery attached to the selected bike.", tone: "success" })
-            }
+            onBatteryBikeSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Bike updated", message: "Battery attached to the selected bike.", tone: "success" });
+            }}
             onBatteryBikeError={(message) => notify({ title: "Attach failed", message, tone: "error" })}
           />
         ) : null}
       </main>
 
-      <Modal open={detail !== null} title={detail?.title ?? "Detail"} onClose={() => setDetail(null)}>
-        <div className="detail-list">
-          {detail?.rows.map(([label, value]) => (
-            <div key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </div>
-          ))}
-        </div>
-        <div className="modal-actions">
-          <button type="button" className="btn primary" onClick={() => setDetail(null)}>
-            Close
-          </button>
-        </div>
-      </Modal>
+      <RecordDetailModal
+        open={detail !== null}
+        payload={detail}
+        permissions={sessionUser?.permissions ?? detailPermissions}
+        onClose={() => setDetail(null)}
+        onRowAction={handleDetailRowAction}
+      />
+
     </div>
   );
 }

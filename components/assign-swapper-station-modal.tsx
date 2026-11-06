@@ -147,14 +147,32 @@ export function AssignSwapperStationModal({
     }
   };
 
+  const formId = "assign-swapper-station-form";
+
   return (
     <Modal
       open={open}
+      variant="panel"
       title="Assign station"
       description={`Choose which swap station ${swapperLabel(user)} operates.`}
       onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="btn" onClick={onClose} disabled={saving}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form={formId}
+            className="btn primary"
+            disabled={saving || loadingStations}
+          >
+            {saving ? "Saving…" : "Save assignment"}
+          </button>
+        </>
+      }
     >
-      <form className="form" onSubmit={submit}>
+      <form id={formId} className="form form-modal-panel" onSubmit={submit}>
         {error ? (
           <div className="login-error" role="alert">
             {error}
@@ -179,15 +197,6 @@ export function AssignSwapperStationModal({
         </label>
 
         {loadingStations ? <p className="sub">Loading stations…</p> : null}
-
-        <div className="modal-actions">
-          <button type="button" className="btn" onClick={onClose} disabled={saving}>
-            Cancel
-          </button>
-          <button type="submit" className="btn primary" disabled={saving || loadingStations}>
-            {saving ? "Saving…" : "Save assignment"}
-          </button>
-        </div>
       </form>
     </Modal>
   );

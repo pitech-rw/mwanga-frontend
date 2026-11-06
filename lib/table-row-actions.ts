@@ -76,3 +76,14 @@ export function getAvailableRowActions(section: Section, permissions: readonly s
 
   return defs.filter((def) => userMayUsePermission(permissions, def.permission));
 }
+
+/** Actions applicable to one row (used by table menus and the record detail dialog). */
+export function getRowActionsForRecord(
+  section: Section,
+  permissions: readonly string[],
+  row: Record<string, unknown>,
+): TableRowActionDef[] {
+  return getAvailableRowActions(section, permissions).filter(
+    (def) => !def.visibleForRow || def.visibleForRow(row),
+  );
+}
