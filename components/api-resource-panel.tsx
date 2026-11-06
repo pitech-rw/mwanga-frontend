@@ -112,6 +112,11 @@ function statusLike(key: string, value: unknown): boolean {
   return /status|state|online|kyc/i.test(key);
 }
 
+function addressCellDisplay(value: unknown): string {
+  const text = cellValue(value);
+  return text === "—" ? "" : text;
+}
+
 function buildColumns(rows: Row[]): Column<Row>[] {
   if (rows.length === 0) {
     return [
@@ -133,6 +138,7 @@ function buildColumns(rows: Row[]): Column<Row>[] {
   return ordered.map((key) => ({
     key,
     header: key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()),
+    cellClassName: key === "address" ? "data-table-cell-ellipsis" : undefined,
     sortValue: (row) => {
       const value = row[key];
       return typeof value === "number" ? value : String(value ?? "");
@@ -143,6 +149,18 @@ function buildColumns(rows: Row[]): Column<Row>[] {
 
       if (statusLike(key, value)) {
         return <Badge status={String(value)} />;
+      }
+
+      if (key === "address") {
+        const full = addressCellDisplay(value);
+        if (!full) {
+          return "—";
+        }
+        return (
+          <span className="data-table-ellipsis-inner" title={full}>
+            {full}
+          </span>
+        );
       }
 
       return cellValue(value);
