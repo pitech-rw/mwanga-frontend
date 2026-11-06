@@ -6,6 +6,14 @@ import { authFetch, type AuthUser } from "../lib/auth";
 import type { Section } from "../lib/nav";
 import { buildResourceDetailPayload, type ResourceDetailPayload } from "../lib/resource-detail";
 import {
+  walletBalanceNumber,
+  walletCurrency,
+  walletDeleteLabelFromRow,
+  walletEditTargetFromRow,
+  walletOwnerCell,
+  type WalletEditTarget,
+} from "../lib/wallet-row-helpers";
+import {
   getAvailableRowActions,
   TABLE_ROW_ACTION_IDS,
   type TableRowActionDef,
@@ -20,6 +28,9 @@ import { Badge } from "./badge";
 import { CreateResourceButton } from "./create-resource-button";
 import { DataTable, type Column } from "./data-table";
 import { TableRowActionsMenu, type TableRowMenuItem } from "./table-row-actions-menu";
+import { DeleteWalletModal } from "./delete-wallet-modal";
+import { EditWalletModal } from "./edit-wallet-modal";
+import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
 
 type Row = Record<string, unknown>;
 
@@ -151,6 +162,48 @@ function userDisplayName(row: Row): string {
   const combined = [first, last].filter(Boolean).join(" ").trim();
 
   return combined || cellValue(row.username);
+}
+
+function buildWalletDataColumns(): Column<Row>[] {
+  return [
+    {
+      key: "owner",
+      header: "Owner",
+      sortValue: (row) => walletOwnerCell(row).label,
+      searchValue: (row) => {
+        const { label, type } = walletOwnerCell(row);
+        const parts = [label, type, row.userId != null ? String(row.userId) : ""];
+        const user = row.user;
+        if (user && typeof user === "object") {
+          const u = user as Record<string, unknown>;
+          if (typeof u.email === "string") {
+            parts.push(u.email);
+          }
+          if (typeof u.username === "string") {
+            parts.push(u.username);
+          }
+        }
+        return parts.filter(Boolean).join(" ");
+      },
+      render: (row) => {
+        const { label, type } = walletOwnerCell(row);
+        return (
+          <span className="wallet-owner-cell">
+            <span className="wallet-owner-name">{label}</span>
+            <Badge status={type} />
+          </span>
+        );
+      },
+    },
+    {
+      key: "balance",
+      header: "Balance",
+      align: "right",
+      sortValue: (row) => walletBalanceNumber(row),
+      searchValue: (row) => `${walletBalanceNumber(row)} ${walletCurrency(row)}`,
+      render: (row) => `${walletBalanceNumber(row).toLocaleString()} ${walletCurrency(row)}`,
+    },
+  ];
 }
 
 function buildBatteryDataColumns(): Column<Row>[] {
@@ -318,6 +371,9 @@ function buildRowActionMenuItems(
   openAssign: (user: SwapperAssignTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
+  openWalletTopUp: (wallet: WalletTopUpTarget) => void,
+  openWalletEdit: (wallet: WalletEditTarget) => void,
+  openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
 ): TableRowMenuItem[] {
   const items: TableRowMenuItem[] = [];
 
@@ -373,6 +429,56 @@ function buildRowActionMenuItems(
         label: def.label,
         onSelect: () => openAssign(row as unknown as SwapperAssignTarget),
       });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.walletTopUp) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+
+      const { label } = walletOwnerCell(row);
+
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () =>
+          openWalletTopUp({
+            id,
+            ownerLabel: label,
+            currency: walletCurrency(row),
+            currentBalance: walletBalanceNumber(row),
+          }),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.walletEdit) {
+      const target = walletEditTargetFromRow(row);
+      if (!target) {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openWalletEdit(target),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.walletDelete) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () =>
+          openWalletDelete({ id, ownerLabel: walletDeleteLabelFromRow(row) }),
+      });
+      continue;
     }
   }
 
@@ -388,6 +494,9 @@ function appendActionsColumn(
   openAssign: (user: SwapperAssignTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
+  openWalletTopUp: (wallet: WalletTopUpTarget) => void,
+  openWalletEdit: (wallet: WalletEditTarget) => void,
+  openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
 ): Column<Row>[] {
   return [
     ...baseColumns,
@@ -406,6 +515,9 @@ function appendActionsColumn(
           openAssign,
           openBatteryStationAttach,
           openBatteryBikeAttach,
+          openWalletTopUp,
+          openWalletEdit,
+          openWalletDelete,
         );
         return menuItems.map((item) => item.label).join(" ");
       },
@@ -419,6 +531,9 @@ function appendActionsColumn(
           openAssign,
           openBatteryStationAttach,
           openBatteryBikeAttach,
+          openWalletTopUp,
+          openWalletEdit,
+          openWalletDelete,
         );
 
         if (menuItems.length === 0) {
@@ -450,12 +565,21 @@ type ApiResourcePanelProps = {
   onBatteryStationError?: (message: string) => void;
   onBatteryBikeSuccess?: () => void;
   onBatteryBikeError?: (message: string) => void;
+  onWalletTopUpSuccess?: () => void;
+  onWalletTopUpError?: (message: string) => void;
+  onWalletEditSuccess?: () => void;
+  onWalletEditError?: (message: string) => void;
+  onWalletDeleteSuccess?: () => void;
+  onWalletDeleteError?: (message: string) => void;
   /** Bumps when parent wants a fresh fetch (e.g. after closing a global modal). */
   reloadKey?: number;
   /** Open attach/assign flows from outside the table (e.g. record detail dialog). */
   openAttachBatteryStation?: BatteryAttachTarget | null;
   openAttachBatteryBike?: BatteryBikeAttachTarget | null;
   openAssignSwapper?: SwapperAssignTarget | null;
+  openWalletTopUp?: WalletTopUpTarget | null;
+  openWalletEdit?: WalletEditTarget | null;
+  openWalletDelete?: { id: number; ownerLabel: string } | null;
   onExternalFlowOpened?: () => void;
 };
 
@@ -474,10 +598,19 @@ export function ApiResourcePanel({
   onBatteryStationError,
   onBatteryBikeSuccess,
   onBatteryBikeError,
+  onWalletTopUpSuccess,
+  onWalletTopUpError,
+  onWalletEditSuccess,
+  onWalletEditError,
+  onWalletDeleteSuccess,
+  onWalletDeleteError,
   reloadKey = 0,
   openAttachBatteryStation,
   openAttachBatteryBike,
   openAssignSwapper,
+  openWalletTopUp,
+  openWalletEdit,
+  openWalletDelete,
   onExternalFlowOpened,
 }: ApiResourcePanelProps) {
   const [rows, setRows] = useState<Row[]>([]);
@@ -488,6 +621,9 @@ export function ApiResourcePanel({
   const [assignUser, setAssignUser] = useState<SwapperAssignTarget | null>(null);
   const [attachBatteryStation, setAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
   const [attachBatteryBike, setAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
+  const [walletTopUp, setWalletTopUp] = useState<WalletTopUpTarget | null>(null);
+  const [walletEdit, setWalletEdit] = useState<WalletEditTarget | null>(null);
+  const [walletDelete, setWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
   const onForbiddenRef = useRef(onForbidden);
   const onRecordsChangeRef = useRef(onRecordsChange);
 
@@ -638,6 +774,39 @@ export function ApiResourcePanel({
     setAttachBatteryBike(battery);
   }, []);
 
+  const openWalletTopUpModal = useCallback((wallet: WalletTopUpTarget) => {
+    setWalletTopUp(wallet);
+  }, []);
+
+  const openWalletEditModal = useCallback((wallet: WalletEditTarget) => {
+    setWalletEdit(wallet);
+  }, []);
+
+  const openWalletDeleteModal = useCallback((payload: { id: number; ownerLabel: string }) => {
+    setWalletDelete(payload);
+  }, []);
+
+  useEffect(() => {
+    if (openWalletTopUp) {
+      setWalletTopUp(openWalletTopUp);
+      onExternalFlowOpened?.();
+    }
+  }, [openWalletTopUp, onExternalFlowOpened]);
+
+  useEffect(() => {
+    if (openWalletEdit) {
+      setWalletEdit(openWalletEdit);
+      onExternalFlowOpened?.();
+    }
+  }, [openWalletEdit, onExternalFlowOpened]);
+
+  useEffect(() => {
+    if (openWalletDelete) {
+      setWalletDelete(openWalletDelete);
+      onExternalFlowOpened?.();
+    }
+  }, [openWalletDelete, onExternalFlowOpened]);
+
   const allRowActionsForSection = useMemo(() => getAvailableRowActions(section, sessionPermissions), [section, sessionPermissions]);
 
   const columns = useMemo(() => {
@@ -647,6 +816,8 @@ export function ApiResourcePanel({
       base = buildUserColumns();
     } else if (section === "batteries") {
       base = buildBatteryDataColumns();
+    } else if (section === "wallets") {
+      base = buildWalletDataColumns();
     } else {
       base = buildColumns(rows);
     }
@@ -660,8 +831,23 @@ export function ApiResourcePanel({
       openAssign,
       openBatteryStationAttach,
       openBatteryBikeAttach,
+      openWalletTopUpModal,
+      openWalletEditModal,
+      openWalletDeleteModal,
     );
-  }, [allRowActionsForSection, onDetail, openAssign, openBatteryBikeAttach, openBatteryStationAttach, rows, section, title]);
+  }, [
+    allRowActionsForSection,
+    onDetail,
+    openAssign,
+    openBatteryBikeAttach,
+    openBatteryStationAttach,
+    openWalletTopUpModal,
+    openWalletEditModal,
+    openWalletDeleteModal,
+    rows,
+    section,
+    title,
+  ]);
 
   const searchPlaceholderFromSection =
     section === "users"
@@ -670,7 +856,9 @@ export function ApiResourcePanel({
         ? "Search batteries…"
         : section === "swaps"
           ? "Search swaps…"
-          : undefined;
+          : section === "wallets"
+            ? "Search wallets…"
+            : undefined;
 
   return (
     <>
@@ -739,6 +927,40 @@ export function ApiResourcePanel({
           onBatteryBikeSuccess?.();
         }}
         onError={onBatteryBikeError}
+      />
+
+      <WalletTopUpModal
+        open={walletTopUp !== null}
+        wallet={walletTopUp}
+        onClose={() => setWalletTopUp(null)}
+        onSaved={() => {
+          reload();
+          onWalletTopUpSuccess?.();
+        }}
+        onError={onWalletTopUpError}
+      />
+
+      <EditWalletModal
+        open={walletEdit !== null}
+        wallet={walletEdit}
+        onClose={() => setWalletEdit(null)}
+        onSaved={() => {
+          reload();
+          onWalletEditSuccess?.();
+        }}
+        onError={onWalletEditError}
+      />
+
+      <DeleteWalletModal
+        open={walletDelete !== null}
+        walletId={walletDelete?.id ?? null}
+        ownerLabel={walletDelete?.ownerLabel ?? ""}
+        onClose={() => setWalletDelete(null)}
+        onDeleted={() => {
+          reload();
+          onWalletDeleteSuccess?.();
+        }}
+        onError={onWalletDeleteError}
       />
     </>
   );

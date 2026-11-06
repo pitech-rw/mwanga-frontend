@@ -167,10 +167,9 @@ const CONFIGS: Partial<Record<Section, CreateResourceConfig>> = {
     section: "wallets",
     apiPath: "/wallets",
     title: "Create wallet",
-    description: "Opens a rider wallet for swap payments.",
+    description: "Pick a user by username (search). Each row shows their account type.",
     submitLabel: "Create wallet",
     fields: [
-      { name: "userId", label: "Rider user ID", type: "number", required: true },
       { name: "balance", label: "Opening balance", type: "number" },
       { name: "currency", label: "Currency", type: "text", placeholder: "CDF" },
     ],

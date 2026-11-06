@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
@@ -15,8 +15,28 @@ type CreateResourceModalProps = {
   onError?: (message: string) => void;
 };
 
+type UserListRow = {
+  id: number;
+  username: string;
+  type: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 function emptyValues(config: CreateResourceConfig): Record<string, string> {
   return Object.fromEntries(config.fields.map((field) => [field.name, ""]));
+}
+
+function userDisplayName(u: UserListRow): string {
+  const name = [u.firstName, u.lastName].filter(Boolean).join(" ").trim();
+  return name || u.username;
+}
+
+function userOptionLine(u: UserListRow): string {
+  const name = userDisplayName(u);
+  const typeLabel = u.type.replace(/_/g, " ");
+  return `${u.id} · @${u.username} · ${typeLabel}${name !== u.username ? ` · ${name}` : ""}`;
 }
 
 export function CreateResourceModal({ open, section, onClose, onCreated, onError }: CreateResourceModalProps) {
@@ -24,28 +44,127 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [walletUserId, setWalletUserId] = useState<number | null>(null);
+  const [walletUserSearch, setWalletUserSearch] = useState("");
+  const [walletUsers, setWalletUsers] = useState<UserListRow[]>([]);
+  const [loadingWalletUsers, setLoadingWalletUsers] = useState(false);
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
     if (open && cfg) {
       setValues(emptyValues(cfg));
       setError(null);
+      setWalletUserId(null);
+      setWalletUserSearch("");
     }
   }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "wallets") {
+      return;
+    }
+
+    let active = true;
+    setLoadingWalletUsers(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch("/users");
+        if (!response.ok) {
+          if (active) {
+            setWalletUsers([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        if (!active) {
+          return;
+        }
+        setWalletUsers(Array.isArray(data) ? (data as UserListRow[]) : []);
+        setError(null);
+      } catch {
+        if (active) {
+          setWalletUsers([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingWalletUsers(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [open, section]);
+
+  const filteredWalletUsers = useMemo(() => {
+    const needle = walletUserSearch.trim().toLowerCase();
+    if (!needle) {
+      return walletUsers;
+    }
+    return walletUsers.filter((u) => {
+      const haystack = [
+        u.username,
+        u.email,
+        u.type,
+        userDisplayName(u),
+        String(u.id),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [walletUserSearch, walletUsers]);
+
+  const selectedWalletUser = useMemo(
+    () => (walletUserId != null ? walletUsers.find((u) => u.id === walletUserId) : undefined),
+    [walletUserId, walletUsers],
+  );
 
   if (!config) {
     return null;
   }
+
+  const submitDisabled =
+    saving || (config.section === "wallets" && (walletUserId === null || loadingWalletUsers));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
     setError(null);
 
+    if (config.section === "wallets") {
+      if (walletUserId === null) {
+        setError("Select a user.");
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
+      let body: Record<string, unknown>;
+
+      if (config.section === "wallets") {
+        body = { userId: walletUserId };
+        const balanceRaw = values.balance?.trim() ?? "";
+        if (balanceRaw) {
+          body.balance = Number(balanceRaw);
+        }
+        const currencyRaw = values.currency?.trim() ?? "";
+        if (currencyRaw) {
+          body.currency = currencyRaw;
+        }
+      } else {
+        body = buildCreatePayload(config, values);
+      }
+
       const response = await authFetch(config.apiPath, {
         method: "POST",
-        body: JSON.stringify(buildCreatePayload(config, values)),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -79,7 +198,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" form={formId} className="btn primary" disabled={saving}>
+          <button type="submit" form={formId} className="btn primary" disabled={submitDisabled}>
             {saving ? "Saving…" : config.submitLabel}
           </button>
         </>
@@ -90,6 +209,53 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           <div className="login-error" role="alert">
             {error}
           </div>
+        ) : null}
+
+        {config.section === "wallets" ? (
+          <>
+            <label className="field">
+              <span>Find user</span>
+              <input
+                type="search"
+                value={walletUserSearch}
+                disabled={saving || loadingWalletUsers}
+                onChange={(event) => setWalletUserSearch(event.target.value)}
+                placeholder="Search by username, email, or name…"
+                autoComplete="off"
+                aria-label="Search users for wallet"
+              />
+            </label>
+            {loadingWalletUsers ? (
+              <p className="sub">Loading users…</p>
+            ) : (
+              <label className="field">
+                <span>User ({filteredWalletUsers.length} shown)</span>
+                <select
+                  value={walletUserId != null ? String(walletUserId) : ""}
+                  disabled={saving || filteredWalletUsers.length === 0}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setWalletUserId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredWalletUsers.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label="Select user for wallet"
+                >
+                  <option value="">{filteredWalletUsers.length === 0 ? "No matches" : "Choose a user…"}</option>
+                  {filteredWalletUsers.map((u) => (
+                    <option key={u.id} value={String(u.id)}>
+                      {userOptionLine(u)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedWalletUser ? (
+              <p className="create-wallet-selection sub" role="status">
+                <strong>Selected:</strong> {userOptionLine(selectedWalletUser)}
+              </p>
+            ) : null}
+          </>
         ) : null}
 
         {config.fields.map((field) => (

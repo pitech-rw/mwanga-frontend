@@ -8,6 +8,9 @@ export const TABLE_ROW_ACTION_IDS = {
   attachBatteryStation: "attach-battery-station",
   attachBatteryBike: "attach-battery-bike",
   assignSwapperStation: "assign-swapper-station",
+  walletTopUp: "wallet-top-up",
+  walletEdit: "wallet-edit",
+  walletDelete: "wallet-delete",
 } as const;
 
 export type TableRowActionId = (typeof TABLE_ROW_ACTION_IDS)[keyof typeof TABLE_ROW_ACTION_IDS];
@@ -53,6 +56,23 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Partial<Record<Section, readonly Tabl
       label: "Assign station",
       permission: "users:write",
       visibleForRow: (row) => row.type === "swapper",
+    },
+  ],
+  wallets: [
+    {
+      id: TABLE_ROW_ACTION_IDS.walletTopUp,
+      label: "Top up",
+      permission: "wallets:write",
+    },
+    {
+      id: TABLE_ROW_ACTION_IDS.walletEdit,
+      label: "Edit wallet",
+      permission: "wallets:write",
+    },
+    {
+      id: TABLE_ROW_ACTION_IDS.walletDelete,
+      label: "Delete wallet",
+      permission: "wallets:delete",
     },
   ],
 };

@@ -8,6 +8,7 @@ import { AccountMenu } from "../../components/account-menu";
 import type { BatteryAttachTarget } from "../../components/attach-battery-station-modal";
 import type { BatteryBikeAttachTarget } from "../../components/attach-battery-bike-modal";
 import type { SwapperAssignTarget } from "../../components/assign-swapper-station-modal";
+import type { WalletTopUpTarget } from "../../components/wallet-top-up-modal";
 import { SidebarNav } from "../../components/sidebar-nav";
 import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight, NavIcon } from "../../components/icons/icon";
 import { RecordDetailModal } from "../../components/record-detail-modal";
@@ -18,6 +19,7 @@ import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser }
 import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../../lib/nav";
 import type { ResourceDetailPayload } from "../../lib/resource-detail";
 import { TABLE_ROW_ACTION_IDS, type TableRowActionId } from "../../lib/table-row-actions";
+import { walletDeleteLabelFromRow, walletEditTargetFromRow, walletTopUpTargetFromRow } from "../../lib/wallet-row-helpers";
 type HealthResponse = {
   ok: boolean;
   database: string;
@@ -49,6 +51,9 @@ export default function DashboardPage() {
   const [openAssignSwapper, setOpenAssignSwapper] = useState<SwapperAssignTarget | null>(null);
   const [openAttachBatteryStation, setOpenAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
   const [openAttachBatteryBike, setOpenAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
+  const [openWalletTopUp, setOpenWalletTopUp] = useState<WalletTopUpTarget | null>(null);
+  const [openWalletEdit, setOpenWalletEdit] = useState<WalletTopUpTarget | null>(null);
+  const [openWalletDelete, setOpenWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
   const [resourceReloadKey, setResourceReloadKey] = useState(0);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -150,6 +155,9 @@ export default function DashboardPage() {
     setOpenAttachBatteryStation(null);
     setOpenAttachBatteryBike(null);
     setOpenAssignSwapper(null);
+    setOpenWalletTopUp(null);
+    setOpenWalletEdit(null);
+    setOpenWalletDelete(null);
   }, []);
 
   useEffect(() => {
@@ -204,6 +212,28 @@ export default function DashboardPage() {
       }
       if (actionId === TABLE_ROW_ACTION_IDS.assignSwapperStation) {
         setOpenAssignSwapper(row as unknown as SwapperAssignTarget);
+        return;
+      }
+      if (actionId === TABLE_ROW_ACTION_IDS.walletTopUp) {
+        const target = walletTopUpTargetFromRow(row);
+        if (target) {
+          setOpenWalletTopUp(target);
+        }
+        return;
+      }
+      if (actionId === TABLE_ROW_ACTION_IDS.walletEdit) {
+        const target = walletEditTargetFromRow(row);
+        if (target) {
+          setOpenWalletEdit(target);
+        }
+        return;
+      }
+      if (actionId === TABLE_ROW_ACTION_IDS.walletDelete) {
+        const id = row.id;
+        if (typeof id !== "number") {
+          return;
+        }
+        setOpenWalletDelete({ id, ownerLabel: walletDeleteLabelFromRow(row) });
       }
     },
     [],
@@ -326,6 +356,9 @@ export default function DashboardPage() {
             openAttachBatteryStation={openAttachBatteryStation}
             openAttachBatteryBike={openAttachBatteryBike}
             openAssignSwapper={openAssignSwapper}
+            openWalletTopUp={openWalletTopUp}
+            openWalletEdit={openWalletEdit}
+            openWalletDelete={openWalletDelete}
             onExternalFlowOpened={clearExternalModals}
             onForbidden={handleForbidden}
             onDetail={setDetail}
@@ -346,6 +379,21 @@ export default function DashboardPage() {
               notify({ title: "Bike updated", message: "Battery attached to the selected bike.", tone: "success" });
             }}
             onBatteryBikeError={(message) => notify({ title: "Attach failed", message, tone: "error" })}
+            onWalletTopUpSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Wallet updated", message: "Balance topped up.", tone: "success" });
+            }}
+            onWalletTopUpError={(message) => notify({ title: "Top-up failed", message, tone: "error" })}
+            onWalletEditSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Wallet updated", message: "Wallet saved.", tone: "success" });
+            }}
+            onWalletEditError={(message) => notify({ title: "Update failed", message, tone: "error" })}
+            onWalletDeleteSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Wallet deleted", message: "Wallet removed.", tone: "success" });
+            }}
+            onWalletDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}
           />
         ) : null}
       </main>
