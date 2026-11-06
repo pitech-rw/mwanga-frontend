@@ -271,6 +271,16 @@ export default function DashboardPage() {
               notify({ title: "Bike updated", message: "Battery attached to the selected bike.", tone: "success" });
             }}
             onBatteryBikeError={(message) => notify({ title: "Attach failed", message, tone: "error" })}
+            onBikeRiderSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Bike updated", message: "Rider assignment saved.", tone: "success" });
+            }}
+            onBikeRiderError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
+            onCardRiderSuccess={() => {
+              bumpResourceReload();
+              notify({ title: "Card updated", message: "Rider assignment saved.", tone: "success" });
+            }}
+            onCardRiderError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
             onWalletTopUpSuccess={() => {
               bumpResourceReload();
               notify({ title: "Wallet updated", message: "Balance topped up.", tone: "success" });

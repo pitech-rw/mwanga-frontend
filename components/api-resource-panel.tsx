@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch, type AuthUser } from "../lib/auth";
 import type { Section } from "../lib/nav";
@@ -24,6 +24,14 @@ import {
   AttachBatteryBikeModal,
   type BatteryBikeAttachTarget,
 } from "./attach-battery-bike-modal";
+import {
+  AttachBikeRiderModal,
+  type BikeRiderAttachTarget,
+} from "./attach-bike-rider-modal";
+import {
+  AssignCardRiderModal,
+  type CardRiderAssignTarget,
+} from "./assign-card-rider-modal";
 import { AttachBatteryStationModal, type BatteryAttachTarget } from "./attach-battery-station-modal";
 import { AssignSwapperStationModal, type SwapperAssignTarget } from "./assign-swapper-station-modal";
 import { Badge } from "./badge";
@@ -375,6 +383,8 @@ function buildRowActionMenuItems(
   openAssign: (user: SwapperAssignTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
+  openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
+  openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openWalletEdit: (wallet: WalletEditTarget) => void,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
@@ -425,6 +435,45 @@ function buildRowActionMenuItems(
         id: def.id,
         label: def.label,
         onSelect: () => openBatteryBikeAttach({ id, serialNumber: serial }),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.attachBikeRider) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+
+      const plateNumber = typeof row.plateNumber === "string" ? row.plateNumber : undefined;
+      const serialNumber = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
+      const currentUserId =
+        typeof row.userId === "number" ? row.userId : row.userId === null ? null : undefined;
+
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () =>
+          openBikeRiderAttach({ id, plateNumber, serialNumber, currentUserId }),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.assignCardRider) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+
+      const serialNumber = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
+      const token = typeof row.token === "string" ? row.token : undefined;
+      const currentUserId =
+        typeof row.userId === "number" ? row.userId : row.userId === null ? null : undefined;
+
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openCardRiderAssign({ id, serialNumber, token, currentUserId }),
       });
       continue;
     }
@@ -536,6 +585,8 @@ function appendActionsColumn(
   openAssign: (user: SwapperAssignTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
+  openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
+  openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openWalletEdit: (wallet: WalletEditTarget) => void,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
@@ -559,6 +610,8 @@ function appendActionsColumn(
           openAssign,
           openBatteryStationAttach,
           openBatteryBikeAttach,
+          openBikeRiderAttach,
+          openCardRiderAssign,
           openWalletTopUp,
           openWalletEdit,
           openWalletDelete,
@@ -577,6 +630,8 @@ function appendActionsColumn(
           openAssign,
           openBatteryStationAttach,
           openBatteryBikeAttach,
+          openBikeRiderAttach,
+          openCardRiderAssign,
           openWalletTopUp,
           openWalletEdit,
           openWalletDelete,
@@ -613,6 +668,10 @@ type ApiResourcePanelProps = {
   onBatteryStationError?: (message: string) => void;
   onBatteryBikeSuccess?: () => void;
   onBatteryBikeError?: (message: string) => void;
+  onBikeRiderSuccess?: () => void;
+  onBikeRiderError?: (message: string) => void;
+  onCardRiderSuccess?: () => void;
+  onCardRiderError?: (message: string) => void;
   onWalletTopUpSuccess?: () => void;
   onWalletTopUpError?: (message: string) => void;
   onWalletEditSuccess?: () => void;
@@ -642,6 +701,10 @@ export function ApiResourcePanel({
   onBatteryStationError,
   onBatteryBikeSuccess,
   onBatteryBikeError,
+  onBikeRiderSuccess,
+  onBikeRiderError,
+  onCardRiderSuccess,
+  onCardRiderError,
   onWalletTopUpSuccess,
   onWalletTopUpError,
   onWalletEditSuccess,
@@ -662,6 +725,8 @@ export function ApiResourcePanel({
   const [assignUser, setAssignUser] = useState<SwapperAssignTarget | null>(null);
   const [attachBatteryStation, setAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
   const [attachBatteryBike, setAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
+  const [attachBikeRider, setAttachBikeRider] = useState<BikeRiderAttachTarget | null>(null);
+  const [assignCardRider, setAssignCardRider] = useState<CardRiderAssignTarget | null>(null);
   const [walletTopUp, setWalletTopUp] = useState<WalletTopUpTarget | null>(null);
   const [walletEdit, setWalletEdit] = useState<WalletEditTarget | null>(null);
   const [walletDelete, setWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
@@ -796,6 +861,14 @@ export function ApiResourcePanel({
     setAttachBatteryBike(battery);
   }, []);
 
+  const openBikeRiderAttach = useCallback((bikeTarget: BikeRiderAttachTarget) => {
+    setAttachBikeRider(bikeTarget);
+  }, []);
+
+  const openCardRiderAssign = useCallback((cardTarget: CardRiderAssignTarget) => {
+    setAssignCardRider(cardTarget);
+  }, []);
+
   const openWalletTopUpModal = useCallback((wallet: WalletTopUpTarget) => {
     setWalletTopUp(wallet);
   }, []);
@@ -840,6 +913,8 @@ export function ApiResourcePanel({
       openAssign,
       openBatteryStationAttach,
       openBatteryBikeAttach,
+      openBikeRiderAttach,
+      openCardRiderAssign,
       openWalletTopUpModal,
       openWalletEditModal,
       openWalletDeleteModal,
@@ -850,6 +925,8 @@ export function ApiResourcePanel({
     allRowActionsForSection,
     onDetail,
     openAssign,
+    openBikeRiderAttach,
+    openCardRiderAssign,
     openBatteryBikeAttach,
     openBatteryStationAttach,
     openWalletTopUpModal,
@@ -940,6 +1017,30 @@ export function ApiResourcePanel({
           onBatteryBikeSuccess?.();
         }}
         onError={onBatteryBikeError}
+      />
+
+      <AttachBikeRiderModal
+        key={attachBikeRider != null ? `bike-rider-${attachBikeRider.id}` : "bike-rider-closed"}
+        open={attachBikeRider !== null}
+        bike={attachBikeRider}
+        onClose={() => setAttachBikeRider(null)}
+        onSaved={() => {
+          reload();
+          onBikeRiderSuccess?.();
+        }}
+        onError={onBikeRiderError}
+      />
+
+      <AssignCardRiderModal
+        key={assignCardRider != null ? `card-rider-${assignCardRider.id}` : "card-rider-closed"}
+        open={assignCardRider !== null}
+        card={assignCardRider}
+        onClose={() => setAssignCardRider(null)}
+        onSaved={() => {
+          reload();
+          onCardRiderSuccess?.();
+        }}
+        onError={onCardRiderError}
       />
 
       <WalletTopUpModal
