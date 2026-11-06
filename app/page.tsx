@@ -3,12 +3,10 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { useTheme } from "../components/theme";
-import { displayName, getAccessToken, login, setSession } from "../lib/auth";
+import { getAccessToken, login, setSession } from "../lib/auth";
 
 export default function HomePage() {
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,12 +14,26 @@ export default function HomePage() {
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const finish = () => {
+      if (!cancelled) {
+        setCheckingSession(false);
+      }
+    };
+
     if (getAccessToken()) {
-      router.replace("/dashboard");
-      return;
+      router.replace("/account");
+      queueMicrotask(finish);
+      return () => {
+        cancelled = true;
+      };
     }
 
-    setCheckingSession(false);
+    queueMicrotask(finish);
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const submit = async (event: FormEvent) => {
@@ -32,7 +44,7 @@ export default function HomePage() {
     try {
       const response = await login(identifier.trim(), password);
       setSession(response);
-      router.replace("/dashboard");
+      router.replace("/account");
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Sign in failed.");
     } finally {
@@ -63,13 +75,8 @@ export default function HomePage() {
           <p className="eyebrow">Renewable energy</p>
           <h1>Battery swap operations for electric mobility</h1>
           <p className="landing-lead">
-            Monitor stations, dispatch packs, and keep riders moving with a single operations workspace built for the Mwanga network.
+            Monitor stations, dispatch packs, and keep riders moving with a single operations workspace.
           </p>
-          <ul className="landing-points">
-            <li>Batteries, bikes, stations, and swaps</li>
-            <li>Riders, cards, and wallets</li>
-            <li>Users, roles, and violations</li>
-          </ul>
         </div>
       </section>
 
@@ -112,15 +119,9 @@ export default function HomePage() {
             </label>
 
             <button type="submit" className="btn primary login-submit" disabled={submitting}>
-              {submitting ? "Signing in…" : "Continue to dashboard"}
+              {submitting ? "Signing in…" : "Sign in "}
             </button>
           </form>
-
-          <div className="login-foot">
-            <button type="button" className="btn ghost theme-toggle" onClick={toggleTheme}>
-              {theme === "dark" ? "Light mode" : "Dark mode"}
-            </button>
-          </div>
         </div>
 
         <p className="landing-note">

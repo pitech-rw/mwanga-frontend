@@ -1,19 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { ApiResourcePanel } from "../../components/api-resource-panel";
-import { AccountMenu } from "../../components/account-menu";
-import { SidebarNav } from "../../components/sidebar-nav";
-import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight, NavIcon } from "../../components/icons/icon";
-import { RecordDetailModal } from "../../components/record-detail-modal";
-import { useTheme } from "../../components/theme";
-import { useToast } from "../../components/toast";
-import { getApiUrl } from "../../lib/api";
-import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../../lib/auth";
-import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../../lib/nav";
-import type { ResourceDetailPayload } from "../../lib/resource-detail";
+import { ApiResourcePanel } from "./api-resource-panel";
+import { AccountMenu } from "./account-menu";
+import { SidebarNav } from "./sidebar-nav";
+import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight } from "./icons/icon";
+import { RecordDetailModal } from "./record-detail-modal";
+import { useTheme } from "./theme";
+import { useToast } from "./toast";
+import { getApiUrl } from "../lib/api";
+import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../lib/auth";
+import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../lib/nav";
+import { sectionFromPathname, sectionHref } from "../lib/nav-path";
+import type { ResourceDetailPayload } from "../lib/resource-detail";
+
 type HealthResponse = {
   ok: boolean;
   database: string;
@@ -27,40 +30,57 @@ const sectionCopy: Record<Section, { eyebrow: string; title: string }> = Object.
 
 const apiUrl = getApiUrl();
 
-export default function DashboardPage() {
+type AccountWorkspaceProps = {
+  /** e.g. `/account` — used for links and breadcrumbs */
+  pathPrefix: string;
+};
+
+export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { notify } = useToast();
+  /** Must match SSR (null / false) so avatar and layout hydrate; sync from storage after mount. */
   const [sessionUser, setSessionUser] = useState<AuthUser | null>(null);
-
-  useEffect(() => {
-    setSessionUser(getStoredUser());
-  }, []);
-  const [section, setSection] = useState<Section>("overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [noticesOpen, setNoticesOpen] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [detail, setDetail] = useState<ResourceDetailPayload | null>(null);
   const [resourceReloadKey, setResourceReloadKey] = useState(0);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  const section = sectionFromPathname(pathname, pathPrefix);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setSessionUser(getStoredUser());
+    });
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        if (localStorage.getItem("mwanga-sidebar-collapsed") === "true") {
+          setSidebarCollapsed(true);
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const item = getMenuItem(section);
+    const label = section === "overview" ? "Overview" : item.title;
+    document.title = `${label} — Mwanga`;
+  }, [section]);
 
   useEffect(() => {
     if (!getAccessToken()) {
       router.replace("/");
     }
   }, [router]);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("mwanga-sidebar-collapsed");
-      if (stored === "true") {
-        setSidebarCollapsed(true);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   useEffect(() => {
     try {
@@ -122,7 +142,7 @@ export default function DashboardPage() {
     return () => {
       active = false;
     };
-  }, [notify, router]);
+  }, [notify]);
 
   const signOut = () => {
     clearSession();
@@ -140,6 +160,9 @@ export default function DashboardPage() {
 
   const copy = sectionCopy[section];
   const activeMenu = getMenuItem(section);
+  const accountHome = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  const pageTitle = section === "overview" ? "Overview" : copy.title;
+  const breadcrumbLeaf = section === "overview" ? "Overview" : activeMenu.label;
 
   return (
     <div className="app-shell" data-sidebar-collapsed={sidebarCollapsed ? "true" : "false"}>
@@ -169,7 +192,7 @@ export default function DashboardPage() {
             {sidebarCollapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
           </button>
         </div>
-        <SidebarNav section={section} counts={counts} collapsed={sidebarCollapsed} onSelect={setSection} />
+        <SidebarNav section={section} counts={counts} collapsed={sidebarCollapsed} pathPrefix={pathPrefix} />
         <div className="sidebar-foot">
           <span className="sidebar-foot-full">
             {health ? `API online · ${health.userCount} users` : "Waiting on the operations API."}
@@ -183,12 +206,19 @@ export default function DashboardPage() {
       <main className="workspace">
         <header className="topbar">
           <div className="topbar-title">
-            <span className="topbar-icon" aria-hidden="true">
-              <NavIcon section={section} size={22} />
-            </span>
-            <div>
-              <p className="eyebrow">{copy.eyebrow}</p>
-              <h1>{copy.title}</h1>
+            <div className="topbar-heading">
+              <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
+                <ol>
+                  <li>
+                    <Link href={accountHome}>Account</Link>
+                  </li>
+                  <li className="topbar-breadcrumb-sep" aria-hidden="true">
+                    /
+                  </li>
+                  <li className="topbar-breadcrumb-current">{breadcrumbLeaf}</li>
+                </ol>
+              </nav>
+              <h1>{pageTitle}</h1>
             </div>
           </div>
           <div className="topbar-actions">
@@ -208,7 +238,7 @@ export default function DashboardPage() {
               theme={theme}
               onToggleTheme={toggleTheme}
               onSignOut={signOut}
-              onManageUsers={() => setSection("users")}
+              onManageUsers={() => router.push(sectionHref(pathPrefix, "users"))}
             />
           </div>
         </header>
@@ -311,7 +341,6 @@ export default function DashboardPage() {
       </main>
 
       <RecordDetailModal open={detail !== null} payload={detail} onClose={() => setDetail(null)} />
-
     </div>
   );
 }
