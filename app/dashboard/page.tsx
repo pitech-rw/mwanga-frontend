@@ -14,7 +14,6 @@ import { Modal } from "../../components/modal";
 import { useTheme } from "../../components/theme";
 import { useToast } from "../../components/toast";
 import { getApiUrl } from "../../lib/api";
-import { userMessageForStatus } from "../../lib/api-errors";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../../lib/auth";
 import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../../lib/nav";
 import { batteries, hourlySwaps, notices, stations, type BatteryRow } from "../../lib/ops-data";
@@ -354,8 +353,12 @@ export default function DashboardPage() {
             onForbidden={handleForbidden}
             onDetail={setDetail}
             onRecordsChange={(count) => setCounts((current) => ({ ...current, [section]: count }))}
-            onCreateError={() => notify({ title: "Create failed", message: userMessageForStatus("create", 500), tone: "error" })}
+            onCreateError={(message) => notify({ title: "Create failed", message, tone: "error" })}
             onCreateSuccess={() => notify({ title: "Created", message: `${activeMenu.title} saved.`, tone: "success" })}
+            onAssignSuccess={() =>
+              notify({ title: "Assignment saved", message: "Swapper station assignment updated.", tone: "success" })
+            }
+            onAssignError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
           />
         ) : null}
       </main>

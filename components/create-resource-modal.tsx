@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { authFetch } from "../lib/auth";
-import { userMessageForNetwork, userMessageForStatus } from "../lib/api-errors";
+import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
 import type { Section } from "../lib/nav";
 import { Modal } from "./modal";
@@ -49,8 +49,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       });
 
       if (!response.ok) {
-        setError(userMessageForStatus("create", response.status));
-        onError?.(userMessageForStatus("create", response.status));
+        const message = await userMessageFromResponse("create", response);
+        setError(message);
+        onError?.(message);
         return;
       }
 

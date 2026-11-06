@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { userMessageForNetwork, userMessageForStatus } from "../lib/api-errors";
+import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
 import type { Section } from "../lib/nav";
+import { AssignSwapperStationModal, type SwapperAssignTarget } from "./assign-swapper-station-modal";
 import { Badge } from "./badge";
 import { CreateResourceButton } from "./create-resource-button";
 import { DataTable, type Column } from "./data-table";
@@ -22,7 +23,7 @@ const SKIP_KEYS = new Set([
   "readings",
   "wallet",
   "owner",
-  "rider",
+  "user",
   "role",
   "currentBattery",
   "station",
@@ -30,6 +31,8 @@ const SKIP_KEYS = new Set([
   "bike",
   "swapTransaction",
   "user",
+  "assignedStation",
+  "stationId",
 ]);
 
 function cellValue(value: unknown): string {
@@ -108,6 +111,92 @@ function buildColumns(rows: Row[]): Column<Row>[] {
   }));
 }
 
+function stationLabel(row: Row): string {
+  const assigned = row.assignedStation;
+
+  if (assigned && typeof assigned === "object") {
+    const record = assigned as Record<string, unknown>;
+    const name = typeof record.name === "string" ? record.name : "";
+    const code = typeof record.code === "string" ? record.code : "";
+
+    if (code && name) {
+      return `${code} — ${name}`;
+    }
+
+    return name || code || "—";
+  }
+
+  return "Unassigned";
+}
+
+function userDisplayName(row: Row): string {
+  const first = typeof row.firstName === "string" ? row.firstName : "";
+  const last = typeof row.lastName === "string" ? row.lastName : "";
+  const combined = [first, last].filter(Boolean).join(" ").trim();
+
+  return combined || cellValue(row.username);
+}
+
+function buildUserColumns(onAssign: (user: SwapperAssignTarget) => void): Column<Row>[] {
+  return [
+    {
+      key: "username",
+      header: "Username",
+      sortValue: (row) => String(row.username ?? ""),
+      searchValue: (row) =>
+        [row.username, row.firstName, row.lastName, row.email].map((value) => cellValue(value)).join(" "),
+      render: (row) => cellValue(row.username),
+    },
+    {
+      key: "name",
+      header: "Name",
+      sortValue: (row) => userDisplayName(row),
+      render: (row) => userDisplayName(row),
+    },
+    {
+      key: "email",
+      header: "Email",
+      sortValue: (row) => String(row.email ?? ""),
+      render: (row) => cellValue(row.email),
+    },
+    {
+      key: "type",
+      header: "Type",
+      sortValue: (row) => String(row.type ?? ""),
+      render: (row) => <Badge status={String(row.type ?? "—")} />,
+    },
+    {
+      key: "station",
+      header: "Station",
+      sortValue: (row) => stationLabel(row),
+      render: (row) => (row.type === "swapper" ? stationLabel(row) : "—"),
+    },
+    {
+      key: "assign",
+      header: "",
+      sortable: false,
+      render: (row) => {
+        if (row.type !== "swapper") {
+          return "—";
+        }
+
+        return (
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAssign(row as unknown as SwapperAssignTarget);
+            }}
+          >
+            Assign station
+          </button>
+        );
+      },
+    },
+  ];
+}
+
 type ApiResourcePanelProps = {
   section: Section;
   apiPath: string;
@@ -117,6 +206,8 @@ type ApiResourcePanelProps = {
   onRecordsChange?: (count: number) => void;
   onCreateError?: (message: string) => void;
   onCreateSuccess?: () => void;
+  onAssignSuccess?: () => void;
+  onAssignError?: (message: string) => void;
 };
 
 export function ApiResourcePanel({
@@ -128,11 +219,14 @@ export function ApiResourcePanel({
   onRecordsChange,
   onCreateError,
   onCreateSuccess,
+  onAssignSuccess,
+  onAssignError,
 }: ApiResourcePanelProps) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [assignUser, setAssignUser] = useState<SwapperAssignTarget | null>(null);
   const onForbiddenRef = useRef(onForbidden);
   const onRecordsChangeRef = useRef(onRecordsChange);
 
@@ -163,7 +257,7 @@ export function ApiResourcePanel({
         if (response.status === 403) {
           if (active) {
             setRows([]);
-            setError(userMessageForStatus("load", response.status));
+            setError(await userMessageFromResponse("load", response));
             onRecordsChangeRef.current?.(0);
           }
           return;
@@ -172,7 +266,7 @@ export function ApiResourcePanel({
         if (!response.ok) {
           if (active) {
             setRows([]);
-            setError(userMessageForStatus("load", response.status));
+            setError(await userMessageFromResponse("load", response));
             onRecordsChangeRef.current?.(0);
           }
           return;
@@ -209,10 +303,21 @@ export function ApiResourcePanel({
     };
   }, [apiPath, reloadToken]);
 
-  const columns = useMemo(() => buildColumns(rows), [rows]);
+  const openAssign = useCallback((user: SwapperAssignTarget) => {
+    setAssignUser(user);
+  }, []);
+
+  const columns = useMemo(() => {
+    if (section === "users") {
+      return buildUserColumns(openAssign);
+    }
+
+    return buildColumns(rows);
+  }, [openAssign, rows, section]);
 
   return (
-    <article className="card panel">
+    <>
+      <article className="card panel">
       <div className="panel-head">
         <h2>{title}</h2>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -236,6 +341,7 @@ export function ApiResourcePanel({
         loading={loading}
         rowKey={(row) => String(row.id ?? JSON.stringify(row))}
         empty={error ? "Unable to load records." : "No records yet."}
+        searchPlaceholder={section === "users" ? "Search users…" : undefined}
         onRowClick={
           onDetail
             ? (row) => {
@@ -249,6 +355,18 @@ export function ApiResourcePanel({
             : undefined
         }
       />
-    </article>
+      </article>
+
+      <AssignSwapperStationModal
+        open={assignUser !== null}
+        user={assignUser}
+        onClose={() => setAssignUser(null)}
+        onSaved={() => {
+          reload();
+          onAssignSuccess?.();
+        }}
+        onError={onAssignError}
+      />
+    </>
   );
 }

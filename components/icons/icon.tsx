@@ -239,8 +239,6 @@ const NAV_ICON_MAP = {
   batteries: IconBatteryCharging,
   bikes: IconBike,
   cards: IconNfc,
-  owners: IconBuilding,
-  riders: IconUser,
   roles: IconShield,
   stations: IconMapPin,
   swaps: IconArrowLeftRight,

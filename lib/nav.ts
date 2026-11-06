@@ -3,8 +3,6 @@ export type Section =
   | "batteries"
   | "bikes"
   | "cards"
-  | "owners"
-  | "riders"
   | "roles"
   | "stations"
   | "swaps"
@@ -49,20 +47,6 @@ export const MENU_ITEMS: MenuItem[] = [
     apiPath: "/cards",
     eyebrow: "Access",
     title: "NFC cards",
-  },
-  {
-    id: "owners",
-    label: "Owners",
-    apiPath: "/owners",
-    eyebrow: "Partners",
-    title: "Owners",
-  },
-  {
-    id: "riders",
-    label: "Riders",
-    apiPath: "/riders",
-    eyebrow: "Customers",
-    title: "Riders",
   },
   {
     id: "roles",
