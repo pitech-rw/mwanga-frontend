@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
 import type { ResourceSection } from "../lib/resource-create-config";
@@ -8,6 +8,7 @@ import type { FieldSpec } from "../lib/resource-create-config";
 import { getMenuItem } from "../lib/nav";
 import { buildUpdatePatchPayload, initialValuesForUpdate } from "../lib/resource-edit-payload";
 import { recordLabelForRow } from "../lib/resource-record-label";
+import { PlacesLocationPicker } from "./places-location-picker";
 import { Modal } from "./modal";
 
 export type EditResourceTarget = {
@@ -36,6 +37,18 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
       setError(null);
     }
   }, [open, target]);
+
+  const onStationPlaceSelected = useCallback(
+    (place: { address: string; latitude: number; longitude: number }) => {
+      setValues((prev) => ({
+        ...prev,
+        address: place.address,
+        latitude: String(place.latitude),
+        longitude: String(place.longitude),
+      }));
+    },
+    [],
+  );
 
   if (!target) {
     return null;
@@ -104,6 +117,10 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
           <div className="login-error" role="alert">
             {error}
           </div>
+        ) : null}
+
+        {section === "stations" ? (
+          <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
         ) : null}
 
         {fields.map((field) => (

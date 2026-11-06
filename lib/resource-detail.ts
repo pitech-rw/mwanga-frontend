@@ -133,6 +133,11 @@ export function buildResourceDetailPayload(
       }
       usedKeys.add("name");
       summary.push(["Name", name]);
+      const street = pickString(row, "address");
+      if (street) {
+        usedKeys.add("address");
+        summary.push(["Address", street]);
+      }
       const cap = row.capacity;
       if (cap != null) {
         usedKeys.add("capacity");
