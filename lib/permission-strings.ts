@@ -12,6 +12,11 @@ export const PERMISSIONS = {
     write: "roles:write",
     delete: "roles:delete",
   },
+  owners: {
+    read: "owners:read",
+    write: "owners:write",
+    delete: "owners:delete",
+  },
   bikes: {
     read: "bikes:read",
     write: "bikes:write",
@@ -35,7 +40,12 @@ export const PERMISSIONS = {
   wallets: {
     read: "wallets:read",
     write: "wallets:write",
+    credit: "wallets:credit",
     delete: "wallets:delete",
+  },
+  companyAccounts: {
+    read: "company-accounts:read",
+    write: "company-accounts:write",
   },
   swaps: {
     read: "swaps:read",

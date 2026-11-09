@@ -10,6 +10,8 @@ export type Column<T> = {
   header: string;
   align?: "left" | "right";
   sortable?: boolean;
+  /** Extra class on `<td>` (e.g. truncation for long strings). */
+  cellClassName?: string;
   searchValue?: (row: T) => string;
   sortValue?: (row: T) => string | number;
   render: (row: T) => React.ReactNode;
@@ -255,11 +257,14 @@ export function DataTable<T>({
                   tabIndex={onRowClick ? 0 : undefined}
                   role={onRowClick ? "button" : undefined}
                 >
-                  {columns.map((column) => (
-                    <td key={column.key} className={column.align === "right" ? "right" : undefined}>
-                      {column.render(row)}
-                    </td>
-                  ))}
+                  {columns.map((column) => {
+                    const classes = [column.cellClassName, column.align === "right" ? "right" : ""].filter(Boolean).join(" ");
+                    return (
+                      <td key={column.key} className={classes || undefined}>
+                        {column.render(row)}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}

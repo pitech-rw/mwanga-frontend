@@ -11,9 +11,8 @@ import {
   walletBalanceNumber,
   walletCurrency,
   walletDeleteLabelFromRow,
-  walletEditTargetFromRow,
   walletOwnerCell,
-  type WalletEditTarget,
+  walletTopUpTargetFromRow,
 } from "../lib/wallet-row-helpers";
 import {
   getAvailableRowActions,
@@ -41,8 +40,8 @@ import { TableRowActionsMenu, type TableRowMenuItem } from "./table-row-actions-
 import { DeleteResourceModal } from "./delete-resource-modal";
 import { DeleteWalletModal } from "./delete-wallet-modal";
 import { EditResourceModal, type EditResourceTarget } from "./edit-resource-modal";
-import { EditWalletModal } from "./edit-wallet-modal";
 import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
+import { WalletLedgerModal } from "./wallet-ledger-modal";
 
 type Row = Record<string, unknown>;
 
@@ -112,6 +111,11 @@ function statusLike(key: string, value: unknown): boolean {
   return /status|state|online|kyc/i.test(key);
 }
 
+function addressCellDisplay(value: unknown): string {
+  const text = cellValue(value);
+  return text === "—" ? "" : text;
+}
+
 function buildColumns(rows: Row[]): Column<Row>[] {
   if (rows.length === 0) {
     return [
@@ -133,6 +137,7 @@ function buildColumns(rows: Row[]): Column<Row>[] {
   return ordered.map((key) => ({
     key,
     header: key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()),
+    cellClassName: key === "address" ? "data-table-cell-ellipsis" : undefined,
     sortValue: (row) => {
       const value = row[key];
       return typeof value === "number" ? value : String(value ?? "");
@@ -143,6 +148,18 @@ function buildColumns(rows: Row[]): Column<Row>[] {
 
       if (statusLike(key, value)) {
         return <Badge status={String(value)} />;
+      }
+
+      if (key === "address") {
+        const full = addressCellDisplay(value);
+        if (!full) {
+          return "—";
+        }
+        return (
+          <span className="data-table-ellipsis-inner" title={full}>
+            {full}
+          </span>
+        );
       }
 
       return cellValue(value);
@@ -184,15 +201,15 @@ function buildWalletDataColumns(): Column<Row>[] {
       sortValue: (row) => walletOwnerCell(row).label,
       searchValue: (row) => {
         const { label, type } = walletOwnerCell(row);
-        const parts = [label, type, row.userId != null ? String(row.userId) : ""];
-        const user = row.user;
-        if (user && typeof user === "object") {
-          const u = user as Record<string, unknown>;
-          if (typeof u.email === "string") {
-            parts.push(u.email);
+        const parts = [label, type, row.ownerId != null ? String(row.ownerId) : ""];
+        const owner = row.owner;
+        if (owner && typeof owner === "object") {
+          const o = owner as Record<string, unknown>;
+          if (typeof o.email === "string") {
+            parts.push(o.email);
           }
-          if (typeof u.username === "string") {
-            parts.push(u.username);
+          if (typeof o.name === "string") {
+            parts.push(o.name);
           }
         }
         return parts.filter(Boolean).join(" ");
@@ -386,7 +403,7 @@ function buildRowActionMenuItems(
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
-  openWalletEdit: (wallet: WalletEditTarget) => void,
+  openWalletLedger: (wallet: WalletTopUpTarget) => void,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
@@ -509,15 +526,15 @@ function buildRowActionMenuItems(
       continue;
     }
 
-    if (def.id === TABLE_ROW_ACTION_IDS.walletEdit) {
-      const target = walletEditTargetFromRow(row);
+    if (def.id === TABLE_ROW_ACTION_IDS.walletLedger) {
+      const target = walletTopUpTargetFromRow(row);
       if (!target) {
         continue;
       }
       items.push({
         id: def.id,
         label: def.label,
-        onSelect: () => openWalletEdit(target),
+        onSelect: () => openWalletLedger(target),
       });
       continue;
     }
@@ -588,7 +605,7 @@ function appendActionsColumn(
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
-  openWalletEdit: (wallet: WalletEditTarget) => void,
+  openWalletLedger: (wallet: WalletTopUpTarget) => void,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
@@ -613,7 +630,7 @@ function appendActionsColumn(
           openBikeRiderAttach,
           openCardRiderAssign,
           openWalletTopUp,
-          openWalletEdit,
+          openWalletLedger,
           openWalletDelete,
           openResourceEdit,
           openResourceDelete,
@@ -633,7 +650,7 @@ function appendActionsColumn(
           openBikeRiderAttach,
           openCardRiderAssign,
           openWalletTopUp,
-          openWalletEdit,
+          openWalletLedger,
           openWalletDelete,
           openResourceEdit,
           openResourceDelete,
@@ -674,8 +691,6 @@ type ApiResourcePanelProps = {
   onCardRiderError?: (message: string) => void;
   onWalletTopUpSuccess?: () => void;
   onWalletTopUpError?: (message: string) => void;
-  onWalletEditSuccess?: () => void;
-  onWalletEditError?: (message: string) => void;
   onWalletDeleteSuccess?: () => void;
   onWalletDeleteError?: (message: string) => void;
   onResourceEditSuccess?: () => void;
@@ -707,8 +722,6 @@ export function ApiResourcePanel({
   onCardRiderError,
   onWalletTopUpSuccess,
   onWalletTopUpError,
-  onWalletEditSuccess,
-  onWalletEditError,
   onWalletDeleteSuccess,
   onWalletDeleteError,
   onResourceEditSuccess,
@@ -728,7 +741,7 @@ export function ApiResourcePanel({
   const [attachBikeRider, setAttachBikeRider] = useState<BikeRiderAttachTarget | null>(null);
   const [assignCardRider, setAssignCardRider] = useState<CardRiderAssignTarget | null>(null);
   const [walletTopUp, setWalletTopUp] = useState<WalletTopUpTarget | null>(null);
-  const [walletEdit, setWalletEdit] = useState<WalletEditTarget | null>(null);
+  const [walletLedger, setWalletLedger] = useState<WalletTopUpTarget | null>(null);
   const [walletDelete, setWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
   const [resourceEdit, setResourceEdit] = useState<EditResourceTarget | null>(null);
   const [resourceDelete, setResourceDelete] = useState<{ section: ResourceSection; id: number; row: Row } | null>(null);
@@ -873,8 +886,8 @@ export function ApiResourcePanel({
     setWalletTopUp(wallet);
   }, []);
 
-  const openWalletEditModal = useCallback((wallet: WalletEditTarget) => {
-    setWalletEdit(wallet);
+  const openWalletLedgerModal = useCallback((wallet: WalletTopUpTarget) => {
+    setWalletLedger(wallet);
   }, []);
 
   const openWalletDeleteModal = useCallback((payload: { id: number; ownerLabel: string }) => {
@@ -916,7 +929,7 @@ export function ApiResourcePanel({
       openBikeRiderAttach,
       openCardRiderAssign,
       openWalletTopUpModal,
-      openWalletEditModal,
+      openWalletLedgerModal,
       openWalletDeleteModal,
       openResourceEditModal,
       openResourceDeleteModal,
@@ -930,7 +943,7 @@ export function ApiResourcePanel({
     openBatteryBikeAttach,
     openBatteryStationAttach,
     openWalletTopUpModal,
-    openWalletEditModal,
+    openWalletLedgerModal,
     openWalletDeleteModal,
     openResourceEditModal,
     openResourceDeleteModal,
@@ -948,7 +961,9 @@ export function ApiResourcePanel({
           ? "Search swaps…"
           : section === "wallets"
             ? "Search wallets…"
-            : undefined;
+            : section === "companyAccounts"
+              ? "Search company accounts…"
+              : undefined;
 
   return (
     <>
@@ -1054,15 +1069,10 @@ export function ApiResourcePanel({
         onError={onWalletTopUpError}
       />
 
-      <EditWalletModal
-        open={walletEdit !== null}
-        wallet={walletEdit}
-        onClose={() => setWalletEdit(null)}
-        onSaved={() => {
-          reload();
-          onWalletEditSuccess?.();
-        }}
-        onError={onWalletEditError}
+      <WalletLedgerModal
+        open={walletLedger !== null}
+        wallet={walletLedger}
+        onClose={() => setWalletLedger(null)}
       />
 
       <DeleteWalletModal

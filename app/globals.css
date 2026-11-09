@@ -977,6 +977,21 @@ table.data td {
   white-space: nowrap;
 }
 
+/* Long single-line fields (e.g. address): cap width, show ellipsis; full value on hover via title. */
+table.data td.data-table-cell-ellipsis {
+  max-width: min(32ch, 42vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+table.data td.data-table-cell-ellipsis .data-table-ellipsis-inner {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 table.data th {
   color: var(--text-faint);
   font-size: 0.72rem;

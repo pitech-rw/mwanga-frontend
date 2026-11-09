@@ -316,11 +316,6 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
               notify({ title: "Wallet updated", message: "Balance topped up.", tone: "success" });
             }}
             onWalletTopUpError={(message) => notify({ title: "Top-up failed", message, tone: "error" })}
-            onWalletEditSuccess={() => {
-              bumpResourceReload();
-              notify({ title: "Wallet updated", message: "Wallet saved.", tone: "success" });
-            }}
-            onWalletEditError={(message) => notify({ title: "Update failed", message, tone: "error" })}
             onWalletDeleteSuccess={() => {
               bumpResourceReload();
               notify({ title: "Wallet deleted", message: "Wallet removed.", tone: "success" });

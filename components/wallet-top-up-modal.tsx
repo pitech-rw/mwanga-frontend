@@ -8,6 +8,14 @@ import { Modal } from "./modal";
 
 export type WalletTopUpTarget = WalletTopUpTargetRow;
 
+type CompanyAccountOption = {
+  id: number;
+  name: string;
+  bankName: string | null;
+  accountNumber: string | null;
+  currency: string;
+};
+
 type WalletTopUpModalProps = {
   open: boolean;
   wallet: WalletTopUpTarget | null;
@@ -26,15 +34,60 @@ function parseAmount(raw: string): number | null {
 
 export function WalletTopUpModal({ open, wallet, onClose, onSaved, onError }: WalletTopUpModalProps) {
   const [amount, setAmount] = useState("");
+  const [companyAccountId, setCompanyAccountId] = useState("");
+  const [externalReference, setExternalReference] = useState("");
+  const [description, setDescription] = useState("");
+  const [companyAccounts, setCompanyAccounts] = useState<CompanyAccountOption[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && wallet) {
       setAmount("");
+      setCompanyAccountId("");
+      setExternalReference("");
+      setDescription("");
       setError(null);
     }
   }, [open, wallet]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let cancelled = false;
+    setAccountsLoading(true);
+
+    void (async () => {
+      try {
+        const response = await authFetch("/company-accounts");
+        if (!response.ok || cancelled) {
+          return;
+        }
+        const data = (await response.json()) as CompanyAccountOption[];
+        if (!cancelled) {
+          setCompanyAccounts(data);
+          if (data.length === 1) {
+            setCompanyAccountId(String(data[0].id));
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setCompanyAccounts([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setAccountsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   if (!wallet) {
     return null;
@@ -50,15 +103,30 @@ export function WalletTopUpModal({ open, wallet, onClose, onSaved, onError }: Wa
       return;
     }
 
+    const accountId = Number(companyAccountId);
+    if (!companyAccountId || Number.isNaN(accountId) || accountId < 1) {
+      setError("Select the company account that received the transfer.");
+      return;
+    }
+
+    const bankRef = externalReference.trim();
+    if (bankRef.length < 2) {
+      setError("Enter the bank transfer reference from the proof of payment.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
-    const newBalance = wallet.currentBalance + add;
-
     try {
-      const response = await authFetch(`/wallets/${wallet.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ balance: newBalance }),
+      const response = await authFetch(`/wallets/${wallet.id}/float-credit`, {
+        method: "POST",
+        body: JSON.stringify({
+          amount: add,
+          companyAccountId: accountId,
+          externalReference: bankRef,
+          description: description.trim() || undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -84,7 +152,7 @@ export function WalletTopUpModal({ open, wallet, onClose, onSaved, onError }: Wa
       open={open}
       variant="panel"
       title="Top up wallet"
-      description={`Add credit for ${wallet.ownerLabel}. Current balance: ${wallet.currentBalance.toLocaleString()} ${wallet.currency}`}
+      description={`Credit float for ${wallet.ownerLabel} after verifying bank payment. Current balance: ${wallet.currentBalance.toLocaleString()} ${wallet.currency}`}
       onClose={onClose}
       footer={
         <>
@@ -105,6 +173,36 @@ export function WalletTopUpModal({ open, wallet, onClose, onSaved, onError }: Wa
         ) : null}
 
         <label className="field">
+          <span>Company account</span>
+          <select
+            value={companyAccountId}
+            disabled={saving || accountsLoading || companyAccounts.length === 0}
+            onChange={(event) => setCompanyAccountId(event.target.value)}
+            aria-label="Company account"
+          >
+            <option value="">Select account…</option>
+            {companyAccounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name}
+                {account.accountNumber ? ` · ${account.accountNumber}` : ""} ({account.currency})
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="field">
+          <span>Bank transfer reference</span>
+          <input
+            type="text"
+            value={externalReference}
+            disabled={saving}
+            onChange={(event) => setExternalReference(event.target.value)}
+            placeholder="e.g. TXN-2026-00412"
+            aria-label="Bank transfer reference"
+          />
+        </label>
+
+        <label className="field">
           <span>Amount to add ({wallet.currency})</span>
           <input
             type="number"
@@ -115,6 +213,18 @@ export function WalletTopUpModal({ open, wallet, onClose, onSaved, onError }: Wa
             onChange={(event) => setAmount(event.target.value)}
             placeholder="e.g. 5000"
             aria-label="Top-up amount"
+          />
+        </label>
+
+        <label className="field">
+          <span>Notes (optional)</span>
+          <input
+            type="text"
+            value={description}
+            disabled={saving}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Internal note"
+            aria-label="Top-up description"
           />
         </label>
       </form>

@@ -103,6 +103,19 @@ export function buildResourceDetailPayload(
       }
       break;
     }
+    case "owners": {
+      const name = pickString(row, "name") ?? idStr;
+      headingTitle = `Owner · ${name}`;
+      description = "Fleet buyer account with a shared wallet.";
+      usedKeys.add("name");
+      summary.push(["Name", name]);
+      const email = pickString(row, "email");
+      if (email) {
+        usedKeys.add("email");
+        summary.push(["Email", email]);
+      }
+      break;
+    }
     case "users": {
       const username = pickString(row, "username") ?? idStr;
       const name = [pickString(row, "firstName"), pickString(row, "lastName")].filter(Boolean).join(" ").trim();
@@ -175,29 +188,52 @@ export function buildResourceDetailPayload(
       }
       break;
     }
+    case "companyAccounts": {
+      const name = pickString(row, "name");
+      headingTitle = name ? `Account · ${name}` : `Account · #${idStr}`;
+      description = "Company bank account (asset) for verified float inflows.";
+      if (name) {
+        usedKeys.add("name");
+        summary.push(["Name", name]);
+      }
+      const bank = pickString(row, "bankName");
+      if (bank) {
+        usedKeys.add("bankName");
+        summary.push(["Bank", bank]);
+      }
+      const acct = pickString(row, "accountNumber");
+      if (acct) {
+        usedKeys.add("accountNumber");
+        summary.push(["Account number", acct]);
+      }
+      if (row.balance != null) {
+        usedKeys.add("balance");
+        summary.push(["Balance", cellText(row.balance)]);
+      }
+      const cur = pickString(row, "currency");
+      if (cur) {
+        usedKeys.add("currency");
+        summary.push(["Currency", cur]);
+      }
+      break;
+    }
     case "wallets": {
       headingTitle = `Wallet · #${idStr}`;
-      description = "Balance and currency for the linked user.";
-      const user = row.user;
-      if (user && typeof user === "object") {
-        const u = user as Record<string, unknown>;
-        usedKeys.add("userId");
-        usedKeys.add("user");
-        const first = typeof u.firstName === "string" ? u.firstName : "";
-        const last = typeof u.lastName === "string" ? u.lastName : "";
-        const name = [first, last].filter(Boolean).join(" ").trim();
-        const uname = typeof u.username === "string" ? u.username : "";
-        const type = typeof u.type === "string" ? u.type.replace(/_/g, " ") : "";
-        summary.push([
-          "Owner",
-          name && uname ? `${name} (@${uname})` : name || (uname ? `@${uname}` : cellText(user)),
-        ]);
-        if (type) {
-          summary.push(["Type", type]);
+      description = "Fleet owner liability account. Balance changes only via ledger top-ups and swap fees.";
+      const owner = row.owner;
+      if (owner && typeof owner === "object") {
+        const o = owner as Record<string, unknown>;
+        usedKeys.add("ownerId");
+        usedKeys.add("owner");
+        const name = typeof o.name === "string" ? o.name : "";
+        summary.push(["Owner", name || cellText(owner)]);
+        const email = typeof o.email === "string" ? o.email : "";
+        if (email) {
+          summary.push(["Email", email]);
         }
-      } else if (row.userId != null) {
-        usedKeys.add("userId");
-        summary.push(["User ID", String(row.userId)]);
+      } else if (row.ownerId != null) {
+        usedKeys.add("ownerId");
+        summary.push(["Owner ID", String(row.ownerId)]);
       }
       if (row.balance != null) {
         usedKeys.add("balance");
@@ -269,6 +305,7 @@ function isRelationOrMetaKey(key: string): boolean {
     "readings",
     "wallet",
     "owner",
+    "portalUser",
     "user",
     "role",
     "currentBattery",

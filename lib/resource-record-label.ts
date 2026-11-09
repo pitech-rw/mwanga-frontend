@@ -28,6 +28,8 @@ export function recordLabelForRow(section: ResourceSection, row: Record<string, 
       return pick("name", "code") ?? (idStr || "Station");
     case "swaps":
       return idStr ? `Swap #${idStr}` : "Swap";
+    case "owners":
+      return pick("name", "email") ?? (idStr || "Owner");
     case "users": {
       const u = pick("username");
       const first = typeof row.firstName === "string" ? row.firstName : "";
@@ -42,6 +44,8 @@ export function recordLabelForRow(section: ResourceSection, row: Record<string, 
       return pick("title", "trackId") ?? (idStr || "Violation");
     case "wallets":
       return idStr ? `Wallet #${idStr}` : "Wallet";
+    case "companyAccounts":
+      return pick("name", "accountNumber") ?? (idStr || "Company account");
     default:
       return idStr || "Record";
   }

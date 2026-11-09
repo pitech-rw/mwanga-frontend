@@ -16,28 +16,20 @@ type CreateResourceModalProps = {
   onError?: (message: string) => void;
 };
 
-type UserListRow = {
+type OwnerListRow = {
   id: number;
-  username: string;
-  type: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
 };
 
 function emptyValues(config: CreateResourceConfig): Record<string, string> {
   return Object.fromEntries(config.fields.map((field) => [field.name, ""]));
 }
 
-function userDisplayName(u: UserListRow): string {
-  const name = [u.firstName, u.lastName].filter(Boolean).join(" ").trim();
-  return name || u.username;
-}
-
-function userOptionLine(u: UserListRow): string {
-  const name = userDisplayName(u);
-  const typeLabel = u.type.replace(/_/g, " ");
-  return `${u.id} · @${u.username} · ${typeLabel}${name !== u.username ? ` · ${name}` : ""}`;
+function ownerOptionLine(o: OwnerListRow): string {
+  const contact = o.email ?? o.phone ?? "";
+  return contact ? `${o.id} · ${o.name} · ${contact}` : `${o.id} · ${o.name}`;
 }
 
 export function CreateResourceModal({ open, section, onClose, onCreated, onError }: CreateResourceModalProps) {
@@ -45,9 +37,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [walletUserId, setWalletUserId] = useState<number | null>(null);
-  const [walletUserSearch, setWalletUserSearch] = useState("");
-  const [walletUsers, setWalletUsers] = useState<UserListRow[]>([]);
+  const [walletOwnerId, setWalletOwnerId] = useState<number | null>(null);
+  const [walletOwnerSearch, setWalletOwnerSearch] = useState("");
+  const [walletOwners, setWalletOwners] = useState<OwnerListRow[]>([]);
   const [loadingWalletUsers, setLoadingWalletUsers] = useState(false);
 
   useEffect(() => {
@@ -55,8 +47,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     if (open && cfg) {
       setValues(emptyValues(cfg));
       setError(null);
-      setWalletUserId(null);
-      setWalletUserSearch("");
+      setWalletOwnerId(null);
+      setWalletOwnerSearch("");
     }
   }, [open, section]);
 
@@ -70,10 +62,10 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
     const load = async () => {
       try {
-        const response = await authFetch("/users");
+        const response = await authFetch("/owners");
         if (!response.ok) {
           if (active) {
-            setWalletUsers([]);
+            setWalletOwners([]);
             setError(await userMessageFromResponse("load", response));
           }
           return;
@@ -82,7 +74,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         if (!active) {
           return;
         }
-        setWalletUsers(Array.isArray(data) ? (data as UserListRow[]) : []);
+        setWalletOwners(Array.isArray(data) ? (data as OwnerListRow[]) : []);
         setError(null);
       } catch {
         if (active) {
@@ -102,28 +94,20 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     };
   }, [open, section]);
 
-  const filteredWalletUsers = useMemo(() => {
-    const needle = walletUserSearch.trim().toLowerCase();
+  const filteredWalletOwners = useMemo(() => {
+    const needle = walletOwnerSearch.trim().toLowerCase();
     if (!needle) {
-      return walletUsers;
+      return walletOwners;
     }
-    return walletUsers.filter((u) => {
-      const haystack = [
-        u.username,
-        u.email,
-        u.type,
-        userDisplayName(u),
-        String(u.id),
-      ]
-        .join(" ")
-        .toLowerCase();
+    return walletOwners.filter((o) => {
+      const haystack = [o.name, o.email ?? "", o.phone ?? "", String(o.id)].join(" ").toLowerCase();
       return haystack.includes(needle);
     });
-  }, [walletUserSearch, walletUsers]);
+  }, [walletOwnerSearch, walletOwners]);
 
-  const selectedWalletUser = useMemo(
-    () => (walletUserId != null ? walletUsers.find((u) => u.id === walletUserId) : undefined),
-    [walletUserId, walletUsers],
+  const selectedWalletOwner = useMemo(
+    () => (walletOwnerId != null ? walletOwners.find((o) => o.id === walletOwnerId) : undefined),
+    [walletOwnerId, walletOwners],
   );
 
   const onStationPlaceSelected = useCallback(
@@ -143,7 +127,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   }
 
   const submitDisabled =
-    saving || (config.section === "wallets" && (walletUserId === null || loadingWalletUsers));
+    saving || (config.section === "wallets" && (walletOwnerId === null || loadingWalletUsers));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -151,8 +135,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     setError(null);
 
     if (config.section === "wallets") {
-      if (walletUserId === null) {
-        setError("Select a user.");
+      if (walletOwnerId === null) {
+        setError("Select a fleet owner.");
         setSaving(false);
         return;
       }
@@ -162,7 +146,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       let body: Record<string, unknown>;
 
       if (config.section === "wallets") {
-        body = { userId: walletUserId };
+        body = { ownerId: walletOwnerId };
         const balanceRaw = values.balance?.trim() ?? "";
         if (balanceRaw) {
           body.balance = Number(balanceRaw);
@@ -227,45 +211,45 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         {config.section === "wallets" ? (
           <>
             <label className="field">
-              <span>Find user</span>
+              <span>Find owner</span>
               <input
                 type="search"
-                value={walletUserSearch}
+                value={walletOwnerSearch}
                 disabled={saving || loadingWalletUsers}
-                onChange={(event) => setWalletUserSearch(event.target.value)}
-                placeholder="Search by username, email, or name…"
+                onChange={(event) => setWalletOwnerSearch(event.target.value)}
+                placeholder="Search by name, email, or phone…"
                 autoComplete="off"
-                aria-label="Search users for wallet"
+                aria-label="Search owners for wallet"
               />
             </label>
             {loadingWalletUsers ? (
-              <p className="sub">Loading users…</p>
+              <p className="sub">Loading owners…</p>
             ) : (
               <label className="field">
-                <span>User ({filteredWalletUsers.length} shown)</span>
+                <span>Owner ({filteredWalletOwners.length} shown)</span>
                 <select
-                  value={walletUserId != null ? String(walletUserId) : ""}
-                  disabled={saving || filteredWalletUsers.length === 0}
+                  value={walletOwnerId != null ? String(walletOwnerId) : ""}
+                  disabled={saving || filteredWalletOwners.length === 0}
                   onChange={(event) => {
                     const v = event.target.value;
-                    setWalletUserId(v === "" ? null : Number(v));
+                    setWalletOwnerId(v === "" ? null : Number(v));
                   }}
-                  size={Math.min(8, Math.max(4, filteredWalletUsers.length || 4))}
+                  size={Math.min(8, Math.max(4, filteredWalletOwners.length || 4))}
                   className="station-picker create-wallet-user-select"
-                  aria-label="Select user for wallet"
+                  aria-label="Select fleet owner for wallet"
                 >
-                  <option value="">{filteredWalletUsers.length === 0 ? "No matches" : "Choose a user…"}</option>
-                  {filteredWalletUsers.map((u) => (
-                    <option key={u.id} value={String(u.id)}>
-                      {userOptionLine(u)}
+                  <option value="">{filteredWalletOwners.length === 0 ? "No matches" : "Choose an owner…"}</option>
+                  {filteredWalletOwners.map((o) => (
+                    <option key={o.id} value={String(o.id)}>
+                      {ownerOptionLine(o)}
                     </option>
                   ))}
                 </select>
               </label>
             )}
-            {selectedWalletUser ? (
+            {selectedWalletOwner ? (
               <p className="create-wallet-selection sub" role="status">
-                <strong>Selected:</strong> {userOptionLine(selectedWalletUser)}
+                <strong>Selected:</strong> {ownerOptionLine(selectedWalletOwner)}
               </p>
             ) : null}
           </>
