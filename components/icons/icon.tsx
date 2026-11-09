@@ -149,6 +149,20 @@ export function IconWallet(props: IconProps) {
   );
 }
 
+export function IconLandmark(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 22h18" />
+      <path d="M6 18v-9" />
+      <path d="M10 18v-9" />
+      <path d="M14 18v-9" />
+      <path d="M18 18v-9" />
+      <path d="M4 9h16" />
+      <path d="M12 2 4 9h16z" />
+    </IconBase>
+  );
+}
+
 export function IconBell(props: IconProps) {
   return (
     <IconBase {...props}>
@@ -243,8 +257,10 @@ const NAV_ICON_MAP = {
   stations: IconMapPin,
   swaps: IconArrowLeftRight,
   users: IconUsers,
+  owners: IconBuilding,
   violations: IconTriangleAlert,
   wallets: IconWallet,
+  companyAccounts: IconLandmark,
 } as const satisfies Record<Section, (props: IconProps) => React.JSX.Element>;
 
 export function NavIcon({ section, className, size }: { section: Section; className?: string; size?: number }) {
@@ -265,6 +281,7 @@ export const icons = {
   users: IconUsers,
   triangleAlert: IconTriangleAlert,
   wallet: IconWallet,
+  landmark: IconLandmark,
   bell: IconBell,
   logOut: IconLogOut,
   sun: IconSun,

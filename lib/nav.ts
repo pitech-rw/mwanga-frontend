@@ -7,8 +7,10 @@ export type Section =
   | "stations"
   | "swaps"
   | "users"
+  | "owners"
   | "violations"
-  | "wallets";
+  | "wallets"
+  | "companyAccounts";
 
 export type MenuItem = {
   id: Section;
@@ -77,6 +79,13 @@ export const MENU_ITEMS: MenuItem[] = [
     title: "Users",
   },
   {
+    id: "owners",
+    label: "Owners",
+    apiPath: "/owners",
+    eyebrow: "Fleet",
+    title: "Fleet owners",
+  },
+  {
     id: "violations",
     label: "Violations",
     apiPath: "/violations",
@@ -89,6 +98,13 @@ export const MENU_ITEMS: MenuItem[] = [
     apiPath: "/wallets",
     eyebrow: "Finance",
     title: "Wallets",
+  },
+  {
+    id: "companyAccounts",
+    label: "Company accounts",
+    apiPath: "/company-accounts",
+    eyebrow: "Finance",
+    title: "Company accounts",
   },
 ];
 

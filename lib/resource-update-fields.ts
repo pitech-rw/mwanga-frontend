@@ -1,7 +1,7 @@
 import type { FieldSpec } from "./resource-create-config";
 import type { ResourceSection } from "./resource-create-config";
 
-const USER_TYPES = ["admin", "office", "office_manager", "swapper", "agent", "rider", "viewer"] as const;
+const USER_TYPES = ["admin", "office", "office_manager", "swapper", "agent", "owner", "rider", "viewer"] as const;
 const VIOLATION_STATUSES = ["open", "under_review", "resolved", "dismissed"] as const;
 const VIOLATION_SEVERITIES = ["low", "medium", "high", "critical"] as const;
 
@@ -38,8 +38,17 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "model", label: "Model", type: "text" },
         { name: "image", label: "Image URL", type: "text" },
         { name: "status", label: "Status", type: "text" },
+        { name: "ownerId", label: "Owner ID", type: "number" },
         { name: "userId", label: "Rider user ID", type: "number" },
         { name: "currentBatteryId", label: "Current battery ID", type: "number" },
+      ];
+    case "owners":
+      return [
+        { name: "name", label: "Display name", type: "text" },
+        { name: "email", label: "Email", type: "email" },
+        { name: "phone", label: "Phone", type: "text" },
+        { name: "status", label: "Status", type: "text" },
+        { name: "userId", label: "Portal user ID", type: "number" },
       ];
     case "cards":
       return [
@@ -96,6 +105,7 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "password", label: "New password", type: "password", placeholder: "Leave blank to keep current" },
         { name: "kycStatus", label: "KYC status", type: "text" },
         { name: "stationId", label: "Assigned station ID (swappers)", type: "number", placeholder: "Empty = omit; use swapper assign flow when possible" },
+        { name: "ownerId", label: "Fleet owner ID (riders)", type: "number" },
       ];
     case "violations":
       return [

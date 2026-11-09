@@ -13,7 +13,7 @@ export const TABLE_ROW_ACTION_IDS = {
   assignCardRider: "assign-card-rider",
   assignSwapperStation: "assign-swapper-station",
   walletTopUp: "wallet-top-up",
-  walletEdit: "wallet-edit",
+  walletLedger: "wallet-ledger",
   walletDelete: "wallet-delete",
   resourceEdit: "resource-edit",
   resourceDelete: "resource-delete",
@@ -70,6 +70,7 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericEdit(PERMISSIONS.batteries.write),
     genericDelete(PERMISSIONS.batteries.delete),
   ],
+  owners: [genericEdit(PERMISSIONS.owners.write), genericDelete(PERMISSIONS.owners.delete)],
   bikes: [
     {
       id: TABLE_ROW_ACTION_IDS.attachBikeRider,
@@ -106,12 +107,12 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     {
       id: TABLE_ROW_ACTION_IDS.walletTopUp,
       label: "Top up",
-      permission: PERMISSIONS.wallets.write,
+      permission: PERMISSIONS.wallets.credit,
     },
     {
-      id: TABLE_ROW_ACTION_IDS.walletEdit,
-      label: "Edit wallet",
-      permission: PERMISSIONS.wallets.write,
+      id: TABLE_ROW_ACTION_IDS.walletLedger,
+      label: "Ledger",
+      permission: PERMISSIONS.wallets.read,
     },
     {
       id: TABLE_ROW_ACTION_IDS.walletDelete,
@@ -119,6 +120,7 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       permission: PERMISSIONS.wallets.delete,
     },
   ],
+  companyAccounts: [],
 };
 
 const ADMIN = "system:admin";

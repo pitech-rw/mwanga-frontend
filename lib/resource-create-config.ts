@@ -23,7 +23,7 @@ export type CreateResourceConfig = {
   fields: FieldSpec[];
 };
 
-const USER_TYPES = ["admin", "office", "office_manager", "swapper", "agent", "rider", "viewer"] as const;
+const USER_TYPES = ["admin", "office", "office_manager", "swapper", "agent", "owner", "rider", "viewer"] as const;
 
 const VIOLATION_STATUSES = ["open", "under_review", "resolved", "dismissed"] as const;
 const VIOLATION_SEVERITIES = ["low", "medium", "high", "critical"] as const;
@@ -60,8 +60,22 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
       { name: "plateNumber", label: "Plate number", type: "text", required: true },
       { name: "serialNumber", label: "Serial number", type: "text", required: true },
       { name: "model", label: "Model", type: "text", required: true },
+      { name: "ownerId", label: "Owner ID", type: "number", required: true },
       { name: "chassisNumber", label: "Chassis number", type: "text" },
       { name: "userId", label: "Rider user ID", type: "number" },
+    ],
+  },
+  owners: {
+    section: "owners",
+    apiPath: "/owners",
+    title: "Register owner",
+    description: "Creates a fleet buyer record with a wallet.",
+    submitLabel: "Create owner",
+    fields: [
+      { name: "name", label: "Display name", type: "text", required: true },
+      { name: "email", label: "Email", type: "email" },
+      { name: "phone", label: "Phone", type: "text" },
+      { name: "currency", label: "Wallet currency", type: "text", placeholder: "CDF" },
     ],
   },
   cards: {
@@ -136,6 +150,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         options: selectOptions(USER_TYPES),
       },
       { name: "phone", label: "Phone", type: "text" },
+      { name: "ownerId", label: "Fleet owner ID (required for riders)", type: "number" },
       { name: "kycStatus", label: "KYC status", type: "text", placeholder: "pending" },
     ],
   },
@@ -171,10 +186,20 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     section: "wallets",
     apiPath: "/wallets",
     title: "Create wallet",
-    description: "Pick a user by username (search). Each row shows their account type.",
+    description: "Pick a fleet owner (search). Each owner has one shared wallet.",
     submitLabel: "Create wallet",
+    fields: [{ name: "currency", label: "Currency", type: "text", placeholder: "CDF" }],
+  },
+  companyAccounts: {
+    section: "companyAccounts",
+    apiPath: "/company-accounts",
+    title: "Add company account",
+    description: "Register a bank account used for float collection.",
+    submitLabel: "Create account",
     fields: [
-      { name: "balance", label: "Opening balance", type: "number" },
+      { name: "name", label: "Display name", type: "text", required: true },
+      { name: "bankName", label: "Bank name", type: "text" },
+      { name: "accountNumber", label: "Account number", type: "text" },
       { name: "currency", label: "Currency", type: "text", placeholder: "CDF" },
     ],
   },

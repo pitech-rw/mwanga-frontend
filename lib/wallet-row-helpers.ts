@@ -23,14 +23,27 @@ export function walletUserLabel(user: Record<string, unknown>): string {
   return email || "—";
 }
 
-export function walletOwnerCell(row: Record<string, unknown>): { label: string; type: string } {
-  const user = row.user;
-  if (user && typeof user === "object") {
-    const u = user as Record<string, unknown>;
-    const type = typeof u.type === "string" ? u.type.replace(/_/g, " ") : "—";
-    return { label: walletUserLabel(u), type };
+function ownerAccountLabel(owner: Record<string, unknown>): string {
+  const name = typeof owner.name === "string" ? owner.name.trim() : "";
+  if (name) {
+    return name;
   }
-  return { label: row.userId != null ? `User #${row.userId}` : "—", type: "—" };
+  const email = typeof owner.email === "string" ? owner.email : "";
+  return email || (owner.id != null ? `Owner #${owner.id}` : "—");
+}
+
+export function walletOwnerCell(row: Record<string, unknown>): { label: string; type: string } {
+  const owner = row.owner;
+  if (owner && typeof owner === "object") {
+    const o = owner as Record<string, unknown>;
+    const portalUser = o.portalUser;
+    if (portalUser && typeof portalUser === "object") {
+      const u = portalUser as Record<string, unknown>;
+      return { label: ownerAccountLabel(o), type: typeof u.type === "string" ? u.type.replace(/_/g, " ") : "proprietor" };
+    }
+    return { label: ownerAccountLabel(o), type: "fleet owner" };
+  }
+  return { label: row.ownerId != null ? `Owner #${row.ownerId}` : "—", type: "—" };
 }
 
 export function walletBalanceNumber(row: Record<string, unknown>): number {
@@ -62,12 +75,6 @@ export function walletTopUpTargetFromRow(row: Record<string, unknown>): WalletTo
     currency: walletCurrency(row),
     currentBalance: walletBalanceNumber(row),
   };
-}
-
-export type WalletEditTarget = WalletTopUpTargetRow;
-
-export function walletEditTargetFromRow(row: Record<string, unknown>): WalletEditTarget | null {
-  return walletTopUpTargetFromRow(row);
 }
 
 export function walletDeleteLabelFromRow(row: Record<string, unknown>): string {
