@@ -13,6 +13,7 @@ import {
   walletDeleteLabelFromRow,
   walletOwnerCell,
   walletTopUpTargetFromRow,
+  agentFloatTopUpTargetFromRow,
 } from "../lib/wallet-row-helpers";
 import {
   getAvailableRowActions,
@@ -505,6 +506,19 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.walletTopUp) {
+      if (section === "agents") {
+        const target = agentFloatTopUpTargetFromRow(row);
+        if (!target) {
+          continue;
+        }
+        items.push({
+          id: def.id,
+          label: def.label,
+          onSelect: () => openWalletTopUp(target),
+        });
+        continue;
+      }
+
       const id = row.id;
       if (typeof id !== "number") {
         continue;

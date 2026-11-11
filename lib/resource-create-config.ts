@@ -78,6 +78,14 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
       { name: "currency", label: "Wallet currency", type: "text", placeholder: "CDF" },
     ],
   },
+  agents: {
+    section: "agents",
+    apiPath: "/agents",
+    title: "Register agent",
+    description: "Links an existing user account (type agent) and opens a float wallet.",
+    submitLabel: "Create agent",
+    fields: [{ name: "currency", label: "Float currency", type: "text", placeholder: "CDF" }],
+  },
   cards: {
     section: "cards",
     apiPath: "/cards",

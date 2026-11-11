@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiResourcePanel } from "./api-resource-panel";
+import { AgentTopUpPanel } from "./agent-top-up-panel";
 import { AccountMenu } from "./account-menu";
 import { SidebarNav } from "./sidebar-nav";
 import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight } from "./icons/icon";
@@ -42,6 +43,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const { notify } = useToast();
   /** Must match SSR (null / false) so avatar and layout hydrate; sync from storage after mount. */
   const [sessionUser, setSessionUser] = useState<AuthUser | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [noticesOpen, setNoticesOpen] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
@@ -55,6 +57,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   useEffect(() => {
     queueMicrotask(() => {
       setSessionUser(getStoredUser());
+      setSessionReady(true);
     });
   }, []);
 
@@ -163,6 +166,52 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const accountHome = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
   const pageTitle = section === "overview" ? "Overview" : copy.title;
   const breadcrumbLeaf = section === "overview" ? "Overview" : activeMenu.label;
+  const isAgent = sessionReady && sessionUser?.type === "agent";
+
+  if (!sessionReady) {
+    return <div className="app-shell" />;
+  }
+
+  if (isAgent) {
+    return (
+      <div className="app-shell" data-sidebar-collapsed="false">
+        <aside className="sidebar">
+          <div className="sidebar-head">
+            <div className="brand">
+              <Image
+                src="/assets/logo.png"
+                alt="Mwanga"
+                width={168}
+                height={48}
+                className="brand-logo"
+                priority
+              />
+              <span className="brand-tagline">Agent float</span>
+            </div>
+          </div>
+        </aside>
+        <main className="workspace">
+          <header className="topbar">
+            <div className="topbar-title">
+              <div className="topbar-heading">
+                <h1>Top up</h1>
+              </div>
+            </div>
+            <div className="topbar-actions">
+              <AccountMenu
+                user={sessionUser}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                onSignOut={signOut}
+                onManageUsers={() => router.push(sectionHref(pathPrefix, "users"))}
+              />
+            </div>
+          </header>
+          <AgentTopUpPanel />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell" data-sidebar-collapsed={sidebarCollapsed ? "true" : "false"}>

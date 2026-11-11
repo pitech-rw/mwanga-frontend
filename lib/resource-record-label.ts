@@ -30,6 +30,8 @@ export function recordLabelForRow(section: ResourceSection, row: Record<string, 
       return idStr ? `Swap #${idStr}` : "Swap";
     case "owners":
       return pick("name", "email") ?? (idStr || "Owner");
+    case "agents":
+      return pick("name", "email") ?? (idStr || "Agent");
     case "users": {
       const u = pick("username");
       const first = typeof row.firstName === "string" ? row.firstName : "";

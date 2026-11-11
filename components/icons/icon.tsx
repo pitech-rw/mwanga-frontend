@@ -258,6 +258,7 @@ const NAV_ICON_MAP = {
   swaps: IconArrowLeftRight,
   users: IconUsers,
   owners: IconBuilding,
+  agents: IconUser,
   violations: IconTriangleAlert,
   wallets: IconWallet,
   companyAccounts: IconLandmark,

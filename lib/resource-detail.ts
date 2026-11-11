@@ -116,6 +116,24 @@ export function buildResourceDetailPayload(
       }
       break;
     }
+    case "agents": {
+      const name = pickString(row, "name") ?? idStr;
+      headingTitle = `Agent · ${name}`;
+      description = "Float profile linked to an agent user account.";
+      usedKeys.add("name");
+      summary.push(["Name", name]);
+      const email = pickString(row, "email");
+      if (email) {
+        usedKeys.add("email");
+        summary.push(["Email", email]);
+      }
+      const phone = pickString(row, "phone");
+      if (phone) {
+        usedKeys.add("phone");
+        summary.push(["Phone", phone]);
+      }
+      break;
+    }
     case "users": {
       const username = pickString(row, "username") ?? idStr;
       const name = [pickString(row, "firstName"), pickString(row, "lastName")].filter(Boolean).join(" ").trim();
@@ -219,7 +237,7 @@ export function buildResourceDetailPayload(
     }
     case "wallets": {
       headingTitle = `Wallet · #${idStr}`;
-      description = "Fleet owner liability account. Balance changes only via ledger top-ups and swap fees.";
+      description = "Liability account for an owner, a rider, or an agent float. Balance changes only via the ledger.";
       const owner = row.owner;
       if (owner && typeof owner === "object") {
         const o = owner as Record<string, unknown>;
@@ -306,6 +324,8 @@ function isRelationOrMetaKey(key: string): boolean {
     "wallet",
     "owner",
     "portalUser",
+    "agent",
+    "riderUser",
     "user",
     "role",
     "currentBattery",

@@ -77,6 +77,25 @@ export function walletTopUpTargetFromRow(row: Record<string, unknown>): WalletTo
   };
 }
 
+export function agentFloatTopUpTargetFromRow(row: Record<string, unknown>): WalletTopUpTargetRow | null {
+  const wallet = row.wallet;
+  if (!wallet || typeof wallet !== "object") {
+    return null;
+  }
+  const w = wallet as Record<string, unknown>;
+  const id = w.id;
+  if (typeof id !== "number") {
+    return null;
+  }
+  const name = typeof row.name === "string" && row.name.trim() ? row.name.trim() : `Agent #${row.id ?? id}`;
+  return {
+    id,
+    ownerLabel: name,
+    currency: walletCurrency(w),
+    currentBalance: walletBalanceNumber(w),
+  };
+}
+
 export function walletDeleteLabelFromRow(row: Record<string, unknown>): string {
   const { label } = walletOwnerCell(row);
   return label;

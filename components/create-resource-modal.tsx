@@ -23,6 +23,19 @@ type OwnerListRow = {
   phone?: string | null;
 };
 
+type AgentUserRow = {
+  id: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+};
+
+type AgentListRow = {
+  userId?: number | null;
+};
+
 function emptyValues(config: CreateResourceConfig): Record<string, string> {
   return Object.fromEntries(config.fields.map((field) => [field.name, ""]));
 }
@@ -30,6 +43,13 @@ function emptyValues(config: CreateResourceConfig): Record<string, string> {
 function ownerOptionLine(o: OwnerListRow): string {
   const contact = o.email ?? o.phone ?? "";
   return contact ? `${o.id} · ${o.name} · ${contact}` : `${o.id} · ${o.name}`;
+}
+
+function agentUserOptionLine(user: AgentUserRow): string {
+  const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  const label = name ? `${name} (@${user.username})` : `@${user.username}`;
+  const contact = user.email ?? user.phone ?? "";
+  return contact ? `${user.id} · ${label} · ${contact}` : `${user.id} · ${label}`;
 }
 
 export function CreateResourceModal({ open, section, onClose, onCreated, onError }: CreateResourceModalProps) {
@@ -41,6 +61,10 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [walletOwnerSearch, setWalletOwnerSearch] = useState("");
   const [walletOwners, setWalletOwners] = useState<OwnerListRow[]>([]);
   const [loadingWalletUsers, setLoadingWalletUsers] = useState(false);
+  const [agentUserId, setAgentUserId] = useState<number | null>(null);
+  const [agentUserSearch, setAgentUserSearch] = useState("");
+  const [agentUsers, setAgentUsers] = useState<AgentUserRow[]>([]);
+  const [loadingAgentUsers, setLoadingAgentUsers] = useState(false);
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
@@ -49,6 +73,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       setError(null);
       setWalletOwnerId(null);
       setWalletOwnerSearch("");
+      setAgentUserId(null);
+      setAgentUserSearch("");
     }
   }, [open, section]);
 
@@ -78,12 +104,69 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         setError(null);
       } catch {
         if (active) {
-          setWalletUsers([]);
+          setWalletOwners([]);
           setError(userMessageForNetwork("load"));
         }
       } finally {
         if (active) {
           setLoadingWalletUsers(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "agents") {
+      return;
+    }
+
+    let active = true;
+    setLoadingAgentUsers(true);
+
+    const load = async () => {
+      try {
+        const [usersRes, agentsRes] = await Promise.all([
+          authFetch("/users?type=agent"),
+          authFetch("/agents"),
+        ]);
+        if (!usersRes.ok) {
+          if (active) {
+            setAgentUsers([]);
+            setError(await userMessageFromResponse("load", usersRes));
+          }
+          return;
+        }
+        const usersRaw = (await usersRes.json()) as unknown;
+        const users = Array.isArray(usersRaw) ? (usersRaw as AgentUserRow[]) : [];
+        let linkedIds = new Set<number>();
+        if (agentsRes.ok) {
+          const agentsRaw = (await agentsRes.json()) as unknown;
+          if (Array.isArray(agentsRaw)) {
+            linkedIds = new Set(
+              (agentsRaw as AgentListRow[])
+                .map((row) => row.userId)
+                .filter((id): id is number => typeof id === "number"),
+            );
+          }
+        }
+        if (!active) {
+          return;
+        }
+        setAgentUsers(users.filter((user) => !linkedIds.has(user.id)));
+        setError(null);
+      } catch {
+        if (active) {
+          setAgentUsers([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingAgentUsers(false);
         }
       }
     };
@@ -110,6 +193,31 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     [walletOwnerId, walletOwners],
   );
 
+  const filteredAgentUsers = useMemo(() => {
+    const needle = agentUserSearch.trim().toLowerCase();
+    if (!needle) {
+      return agentUsers;
+    }
+    return agentUsers.filter((user) => {
+      const haystack = [
+        user.username,
+        user.firstName,
+        user.lastName,
+        user.email,
+        user.phone ?? "",
+        String(user.id),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [agentUserSearch, agentUsers]);
+
+  const selectedAgentUser = useMemo(
+    () => (agentUserId != null ? agentUsers.find((user) => user.id === agentUserId) : undefined),
+    [agentUserId, agentUsers],
+  );
+
   const onStationPlaceSelected = useCallback(
     (place: { address: string; latitude: number; longitude: number }) => {
       setValues((prev) => ({
@@ -127,7 +235,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   }
 
   const submitDisabled =
-    saving || (config.section === "wallets" && (walletOwnerId === null || loadingWalletUsers));
+    saving ||
+    (config.section === "wallets" && (walletOwnerId === null || loadingWalletUsers)) ||
+    (config.section === "agents" && (agentUserId === null || loadingAgentUsers));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -142,6 +252,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       }
     }
 
+    if (config.section === "agents") {
+      if (agentUserId === null) {
+        setError("Select an agent user account.");
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       let body: Record<string, unknown>;
 
@@ -151,6 +269,12 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         if (balanceRaw) {
           body.balance = Number(balanceRaw);
         }
+        const currencyRaw = values.currency?.trim() ?? "";
+        if (currencyRaw) {
+          body.currency = currencyRaw;
+        }
+      } else if (config.section === "agents") {
+        body = { userId: agentUserId };
         const currencyRaw = values.currency?.trim() ?? "";
         if (currencyRaw) {
           body.currency = currencyRaw;
@@ -206,6 +330,59 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           <div className="login-error" role="alert">
             {error}
           </div>
+        ) : null}
+
+        {config.section === "agents" ? (
+          <>
+            <p className="sub">
+              Create the sign-in account under <strong>Users</strong> first (role type <strong>agent</strong>), then
+              link it here to open float.
+            </p>
+            <label className="field">
+              <span>Find account</span>
+              <input
+                type="search"
+                value={agentUserSearch}
+                disabled={saving || loadingAgentUsers}
+                onChange={(event) => setAgentUserSearch(event.target.value)}
+                placeholder="Search by name, username, email, or phone…"
+                autoComplete="off"
+                aria-label="Search agent user accounts"
+              />
+            </label>
+            {loadingAgentUsers ? (
+              <p className="sub">Loading accounts…</p>
+            ) : (
+              <label className="field">
+                <span>User account ({filteredAgentUsers.length} without float)</span>
+                <select
+                  value={agentUserId != null ? String(agentUserId) : ""}
+                  disabled={saving || filteredAgentUsers.length === 0}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setAgentUserId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredAgentUsers.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label="Select agent user account"
+                >
+                  <option value="">
+                    {filteredAgentUsers.length === 0 ? "No eligible accounts" : "Choose an account…"}
+                  </option>
+                  {filteredAgentUsers.map((user) => (
+                    <option key={user.id} value={String(user.id)}>
+                      {agentUserOptionLine(user)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedAgentUser ? (
+              <p className="create-wallet-selection sub" role="status">
+                <strong>Selected:</strong> {agentUserOptionLine(selectedAgentUser)}
+              </p>
+            ) : null}
+          </>
         ) : null}
 
         {config.section === "wallets" ? (

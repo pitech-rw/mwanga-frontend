@@ -1,6 +1,7 @@
 import { PERMISSIONS } from "./permission-strings";
 import type { ResourceSection } from "./resource-create-config";
 import type { Section } from "./nav";
+import { agentFloatTopUpTargetFromRow } from "./wallet-row-helpers";
 
 /**
  * Row-level actions for API resource tables. Permission strings match
@@ -71,6 +72,16 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericDelete(PERMISSIONS.batteries.delete),
   ],
   owners: [genericEdit(PERMISSIONS.owners.write), genericDelete(PERMISSIONS.owners.delete)],
+  agents: [
+    {
+      id: TABLE_ROW_ACTION_IDS.walletTopUp,
+      label: "Add float",
+      permission: PERMISSIONS.wallets.credit,
+      visibleForRow: (row) => agentFloatTopUpTargetFromRow(row) != null,
+    },
+    genericEdit(PERMISSIONS.agents.write),
+    genericDelete(PERMISSIONS.agents.delete),
+  ],
   bikes: [
     {
       id: TABLE_ROW_ACTION_IDS.attachBikeRider,
