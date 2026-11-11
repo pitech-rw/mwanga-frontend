@@ -65,7 +65,7 @@ export default function HomePage() {
       <section className="landing-hero">
         <div className="landing-hero-inner">
           <Image
-            src="/assets/mwanga-high-res-logo-grayscale.png"
+            src="/assets/logo.png"
             alt="Mwanga"
             width={200}
             height={56}

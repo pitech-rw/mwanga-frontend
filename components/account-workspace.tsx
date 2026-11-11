@@ -170,7 +170,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         <div className="sidebar-head">
           <div className="brand">
             <Image
-              src="/assets/mwanga-high-res-logo-grayscale.png"
+              src="/assets/logo.png"
               alt="Mwanga"
               width={168}
               height={48}
