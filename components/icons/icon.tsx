@@ -251,6 +251,7 @@ export function IconPlus(props: IconProps) {
 const NAV_ICON_MAP = {
   overview: IconLayoutDashboard,
   topUp: IconWallet,
+  agentTransactions: IconArrowLeftRight,
   riders: IconUsers,
   batteries: IconBatteryCharging,
   bikes: IconBike,

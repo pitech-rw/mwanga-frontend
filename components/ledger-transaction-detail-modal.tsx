@@ -91,7 +91,7 @@ export function LedgerTransactionDetailModal({
                 <thead>
                   <tr>
                     <th>Direction</th>
-                    <th className="right">Amount</th>
+                    <th>Amount</th>
                     <th>Account</th>
                   </tr>
                 </thead>
@@ -99,7 +99,7 @@ export function LedgerTransactionDetailModal({
                   {transaction.lines.map((line, index) => (
                     <tr key={`${transaction.id}-line-${index}`}>
                       <td>{line.direction}</td>
-                      <td className="right">{formatAmount(line.amount)}</td>
+                      <td>{formatAmount(line.amount)}</td>
                       <td>{lineAccountLabel(line)}</td>
                     </tr>
                   ))}

@@ -6,7 +6,7 @@ import { sectionHref } from "../lib/nav-path";
 import { NavIcon } from "./icons/icon";
 
 type AgentSidebarNavProps = {
-  section: "topUp" | "riders";
+  section: "topUp" | "agentTransactions" | "riders";
   pathPrefix: string;
 };
 

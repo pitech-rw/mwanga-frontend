@@ -1,7 +1,7 @@
 import type { Section } from "./nav";
 
 /** Every dashboard section that lists API resources (excludes overview). */
-export type ResourceSection = Exclude<Section, "overview" | "topUp">;
+export type ResourceSection = Exclude<Section, "overview" | "topUp" | "agentTransactions">;
 
 export type FieldType = "text" | "email" | "password" | "number" | "select" | "datetime-local" | "textarea" | "checkbox";
 
@@ -222,7 +222,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
 };
 
 export function getCreateConfig(section: Section): CreateResourceConfig | null {
-  if (section === "overview" || section === "topUp" || section === "riders") {
+  if (section === "overview" || section === "topUp" || section === "agentTransactions" || section === "riders") {
     return null;
   }
   return CONFIGS[section];

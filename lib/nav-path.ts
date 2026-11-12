@@ -20,6 +20,10 @@ export function sectionFromPathname(pathname: string, pathPrefix: string): Secti
     return "riders";
   }
 
+  if (segment === "my-transactions" || segment === "agentTransactions") {
+    return "agentTransactions";
+  }
+
   if (segment === "" || segment === "overview") {
     return "overview";
   }
@@ -38,6 +42,9 @@ export function sectionHref(pathPrefix: string, section: Section): string {
   }
   if (section === "topUp") {
     return `${base}/top-up`;
+  }
+  if (section === "agentTransactions") {
+    return `${base}/my-transactions`;
   }
   return `${base}/${section}`;
 }

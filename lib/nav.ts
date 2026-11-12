@@ -1,6 +1,7 @@
 export type Section =
   | "overview"
   | "topUp"
+  | "agentTransactions"
   | "riders"
   | "batteries"
   | "bikes"
@@ -42,6 +43,13 @@ const MENU_ITEM_MAP: Record<Section, MenuItem> = {
     apiPath: null,
     eyebrow: "Agent",
     title: "Top up",
+  },
+  agentTransactions: {
+    id: "agentTransactions",
+    label: "My transactions",
+    apiPath: "/agents/me/transactions",
+    eyebrow: "Agent",
+    title: "My transactions",
   },
   riders: {
     id: "riders",
@@ -168,7 +176,11 @@ export function getMenuItem(section: Section): MenuItem {
 }
 
 /** Agent mobile / field app — no operations dashboard. */
-export const AGENT_NAV_ITEMS: MenuItem[] = [MENU_ITEM_MAP.topUp, MENU_ITEM_MAP.riders];
+export const AGENT_NAV_ITEMS: MenuItem[] = [
+  MENU_ITEM_MAP.topUp,
+  MENU_ITEM_MAP.agentTransactions,
+  MENU_ITEM_MAP.riders,
+];
 
 export const AGENT_API_MENU_ITEMS = AGENT_NAV_ITEMS.filter(
   (item): item is MenuItem & { apiPath: string } => item.apiPath !== null,

@@ -168,6 +168,7 @@ a {
 .sidebar--agent {
   gap: 6px;
   padding-top: 16px;
+  align-items: stretch;
 }
 
 .sidebar--agent .sidebar-head {
@@ -181,7 +182,10 @@ a {
 
 .sidebar--agent .nav {
   flex: 0 0 auto;
+  width: 100%;
   padding-top: 4px;
+  padding-right: 0;
+  justify-items: stretch;
 }
 
 .brand {
@@ -332,6 +336,7 @@ a {
 .nav-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   width: 100%;
   padding: 7px 8px;
@@ -357,10 +362,20 @@ a {
 
 .nav-agent .nav-block {
   gap: 1px;
+  width: 100%;
+}
+
+.nav-agent a.nav-item {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .nav-agent .nav-item {
-  padding: 6px 8px;
+  padding: 6px 2px 6px 0;
+}
+
+.nav-agent .nav-label {
+  text-align: left;
 }
 
 .nav-icon-wrap {
@@ -450,10 +465,14 @@ a {
   display: none;
 }
 
-.app-shell[data-sidebar-collapsed="true"] .nav-item {
+.app-shell[data-sidebar-collapsed="true"]:not(:has(.sidebar--agent)) .nav-item {
   justify-content: center;
   padding: 8px;
   box-shadow: none;
+}
+
+.app-shell:has(.sidebar--agent) .nav-item {
+  justify-content: flex-start;
 }
 
 .app-shell[data-sidebar-collapsed="true"] .nav-item.active {
@@ -1145,16 +1164,37 @@ table.data td.data-table-cell-ellipsis {
 
 .data-table-ledger table.data {
   table-layout: fixed;
+  width: 100%;
+}
+
+.data-table-ledger .table-wrap {
+  overflow-x: hidden;
+}
+
+/* Fixed layout sets column widths; avoid global ellipsis max-width (e.g. 42vw) blowing out the table. */
+.data-table-ledger table.data td.data-table-cell-ellipsis {
+  max-width: 100%;
 }
 
 .data-table-ledger table.data th:nth-child(1),
 .data-table-ledger table.data td.ledger-col-date {
-  width: 10.5rem;
+  width: 8.25rem;
+  max-width: 8.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .data-table-ledger table.data th:nth-child(2),
 .data-table-ledger table.data td.ledger-col-kind {
-  width: 7.5rem;
+  width: 5.5rem;
+  max-width: 5.5rem;
+}
+
+.data-table-ledger table.data td.ledger-col-kind .badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .data-table-ledger table.data th:nth-child(3),
@@ -1172,8 +1212,12 @@ table.data td.data-table-cell-ellipsis {
 .data-table-ledger table.data th:nth-child(5),
 .data-table-ledger table.data th:nth-child(6),
 .data-table-ledger table.data td.ledger-col-amount {
-  width: 18%;
-  min-width: 9.5rem;
+  width: 16%;
+  max-width: 16%;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .data-table-ledger table.data tbody tr {

@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiResourcePanel } from "./api-resource-panel";
 import { AgentTopUpPanel } from "./agent-top-up-panel";
+import { AgentTransactionsPanel } from "./agent-transactions-panel";
 import { AgentSidebarNav } from "./agent-sidebar-nav";
 import { AccountMenu } from "./account-menu";
 import { SidebarNav } from "./sidebar-nav";
@@ -183,13 +184,15 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
       ? "Overview"
       : activeMenu.label;
   const isAgent = sessionReady && sessionUser?.type === "agent";
-  const agentSection: "topUp" | "riders" = section === "riders" ? "riders" : "topUp";
+  type AgentSection = "topUp" | "agentTransactions" | "riders";
+  const agentSection: AgentSection =
+    section === "riders" ? "riders" : section === "agentTransactions" ? "agentTransactions" : "topUp";
 
   useEffect(() => {
     if (!isAgent) {
       return;
     }
-    if (section !== "topUp" && section !== "riders") {
+    if (section !== "topUp" && section !== "riders" && section !== "agentTransactions") {
       router.replace(sectionHref(pathPrefix, "topUp"));
     }
   }, [isAgent, section, router, pathPrefix]);
@@ -221,9 +224,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           </div>
           <AgentSidebarNav section={agentSection} pathPrefix={pathPrefix} />
           <div className="sidebar-foot">
-            <span className="sidebar-foot-full">
-              {health ? "API online" : "Waiting on the API."}
-            </span>
+            <span className="sidebar-foot-full">{health ? "API online" : "Waiting on the API."}</span>
             <span className="sidebar-foot-compact" title={health ? "API online" : "API offline"} aria-hidden="true">
               <span className={`status-dot ${health ? "online" : ""}`} />
             </span>
@@ -263,6 +264,8 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
           {agentSection === "topUp" ? (
             <AgentTopUpPanel />
+          ) : agentSection === "agentTransactions" ? (
+            <AgentTransactionsPanel reloadKey={resourceReloadKey} onForbidden={handleForbidden} />
           ) : (
             <ApiResourcePanel
               section="riders"
@@ -273,9 +276,10 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
               onDetail={setDetail}
               onRecordsChange={(count) => setCounts((current) => ({ ...current, riders: count }))}
               onCreateError={(message) => notify({ title: "Create failed", message, tone: "error" })}
-              onWalletTopUpSuccess={() =>
-                notify({ title: "Wallet updated", message: "Top-up applied from your float.", tone: "success" })
-              }
+              onWalletTopUpSuccess={() => {
+                bumpResourceReload();
+                notify({ title: "Wallet updated", message: "Top-up applied from your float.", tone: "success" });
+              }}
               onWalletTopUpError={(message) => notify({ title: "Top-up failed", message, tone: "error" })}
               onResourceEditError={(message) => notify({ title: "Update failed", message, tone: "error" })}
               onResourceDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}

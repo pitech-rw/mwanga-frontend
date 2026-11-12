@@ -482,7 +482,6 @@ function buildAgentTopUpDirectoryColumns(): Column<Row>[] {
     {
       key: "wallet",
       header: "Wallet",
-      align: "right",
       sortValue: (row) => {
         const wallet = topUpDirectoryWallet(row);
         return wallet ? walletBalanceNumber(wallet) : -1;
@@ -769,7 +768,7 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.resourceEdit) {
-      if (section === "wallets" || section === "overview" || section === "topUp") {
+      if (section === "wallets" || section === "overview" || section === "topUp" || section === "agentTransactions") {
         continue;
       }
       const id = row.id;
@@ -789,7 +788,7 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.resourceDelete) {
-      if (section === "wallets" || section === "overview" || section === "topUp") {
+      if (section === "wallets" || section === "overview" || section === "topUp" || section === "agentTransactions") {
         continue;
       }
       const id = row.id;

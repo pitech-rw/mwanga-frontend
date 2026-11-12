@@ -31,6 +31,10 @@ function formatKind(kind: string): string {
   return kind.replace(/_/g, " ");
 }
 
+function formatLedgerDate(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
+}
+
 function lineCell(line: LedgerLine | undefined): string {
   if (!line) {
     return "—";
@@ -86,7 +90,11 @@ export function LedgerTransactionList({
         cellClassName: "ledger-col-date",
         sortValue: (row) => new Date(row.createdAt).getTime(),
         searchValue: (row) => new Date(row.createdAt).toLocaleString(),
-        render: (row) => new Date(row.createdAt).toLocaleString(),
+        render: (row) => (
+          <span className="data-table-ellipsis-inner" title={new Date(row.createdAt).toLocaleString()}>
+            {formatLedgerDate(row.createdAt)}
+          </span>
+        ),
       },
       {
         key: "kind",
@@ -115,20 +123,18 @@ export function LedgerTransactionList({
       {
         key: "debit",
         header: "Debit",
-        align: "right",
-        cellClassName: "ledger-col-amount",
+        cellClassName: "data-table-cell-ellipsis ledger-col-amount",
         sortable: false,
         searchValue: (row) => lineCell(lineForDirection(row, "debit")),
-        render: (row) => lineCell(lineForDirection(row, "debit")),
+        render: (row) => ellipsisCell(lineCell(lineForDirection(row, "debit"))),
       },
       {
         key: "credit",
         header: "Credit",
-        align: "right",
-        cellClassName: "ledger-col-amount",
+        cellClassName: "data-table-cell-ellipsis ledger-col-amount",
         sortable: false,
         searchValue: (row) => lineCell(lineForDirection(row, "credit")),
-        render: (row) => lineCell(lineForDirection(row, "credit")),
+        render: (row) => ellipsisCell(lineCell(lineForDirection(row, "credit"))),
       },
     ];
   }, []);
