@@ -27,7 +27,7 @@ function money(value: string | number): string {
 export function AgentTopUpPanel() {
   const [wallet, setWallet] = useState<FloatWallet | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [phone, setPhone] = useState("");
+  const [lookup, setLookup] = useState("");
   const [target, setTarget] = useState<TopUpTarget | null>(null);
   const [amount, setAmount] = useState("");
   const [externalReference, setExternalReference] = useState("");
@@ -60,18 +60,18 @@ export function AgentTopUpPanel() {
     };
   }, [loadFloat]);
 
-  const lookup = async () => {
-    const trimmed = phone.trim();
+  const runLookup = async () => {
+    const trimmed = lookup.trim();
     setFormError(null);
     setNotice(null);
     setTarget(null);
     if (trimmed.length < 2) {
-      setFormError("Enter the rider or owner phone number.");
+      setFormError("Enter a phone number or name (at least 2 characters).");
       return;
     }
     setLookingUp(true);
     try {
-      const response = await authFetch(`/agents/top-up-targets?phone=${encodeURIComponent(trimmed)}`);
+      const response = await authFetch(`/agents/top-up-targets?q=${encodeURIComponent(trimmed)}`);
       if (!response.ok) {
         setFormError(await userMessageFromResponse("load", response));
         return;
@@ -121,7 +121,7 @@ export function AgentTopUpPanel() {
       setAmount("");
       setExternalReference("");
       setDescription("");
-      setPhone("");
+      setLookup("");
       setTarget(null);
       await loadFloat();
     } catch {
@@ -142,7 +142,7 @@ export function AgentTopUpPanel() {
               {wallet ? `${money(wallet.balance)} ${wallet.currency}` : loadError ? "—" : "…"}
             </strong>
             {" · "}
-            Look up a rider or owner by phone, then move float.
+            Look up a rider or owner by phone or name, then move float.
           </p>
         </div>
       </div>
@@ -156,20 +156,20 @@ export function AgentTopUpPanel() {
         {notice ? <p>{notice}</p> : null}
 
         <label className="field">
-          <span>Phone</span>
+          <span>Phone or name</span>
           <input
             type="text"
-            value={phone}
+            value={lookup}
             disabled={saving || lookingUp}
             onChange={(event) => {
-              setPhone(event.target.value);
+              setLookup(event.target.value);
               setTarget(null);
             }}
-            placeholder="Exact rider or owner phone"
-            aria-label="Rider or owner phone"
+            placeholder="Phone or rider / owner name"
+            aria-label="Rider or owner phone or name"
           />
         </label>
-        <button type="button" className="btn" onClick={lookup} disabled={saving || lookingUp}>
+        <button type="button" className="btn" onClick={runLookup} disabled={saving || lookingUp}>
           {lookingUp ? "Looking up…" : "Find wallet"}
         </button>
         {target ? (
