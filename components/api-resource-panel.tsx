@@ -49,6 +49,7 @@ import { EditResourceModal, type EditResourceTarget } from "./edit-resource-moda
 import { AgentWalletTopUpModal } from "./agent-wallet-top-up-modal";
 import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
 import { WalletLedgerModal } from "./wallet-ledger-modal";
+import { buildUsersTableFilters, USERS_TABLE_SORT_OPTIONS } from "../lib/users-table-filters";
 
 type Row = Record<string, unknown>;
 
@@ -553,6 +554,30 @@ function buildUserColumns(): Column<Row>[] {
       header: "Type",
       sortValue: (row) => String(row.type ?? ""),
       render: (row) => <Badge status={String(row.type ?? "—")} />,
+    },
+    {
+      key: "active",
+      header: "Status",
+      sortValue: (row) => (row.isActive === false ? "inactive" : "active"),
+      searchValue: (row) => (row.isActive === false ? "inactive" : "active"),
+      render: (row) => <Badge status={row.isActive === false ? "inactive" : "active"} />,
+    },
+    {
+      key: "kyc",
+      header: "KYC",
+      sortValue: (row) => {
+        const raw = row.kycStatus;
+        return typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : "pending";
+      },
+      searchValue: (row) => {
+        const raw = row.kycStatus;
+        return typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : "pending";
+      },
+      render: (row) => {
+        const raw = row.kycStatus;
+        const label = typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : "pending";
+        return <Badge status={label} />;
+      },
     },
     {
       key: "station",
@@ -1201,6 +1226,11 @@ export function ApiResourcePanel({
     title,
   ]);
 
+  const usersTableFilters = useMemo(
+    () => (section === "users" ? buildUsersTableFilters(rows) : undefined),
+    [rows, section],
+  );
+
   const searchPlaceholderFromSection =
     section === "users"
       ? "Search users…"
@@ -1246,6 +1276,10 @@ export function ApiResourcePanel({
         rowKey={(row) => String(row.id ?? JSON.stringify(row))}
         empty={error ? "Unable to load records." : "No records yet."}
         searchPlaceholder={searchPlaceholderFromSection}
+        selectFilters={usersTableFilters}
+        sortOptions={section === "users" ? [...USERS_TABLE_SORT_OPTIONS] : undefined}
+        defaultSortKey={section === "users" ? "name" : null}
+        defaultSortDirection={section === "users" ? "asc" : "asc"}
         onRowClick={
           onDetail
             ? (row) => onDetail(buildResourceDetailPayload(section, title, row, cellValue))

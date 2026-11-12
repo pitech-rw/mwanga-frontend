@@ -5,6 +5,19 @@ import { IconSearch } from "./icons/icon";
 
 export type SortDirection = "asc" | "desc";
 
+export type DataTableSelectFilter<T> = {
+  id: string;
+  label: string;
+  defaultValue?: string;
+  options: { value: string; label: string }[];
+  match: (row: T, value: string) => boolean;
+};
+
+export type DataTableSortOption = {
+  key: string;
+  label: string;
+};
+
 export type Column<T> = {
   key: string;
   header: string;
@@ -29,6 +42,12 @@ type DataTableProps<T> = {
   defaultPageSize?: number;
   toolbarActions?: ReactNode;
   showSearch?: boolean;
+  /** Select filters applied before search and sort. */
+  selectFilters?: DataTableSelectFilter<T>[];
+  /** Toolbar sort control (column headers remain sortable). */
+  sortOptions?: DataTableSortOption[];
+  defaultSortKey?: string | null;
+  defaultSortDirection?: SortDirection;
   /** Extra class on the outer `.data-table` wrapper (e.g. panel table styling). */
   className?: string;
 };
@@ -89,25 +108,56 @@ export function DataTable<T>({
   defaultPageSize = 10,
   toolbarActions,
   showSearch = true,
+  selectFilters,
+  sortOptions,
+  defaultSortKey = null,
+  defaultSortDirection = "asc",
   className,
 }: DataTableProps<T>) {
   const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortKey, setSortKey] = useState<string | null>(defaultSortKey);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(defaultSortDirection);
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [page, setPage] = useState(0);
+  const [filterValues, setFilterValues] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    for (const filter of selectFilters ?? []) {
+      initial[filter.id] = filter.defaultValue ?? "";
+    }
+    return initial;
+  });
 
   const needle = query.trim().toLowerCase();
+  const filtersActive = useMemo(() => {
+    if (!selectFilters?.length) {
+      return false;
+    }
+    return selectFilters.some((filter) => {
+      const value = filterValues[filter.id] ?? "";
+      return value !== (filter.defaultValue ?? "");
+    });
+  }, [filterValues, selectFilters]);
 
   const filteredRows = useMemo(() => {
-    if (!needle) {
-      return rows;
+    let next = rows;
+
+    if (selectFilters?.length) {
+      next = next.filter((row) =>
+        selectFilters.every((filter) => {
+          const value = filterValues[filter.id] ?? filter.defaultValue ?? "";
+          return filter.match(row, value);
+        }),
+      );
     }
 
-    return rows.filter((row) =>
+    if (!needle) {
+      return next;
+    }
+
+    return next.filter((row) =>
       columns.some((column) => defaultSearchValue(row, column).toLowerCase().includes(needle)),
     );
-  }, [columns, needle, rows]);
+  }, [columns, filterValues, needle, rows, selectFilters]);
 
   const sortedRows = useMemo(() => {
     if (!sortKey) {
@@ -179,7 +229,69 @@ export function DataTable<T>({
         ) : (
           <span />
         )}
+        {selectFilters && selectFilters.length > 0 ? (
+          <div className="data-table-filters" role="group" aria-label="Table filters">
+            {selectFilters.map((filter) => (
+              <label key={filter.id} className="data-table-filter">
+                <span>{filter.label}</span>
+                <select
+                  value={filterValues[filter.id] ?? filter.defaultValue ?? ""}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setFilterValues((current) => ({ ...current, [filter.id]: value }));
+                    setPage(0);
+                  }}
+                >
+                  {filter.options.map((option) => (
+                    <option key={option.value || "__all__"} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        ) : null}
         <div className="data-table-toolbar-actions">
+          {sortOptions && sortOptions.length > 0 ? (
+            <label className="data-table-sort">
+              <span>Sort</span>
+              <select
+                value={sortKey ?? ""}
+                onChange={(event) => {
+                  const key = event.target.value;
+                  setPage(0);
+                  if (!key) {
+                    setSortKey(null);
+                    setSortDirection("asc");
+                    return;
+                  }
+                  setSortKey(key);
+                  setSortDirection("asc");
+                }}
+                aria-label="Sort table"
+              >
+                <option value="">Default</option>
+                {sortOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sortDirection}
+                disabled={!sortKey}
+                onChange={(event) => {
+                  setSortDirection(event.target.value as SortDirection);
+                  setPage(0);
+                }}
+                aria-label="Sort direction"
+              >
+                <option value="asc">A → Z</option>
+                <option value="desc">Z → A</option>
+              </select>
+            </label>
+          ) : null}
           {toolbarActions}
           <label className="data-table-pagesize">
             <span>Rows</span>
@@ -276,7 +388,7 @@ export function DataTable<T>({
         <span>
           {sortedRows.length === 0
             ? "0 rows"
-            : `${rangeStart}–${rangeEnd} of ${sortedRows.length}${needle ? " (filtered)" : ""}`}
+            : `${rangeStart}–${rangeEnd} of ${sortedRows.length}${needle || filtersActive ? " (filtered)" : ""}`}
         </span>
         <div className="data-table-pager">
           <button type="button" className="btn ghost" disabled={safePage <= 0} onClick={() => setPage((value) => value - 1)}>
