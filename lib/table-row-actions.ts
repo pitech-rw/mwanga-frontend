@@ -15,6 +15,7 @@ export const TABLE_ROW_ACTION_IDS = {
   assignSwapperStation: "assign-swapper-station",
   walletTopUp: "wallet-top-up",
   walletLedger: "wallet-ledger",
+  companyAccountLedger: "company-account-ledger",
   walletDelete: "wallet-delete",
   resourceEdit: "resource-edit",
   resourceDelete: "resource-delete",
@@ -139,7 +140,13 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       permission: PERMISSIONS.wallets.delete,
     },
   ],
-  companyAccounts: [],
+  companyAccounts: [
+    {
+      id: TABLE_ROW_ACTION_IDS.companyAccountLedger,
+      label: "Transactions",
+      permission: PERMISSIONS.companyAccounts.read,
+    },
+  ],
 };
 
 const ADMIN = "system:admin";

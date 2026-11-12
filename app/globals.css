@@ -1143,6 +1143,43 @@ table.data td.data-table-cell-ellipsis {
   vertical-align: middle;
 }
 
+.data-table-ledger table.data {
+  table-layout: fixed;
+}
+
+.data-table-ledger table.data th:nth-child(1),
+.data-table-ledger table.data td.ledger-col-date {
+  width: 10.5rem;
+}
+
+.data-table-ledger table.data th:nth-child(2),
+.data-table-ledger table.data td.ledger-col-kind {
+  width: 7.5rem;
+}
+
+.data-table-ledger table.data th:nth-child(3),
+.data-table-ledger table.data td.ledger-col-reference {
+  max-width: min(12ch, 16vw);
+  width: 11%;
+}
+
+.data-table-ledger table.data th:nth-child(4),
+.data-table-ledger table.data td.ledger-col-description {
+  max-width: min(18ch, 22vw);
+  width: 16%;
+}
+
+.data-table-ledger table.data th:nth-child(5),
+.data-table-ledger table.data th:nth-child(6),
+.data-table-ledger table.data td.ledger-col-amount {
+  width: 18%;
+  min-width: 9.5rem;
+}
+
+.data-table-ledger table.data tbody tr {
+  cursor: pointer;
+}
+
 table.data td.data-table-cell-ellipsis .data-table-ellipsis-inner {
   display: block;
   overflow: hidden;

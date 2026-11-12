@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch, type AuthUser } from "../lib/auth";
@@ -12,7 +13,9 @@ import {
   walletCurrency,
   walletDeleteLabelFromRow,
   walletOwnerCell,
-  walletTopUpTargetFromRow,
+  walletLedgerTargetFromRow,
+  companyAccountTransactionsHref,
+  type AccountLedgerTarget,
   agentDirectoryTopUpTargetFromRow,
   agentFloatTopUpTargetFromRow,
   type AgentWalletTopUpTarget,
@@ -574,7 +577,9 @@ function buildRowActionMenuItems(
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
-  openWalletLedger: (wallet: WalletTopUpTarget) => void,
+  openWalletLedger: (account: AccountLedgerTarget) => void,
+  navigateToCompanyAccountTransactions: (href: string) => void,
+  pathPrefix: string,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
@@ -724,7 +729,7 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.walletLedger) {
-      const target = walletTopUpTargetFromRow(row);
+      const target = walletLedgerTargetFromRow(row);
       if (!target) {
         continue;
       }
@@ -732,6 +737,19 @@ function buildRowActionMenuItems(
         id: def.id,
         label: def.label,
         onSelect: () => openWalletLedger(target),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.companyAccountLedger) {
+      const href = companyAccountTransactionsHref(row, pathPrefix);
+      if (!href) {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => navigateToCompanyAccountTransactions(href),
       });
       continue;
     }
@@ -803,7 +821,9 @@ function appendActionsColumn(
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
-  openWalletLedger: (wallet: WalletTopUpTarget) => void,
+  openWalletLedger: (account: AccountLedgerTarget) => void,
+  navigateToCompanyAccountTransactions: (href: string) => void,
+  pathPrefix: string,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
@@ -830,6 +850,8 @@ function appendActionsColumn(
           openWalletTopUp,
           openAgentWalletTopUp,
           openWalletLedger,
+          navigateToCompanyAccountTransactions,
+          pathPrefix,
           openWalletDelete,
           openResourceEdit,
           openResourceDelete,
@@ -851,6 +873,8 @@ function appendActionsColumn(
           openWalletTopUp,
           openAgentWalletTopUp,
           openWalletLedger,
+          navigateToCompanyAccountTransactions,
+          pathPrefix,
           openWalletDelete,
           openResourceEdit,
           openResourceDelete,
@@ -874,6 +898,8 @@ type ApiResourcePanelProps = {
   section: Section;
   apiPath: string;
   title: string;
+  /** Account route prefix, e.g. `/account` — used for in-app navigation from row actions. */
+  pathPrefix?: string;
   onForbidden?: () => void;
   onDetail?: (payload: ResourceDetailPayload) => void;
   onRecordsChange?: (count: number) => void;
@@ -905,6 +931,7 @@ export function ApiResourcePanel({
   section,
   apiPath,
   title,
+  pathPrefix = "/account",
   onForbidden,
   onDetail,
   onRecordsChange,
@@ -930,6 +957,7 @@ export function ApiResourcePanel({
   onResourceDeleteError,
   reloadKey = 0,
 }: ApiResourcePanelProps) {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -942,7 +970,7 @@ export function ApiResourcePanel({
   const [assignCardRider, setAssignCardRider] = useState<CardRiderAssignTarget | null>(null);
   const [walletTopUp, setWalletTopUp] = useState<WalletTopUpTarget | null>(null);
   const [agentWalletTopUp, setAgentWalletTopUp] = useState<AgentWalletTopUpTarget | null>(null);
-  const [walletLedger, setWalletLedger] = useState<WalletTopUpTarget | null>(null);
+  const [walletLedger, setWalletLedger] = useState<AccountLedgerTarget | null>(null);
   const [walletDelete, setWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
   const [resourceEdit, setResourceEdit] = useState<EditResourceTarget | null>(null);
   const [resourceDelete, setResourceDelete] = useState<{ section: ResourceSection; id: number; row: Row } | null>(null);
@@ -1091,9 +1119,16 @@ export function ApiResourcePanel({
     setAgentWalletTopUp(target);
   }, []);
 
-  const openWalletLedgerModal = useCallback((wallet: WalletTopUpTarget) => {
-    setWalletLedger(wallet);
+  const openWalletLedgerModal = useCallback((target: AccountLedgerTarget) => {
+    setWalletLedger(target);
   }, []);
+
+  const navigateToCompanyAccountTransactions = useCallback(
+    (href: string) => {
+      router.push(href);
+    },
+    [router],
+  );
 
   const openWalletDeleteModal = useCallback((payload: { id: number; ownerLabel: string }) => {
     setWalletDelete(payload);
@@ -1140,6 +1175,8 @@ export function ApiResourcePanel({
       openWalletTopUpModal,
       openAgentWalletTopUpModal,
       openWalletLedgerModal,
+      navigateToCompanyAccountTransactions,
+      pathPrefix,
       openWalletDeleteModal,
       openResourceEditModal,
       openResourceDeleteModal,
@@ -1155,6 +1192,8 @@ export function ApiResourcePanel({
     openWalletTopUpModal,
     openAgentWalletTopUpModal,
     openWalletLedgerModal,
+    navigateToCompanyAccountTransactions,
+    pathPrefix,
     openWalletDeleteModal,
     openResourceEditModal,
     openResourceDeleteModal,
@@ -1297,7 +1336,7 @@ export function ApiResourcePanel({
 
       <WalletLedgerModal
         open={walletLedger !== null}
-        wallet={walletLedger}
+        account={walletLedger}
         onClose={() => setWalletLedger(null)}
       />
 

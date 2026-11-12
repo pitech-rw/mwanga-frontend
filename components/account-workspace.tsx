@@ -16,7 +16,8 @@ import { useToast } from "./toast";
 import { getApiUrl } from "../lib/api";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../lib/auth";
 import { AGENT_API_MENU_ITEMS, API_MENU_ITEMS, getMenuItem, type Section } from "../lib/nav";
-import { sectionFromPathname, sectionHref } from "../lib/nav-path";
+import { companyAccountTransactionsSubRoute, sectionFromPathname, sectionHref } from "../lib/nav-path";
+import { CompanyAccountTransactionsPanel } from "./company-account-transactions-panel";
 import type { ResourceDetailPayload } from "../lib/resource-detail";
 
 type HealthResponse = {
@@ -50,6 +51,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const section = sectionFromPathname(pathname, pathPrefix);
+  const companyAccountTx = companyAccountTransactionsSubRoute(pathname, pathPrefix);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -72,9 +74,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
   useEffect(() => {
     const item = getMenuItem(section);
+    if (companyAccountTx) {
+      document.title = `Transactions · Company account #${companyAccountTx.accountId} — Mwanga`;
+      return;
+    }
     const label = section === "overview" ? "Overview" : item.title;
     document.title = `${label} — Mwanga`;
-  }, [section]);
+  }, [section, companyAccountTx]);
 
   useEffect(() => {
     if (!getAccessToken()) {
@@ -166,8 +172,16 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
   const activeMenu = getMenuItem(section);
   const accountHome = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
-  const pageTitle = section === "overview" ? "Overview" : activeMenu.title;
-  const breadcrumbLeaf = section === "overview" ? "Overview" : activeMenu.label;
+  const pageTitle = companyAccountTx
+    ? "Transactions"
+  : section === "overview"
+    ? "Overview"
+    : activeMenu.title;
+  const breadcrumbLeaf = companyAccountTx
+    ? "Transactions"
+    : section === "overview"
+      ? "Overview"
+      : activeMenu.label;
   const isAgent = sessionReady && sessionUser?.type === "agent";
   const agentSection: "topUp" | "riders" = section === "riders" ? "riders" : "topUp";
 
@@ -302,7 +316,12 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             {sidebarCollapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
           </button>
         </div>
-        <SidebarNav section={section} counts={counts} collapsed={sidebarCollapsed} pathPrefix={pathPrefix} />
+        <SidebarNav
+          section={companyAccountTx ? "companyAccounts" : section}
+          counts={counts}
+          collapsed={sidebarCollapsed}
+          pathPrefix={pathPrefix}
+        />
         <div className="sidebar-foot">
           <span className="sidebar-foot-full">
             {health ? `API online · ${health.userCount} users` : "Waiting on the operations API."}
@@ -325,7 +344,19 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
                   <li className="topbar-breadcrumb-sep" aria-hidden="true">
                     /
                   </li>
-                  <li className="topbar-breadcrumb-current">{breadcrumbLeaf}</li>
+                  {companyAccountTx ? (
+                    <>
+                      <li>
+                        <Link href={sectionHref(pathPrefix, "companyAccounts")}>Company accounts</Link>
+                      </li>
+                      <li className="topbar-breadcrumb-sep" aria-hidden="true">
+                        /
+                      </li>
+                      <li className="topbar-breadcrumb-current">Transactions</li>
+                    </>
+                  ) : (
+                    <li className="topbar-breadcrumb-current">{breadcrumbLeaf}</li>
+                  )}
                 </ol>
               </nav>
               <h1>{pageTitle}</h1>
@@ -386,11 +417,20 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           </section>
         ) : null}
 
-        {activeMenu.apiPath && section !== "overview" ? (
+        {companyAccountTx ? (
+          <CompanyAccountTransactionsPanel
+            accountId={companyAccountTx.accountId}
+            pathPrefix={pathPrefix}
+            onForbidden={handleForbidden}
+          />
+        ) : null}
+
+        {activeMenu.apiPath && section !== "overview" && !companyAccountTx ? (
           <ApiResourcePanel
             section={section}
             apiPath={activeMenu.apiPath}
             title={activeMenu.title}
+            pathPrefix={pathPrefix}
             reloadKey={resourceReloadKey}
             onForbidden={handleForbidden}
             onDetail={setDetail}

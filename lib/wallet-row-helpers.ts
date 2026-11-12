@@ -5,6 +5,12 @@ export type WalletTopUpTargetRow = {
   currentBalance: number;
 };
 
+export type AccountLedgerTarget = {
+  id: number;
+  label: string;
+  transactionsPath: string;
+};
+
 export type AgentWalletTopUpTarget = {
   walletId: number;
   name: string;
@@ -142,6 +148,30 @@ export function agentFloatTopUpTargetFromRow(row: Record<string, unknown>): Wall
     currency: walletCurrency(w),
     currentBalance: walletBalanceNumber(w),
   };
+}
+
+export function walletLedgerTargetFromRow(row: Record<string, unknown>): AccountLedgerTarget | null {
+  const target = walletTopUpTargetFromRow(row);
+  if (!target) {
+    return null;
+  }
+  return {
+    id: target.id,
+    label: target.ownerLabel,
+    transactionsPath: `/wallets/${target.id}/transactions`,
+  };
+}
+
+export function companyAccountTransactionsHref(
+  row: Record<string, unknown>,
+  pathPrefix = "/account",
+): string | null {
+  const id = row.id;
+  if (typeof id !== "number") {
+    return null;
+  }
+  const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  return `${base}/companyAccounts/${id}/transactions`;
 }
 
 export function walletDeleteLabelFromRow(row: Record<string, unknown>): string {

@@ -41,3 +41,33 @@ export function sectionHref(pathPrefix: string, section: Section): string {
   }
   return `${base}/${section}`;
 }
+
+export type CompanyAccountTransactionsSubRoute = {
+  accountId: number;
+};
+
+/** `/account/companyAccounts/:id/transactions` — ledger sub-view inside the account shell. */
+export function companyAccountTransactionsSubRoute(
+  pathname: string,
+  pathPrefix: string,
+): CompanyAccountTransactionsSubRoute | null {
+  const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  const rest = pathname === base ? "" : pathname.slice(base.length).replace(/^\/+/, "");
+  const parts = rest.split("/").filter(Boolean);
+
+  if (parts.length !== 3 || parts[0] !== "companyAccounts" || parts[2] !== "transactions") {
+    return null;
+  }
+
+  const accountId = Number(parts[1]);
+  if (!Number.isFinite(accountId) || accountId < 1) {
+    return null;
+  }
+
+  return { accountId };
+}
+
+export function companyAccountTransactionsHref(pathPrefix: string, accountId: number): string {
+  const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  return `${base}/companyAccounts/${accountId}/transactions`;
+}
