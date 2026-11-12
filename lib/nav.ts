@@ -1,5 +1,8 @@
 export type Section =
   | "overview"
+  | "topUp"
+  | "agentTransactions"
+  | "riders"
   | "batteries"
   | "bikes"
   | "cards"
@@ -8,6 +11,7 @@ export type Section =
   | "swaps"
   | "users"
   | "owners"
+  | "agents"
   | "violations"
   | "wallets"
   | "companyAccounts";
@@ -32,6 +36,27 @@ const MENU_ITEM_MAP: Record<Section, MenuItem> = {
     apiPath: null,
     eyebrow: "Operations",
     title: "Battery swap command",
+  },
+  topUp: {
+    id: "topUp",
+    label: "Top up",
+    apiPath: null,
+    eyebrow: "Agent",
+    title: "Top up",
+  },
+  agentTransactions: {
+    id: "agentTransactions",
+    label: "My transactions",
+    apiPath: "/agents/me/transactions",
+    eyebrow: "Agent",
+    title: "My transactions",
+  },
+  riders: {
+    id: "riders",
+    label: "Riders & owners",
+    apiPath: "/users/riders",
+    eyebrow: "People",
+    title: "Riders & owners",
   },
   stations: {
     id: "stations",
@@ -67,6 +92,13 @@ const MENU_ITEM_MAP: Record<Section, MenuItem> = {
     apiPath: "/owners",
     eyebrow: "Fleet",
     title: "Fleet owners",
+  },
+  agents: {
+    id: "agents",
+    label: "Agents",
+    apiPath: "/agents",
+    eyebrow: "Fleet",
+    title: "Agents",
   },
   users: {
     id: "users",
@@ -118,7 +150,7 @@ export const NAV_PRIMARY_ITEMS: MenuItem[] = [MENU_ITEM_MAP.overview];
 /** Collapsible sections — multi-item groups only (no single-link sections). */
 const NAV_GROUP_SECTIONS: { label: string; sections: Section[] }[] = [
   { label: "Network", sections: ["stations", "swaps"] },
-  { label: "Fleet & inventory", sections: ["batteries", "bikes", "owners"] },
+  { label: "Fleet & inventory", sections: ["batteries", "bikes", "owners", "agents"] },
   { label: "People & access", sections: ["users", "roles", "cards"] },
   { label: "Finance", sections: ["wallets", "companyAccounts"] },
 ];
@@ -142,3 +174,14 @@ export const API_MENU_ITEMS = MENU_ITEMS.filter((item): item is MenuItem & { api
 export function getMenuItem(section: Section): MenuItem {
   return MENU_ITEM_MAP[section] ?? MENU_ITEM_MAP.overview;
 }
+
+/** Agent mobile / field app — no operations dashboard. */
+export const AGENT_NAV_ITEMS: MenuItem[] = [
+  MENU_ITEM_MAP.topUp,
+  MENU_ITEM_MAP.agentTransactions,
+  MENU_ITEM_MAP.riders,
+];
+
+export const AGENT_API_MENU_ITEMS = AGENT_NAV_ITEMS.filter(
+  (item): item is MenuItem & { apiPath: string } => item.apiPath !== null,
+);

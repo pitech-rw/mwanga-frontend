@@ -116,6 +116,66 @@ export function buildResourceDetailPayload(
       }
       break;
     }
+    case "agents": {
+      const name = pickString(row, "name") ?? idStr;
+      headingTitle = `Agent · ${name}`;
+      description = "Float profile linked to an agent user account.";
+      usedKeys.add("name");
+      summary.push(["Name", name]);
+      const email = pickString(row, "email");
+      if (email) {
+        usedKeys.add("email");
+        summary.push(["Email", email]);
+      }
+      const phone = pickString(row, "phone");
+      if (phone) {
+        usedKeys.add("phone");
+        summary.push(["Phone", phone]);
+      }
+      break;
+    }
+    case "riders": {
+      if (pickString(row, "directoryKind") === "owner") {
+        const ownerName = pickString(row, "name") ?? idStr;
+        headingTitle = `Owner · ${ownerName}`;
+        description = "Fleet owner wallet top-up target.";
+        usedKeys.add("name");
+        summary.push(["Name", ownerName]);
+        const email = pickString(row, "email");
+        if (email) {
+          usedKeys.add("email");
+          summary.push(["Email", email]);
+        }
+        const phone = pickString(row, "phone");
+        if (phone) {
+          usedKeys.add("phone");
+          summary.push(["Phone", phone]);
+        }
+        const status = pickString(row, "status");
+        if (status) {
+          usedKeys.add("status");
+          summary.push(["Status", status]);
+        }
+        break;
+      }
+      const username = pickString(row, "username") ?? idStr;
+      const name = [pickString(row, "firstName"), pickString(row, "lastName")].filter(Boolean).join(" ").trim();
+      headingTitle = name ? `Rider · ${name}` : `Rider · @${username}`;
+      description = "Rider account.";
+      usedKeys.add("username");
+      summary.push(["Username", `@${username}`]);
+      if (name) {
+        usedKeys.add("firstName");
+        usedKeys.add("lastName");
+        summary.push(["Name", name]);
+      }
+      const phone = pickString(row, "phone");
+      if (phone) {
+        usedKeys.add("phone");
+        summary.push(["Phone", phone]);
+      }
+      break;
+    }
     case "users": {
       const username = pickString(row, "username") ?? idStr;
       const name = [pickString(row, "firstName"), pickString(row, "lastName")].filter(Boolean).join(" ").trim();
@@ -219,7 +279,7 @@ export function buildResourceDetailPayload(
     }
     case "wallets": {
       headingTitle = `Wallet · #${idStr}`;
-      description = "Fleet owner liability account. Balance changes only via ledger top-ups and swap fees.";
+      description = "Liability account for an owner, a rider, or an agent float. Balance changes only via the ledger.";
       const owner = row.owner;
       if (owner && typeof owner === "object") {
         const o = owner as Record<string, unknown>;
@@ -306,6 +366,8 @@ function isRelationOrMetaKey(key: string): boolean {
     "wallet",
     "owner",
     "portalUser",
+    "agent",
+    "riderUser",
     "user",
     "role",
     "currentBattery",

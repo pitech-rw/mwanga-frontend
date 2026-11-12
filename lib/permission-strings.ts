@@ -17,6 +17,11 @@ export const PERMISSIONS = {
     write: "owners:write",
     delete: "owners:delete",
   },
+  agents: {
+    read: "agents:read",
+    write: "agents:write",
+    delete: "agents:delete",
+  },
   bikes: {
     read: "bikes:read",
     write: "bikes:write",
@@ -41,6 +46,7 @@ export const PERMISSIONS = {
     read: "wallets:read",
     write: "wallets:write",
     credit: "wallets:credit",
+    agentTopup: "wallets:agent-topup",
     delete: "wallets:delete",
   },
   companyAccounts: {

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiResourcePanel } from "./api-resource-panel";
+import { AgentTopUpPanel } from "./agent-top-up-panel";
+import { AgentTransactionsPanel } from "./agent-transactions-panel";
+import { AgentSidebarNav } from "./agent-sidebar-nav";
 import { AccountMenu } from "./account-menu";
 import { SidebarNav } from "./sidebar-nav";
 import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight } from "./icons/icon";
@@ -13,8 +16,9 @@ import { useTheme } from "./theme";
 import { useToast } from "./toast";
 import { getApiUrl } from "../lib/api";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../lib/auth";
-import { API_MENU_ITEMS, getMenuItem, MENU_ITEMS, type Section } from "../lib/nav";
-import { sectionFromPathname, sectionHref } from "../lib/nav-path";
+import { AGENT_API_MENU_ITEMS, API_MENU_ITEMS, getMenuItem, type Section } from "../lib/nav";
+import { companyAccountTransactionsSubRoute, sectionFromPathname, sectionHref } from "../lib/nav-path";
+import { CompanyAccountTransactionsPanel } from "./company-account-transactions-panel";
 import type { ResourceDetailPayload } from "../lib/resource-detail";
 
 type HealthResponse = {
@@ -23,10 +27,6 @@ type HealthResponse = {
   userCount: number;
   timestamp: string;
 };
-
-const sectionCopy: Record<Section, { eyebrow: string; title: string }> = Object.fromEntries(
-  MENU_ITEMS.map((item) => [item.id, { eyebrow: item.eyebrow, title: item.title }]),
-) as Record<Section, { eyebrow: string; title: string }>;
 
 const apiUrl = getApiUrl();
 
@@ -42,6 +42,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const { notify } = useToast();
   /** Must match SSR (null / false) so avatar and layout hydrate; sync from storage after mount. */
   const [sessionUser, setSessionUser] = useState<AuthUser | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [noticesOpen, setNoticesOpen] = useState(false);
   const [counts, setCounts] = useState<Partial<Record<Section, number>>>({});
@@ -51,10 +52,12 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const section = sectionFromPathname(pathname, pathPrefix);
+  const companyAccountTx = companyAccountTransactionsSubRoute(pathname, pathPrefix);
 
   useEffect(() => {
     queueMicrotask(() => {
       setSessionUser(getStoredUser());
+      setSessionReady(true);
     });
   }, []);
 
@@ -72,9 +75,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
   useEffect(() => {
     const item = getMenuItem(section);
+    if (companyAccountTx) {
+      document.title = `Transactions · Company account #${companyAccountTx.accountId} — Mwanga`;
+      return;
+    }
     const label = section === "overview" ? "Overview" : item.title;
     document.title = `${label} — Mwanga`;
-  }, [section]);
+  }, [section, companyAccountTx]);
 
   useEffect(() => {
     if (!getAccessToken()) {
@@ -91,7 +98,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   }, [sidebarCollapsed]);
 
   useEffect(() => {
+    if (!sessionReady) {
+      return;
+    }
+
     let active = true;
+    const isAgentUser = sessionUser?.type === "agent";
+    const countMenuItems = isAgentUser ? AGENT_API_MENU_ITEMS : API_MENU_ITEMS;
 
     const load = async () => {
       if (!getAccessToken()) {
@@ -112,7 +125,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         setHealth((await healthResponse.json()) as HealthResponse);
 
         const countResults = await Promise.all(
-          API_MENU_ITEMS.map(async (item) => {
+          countMenuItems.map(async (item) => {
             const response = await authFetch(item.apiPath);
 
             if (!response.ok) {
@@ -142,7 +155,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     return () => {
       active = false;
     };
-  }, [notify]);
+  }, [notify, sessionReady, sessionUser?.type]);
 
   const signOut = () => {
     clearSession();
@@ -158,11 +171,126 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     setResourceReloadKey((k) => k + 1);
   }, []);
 
-  const copy = sectionCopy[section];
   const activeMenu = getMenuItem(section);
   const accountHome = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
-  const pageTitle = section === "overview" ? "Overview" : copy.title;
-  const breadcrumbLeaf = section === "overview" ? "Overview" : activeMenu.label;
+  const pageTitle = companyAccountTx
+    ? "Transactions"
+  : section === "overview"
+    ? "Overview"
+    : activeMenu.title;
+  const breadcrumbLeaf = companyAccountTx
+    ? "Transactions"
+    : section === "overview"
+      ? "Overview"
+      : activeMenu.label;
+  const isAgent = sessionReady && sessionUser?.type === "agent";
+  type AgentSection = "topUp" | "agentTransactions" | "riders";
+  const agentSection: AgentSection =
+    section === "riders" ? "riders" : section === "agentTransactions" ? "agentTransactions" : "topUp";
+
+  useEffect(() => {
+    if (!isAgent) {
+      return;
+    }
+    if (section !== "topUp" && section !== "riders" && section !== "agentTransactions") {
+      router.replace(sectionHref(pathPrefix, "topUp"));
+    }
+  }, [isAgent, section, router, pathPrefix]);
+
+  if (!sessionReady) {
+    return <div className="app-shell" />;
+  }
+
+  if (isAgent) {
+    const agentMenu = getMenuItem(agentSection);
+    const agentTitle = agentMenu.title;
+    const agentBreadcrumb = agentMenu.label;
+
+    return (
+      <div className="app-shell" data-sidebar-collapsed="false">
+        <aside className="sidebar sidebar--agent">
+          <div className="sidebar-head">
+            <div className="brand">
+              <Image
+                src="/assets/logo.png"
+                alt="Mwanga"
+                width={168}
+                height={48}
+                className="brand-logo"
+                priority
+              />
+              <span className="brand-tagline">Agent</span>
+            </div>
+          </div>
+          <AgentSidebarNav section={agentSection} pathPrefix={pathPrefix} />
+          <div className="sidebar-foot">
+            <span className="sidebar-foot-full">{health ? "API online" : "Waiting on the API."}</span>
+            <span className="sidebar-foot-compact" title={health ? "API online" : "API offline"} aria-hidden="true">
+              <span className={`status-dot ${health ? "online" : ""}`} />
+            </span>
+          </div>
+        </aside>
+        <main className="workspace">
+          <header className="topbar">
+            <div className="topbar-title">
+              <div className="topbar-heading">
+                <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
+                  <ol>
+                    <li>
+                      <Link href={sectionHref(pathPrefix, "topUp")}>Agent</Link>
+                    </li>
+                    <li className="topbar-breadcrumb-sep" aria-hidden="true">
+                      /
+                    </li>
+                    <li className="topbar-breadcrumb-current">{agentBreadcrumb}</li>
+                  </ol>
+                </nav>
+                <h1>{agentTitle}</h1>
+              </div>
+            </div>
+            <div className="topbar-actions">
+              <AccountMenu user={sessionUser} theme={theme} onToggleTheme={toggleTheme} onSignOut={signOut} />
+            </div>
+          </header>
+
+          {apiError ? (
+            <div className="banner" role="status">
+              <div>
+                <strong>Live data is unavailable.</strong>
+                <p>{apiError}</p>
+              </div>
+            </div>
+          ) : null}
+
+          {agentSection === "topUp" ? (
+            <AgentTopUpPanel />
+          ) : agentSection === "agentTransactions" ? (
+            <AgentTransactionsPanel reloadKey={resourceReloadKey} onForbidden={handleForbidden} />
+          ) : (
+            <ApiResourcePanel
+              section="riders"
+              apiPath="/users/riders"
+              title={agentMenu.title}
+              reloadKey={resourceReloadKey}
+              onForbidden={handleForbidden}
+              onDetail={setDetail}
+              onRecordsChange={(count) => setCounts((current) => ({ ...current, riders: count }))}
+              onCreateError={(message) => notify({ title: "Create failed", message, tone: "error" })}
+              onWalletTopUpSuccess={() => {
+                bumpResourceReload();
+                notify({ title: "Wallet updated", message: "Top-up applied from your float.", tone: "success" });
+              }}
+              onWalletTopUpError={(message) => notify({ title: "Top-up failed", message, tone: "error" })}
+              onResourceEditError={(message) => notify({ title: "Update failed", message, tone: "error" })}
+              onResourceDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}
+            />
+          )}
+        </main>
+
+        <RecordDetailModal open={detail !== null} payload={detail} onClose={() => setDetail(null)} />
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell" data-sidebar-collapsed={sidebarCollapsed ? "true" : "false"}>
@@ -192,7 +320,12 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             {sidebarCollapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
           </button>
         </div>
-        <SidebarNav section={section} counts={counts} collapsed={sidebarCollapsed} pathPrefix={pathPrefix} />
+        <SidebarNav
+          section={companyAccountTx ? "companyAccounts" : section}
+          counts={counts}
+          collapsed={sidebarCollapsed}
+          pathPrefix={pathPrefix}
+        />
         <div className="sidebar-foot">
           <span className="sidebar-foot-full">
             {health ? `API online · ${health.userCount} users` : "Waiting on the operations API."}
@@ -215,7 +348,19 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
                   <li className="topbar-breadcrumb-sep" aria-hidden="true">
                     /
                   </li>
-                  <li className="topbar-breadcrumb-current">{breadcrumbLeaf}</li>
+                  {companyAccountTx ? (
+                    <>
+                      <li>
+                        <Link href={sectionHref(pathPrefix, "companyAccounts")}>Company accounts</Link>
+                      </li>
+                      <li className="topbar-breadcrumb-sep" aria-hidden="true">
+                        /
+                      </li>
+                      <li className="topbar-breadcrumb-current">Transactions</li>
+                    </>
+                  ) : (
+                    <li className="topbar-breadcrumb-current">{breadcrumbLeaf}</li>
+                  )}
                 </ol>
               </nav>
               <h1>{pageTitle}</h1>
@@ -276,11 +421,20 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           </section>
         ) : null}
 
-        {activeMenu.apiPath && section !== "overview" ? (
+        {companyAccountTx ? (
+          <CompanyAccountTransactionsPanel
+            accountId={companyAccountTx.accountId}
+            pathPrefix={pathPrefix}
+            onForbidden={handleForbidden}
+          />
+        ) : null}
+
+        {activeMenu.apiPath && section !== "overview" && !companyAccountTx ? (
           <ApiResourcePanel
             section={section}
             apiPath={activeMenu.apiPath}
             title={activeMenu.title}
+            pathPrefix={pathPrefix}
             reloadKey={resourceReloadKey}
             onForbidden={handleForbidden}
             onDetail={setDetail}

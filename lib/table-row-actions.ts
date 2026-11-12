@@ -1,6 +1,7 @@
 import { PERMISSIONS } from "./permission-strings";
 import type { ResourceSection } from "./resource-create-config";
 import type { Section } from "./nav";
+import { agentDirectoryTopUpTargetFromRow, agentFloatTopUpTargetFromRow } from "./wallet-row-helpers";
 
 /**
  * Row-level actions for API resource tables. Permission strings match
@@ -14,6 +15,7 @@ export const TABLE_ROW_ACTION_IDS = {
   assignSwapperStation: "assign-swapper-station",
   walletTopUp: "wallet-top-up",
   walletLedger: "wallet-ledger",
+  companyAccountLedger: "company-account-ledger",
   walletDelete: "wallet-delete",
   resourceEdit: "resource-edit",
   resourceDelete: "resource-delete",
@@ -71,6 +73,24 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericDelete(PERMISSIONS.batteries.delete),
   ],
   owners: [genericEdit(PERMISSIONS.owners.write), genericDelete(PERMISSIONS.owners.delete)],
+  riders: [
+    {
+      id: TABLE_ROW_ACTION_IDS.walletTopUp,
+      label: "Top up",
+      permission: PERMISSIONS.wallets.agentTopup,
+      visibleForRow: (row) => agentDirectoryTopUpTargetFromRow(row) != null,
+    },
+  ],
+  agents: [
+    {
+      id: TABLE_ROW_ACTION_IDS.walletTopUp,
+      label: "Add float",
+      permission: PERMISSIONS.wallets.credit,
+      visibleForRow: (row) => agentFloatTopUpTargetFromRow(row) != null,
+    },
+    genericEdit(PERMISSIONS.agents.write),
+    genericDelete(PERMISSIONS.agents.delete),
+  ],
   bikes: [
     {
       id: TABLE_ROW_ACTION_IDS.attachBikeRider,
@@ -120,7 +140,13 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       permission: PERMISSIONS.wallets.delete,
     },
   ],
-  companyAccounts: [],
+  companyAccounts: [
+    {
+      id: TABLE_ROW_ACTION_IDS.companyAccountLedger,
+      label: "Transactions",
+      permission: PERMISSIONS.companyAccounts.read,
+    },
+  ],
 };
 
 const ADMIN = "system:admin";
@@ -135,12 +161,12 @@ export function userMayUsePermission(permissions: readonly string[], required: s
 
 /** Returns which row actions the current user may see for this section (from registry + permissions). */
 export function getAvailableRowActions(section: Section, permissions: readonly string[]): TableRowActionDef[] {
-  if (section === "overview") {
+  if (section === "overview" || section === "topUp" || section === "agentTransactions") {
     return [];
   }
 
   const defs = TABLE_ROW_ACTIONS_BY_SECTION[section];
-  return defs.filter((def) => userMayUsePermission(permissions, def.permission));
+  return defs.filter((def: TableRowActionDef) => userMayUsePermission(permissions, def.permission));
 }
 
 /** Actions applicable to one row (used by table menus and the record detail dialog). */

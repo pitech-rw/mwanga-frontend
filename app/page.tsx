@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { getAccessToken, login, setSession } from "../lib/auth";
+import { getAccessToken, getStoredUser, login, setSession } from "../lib/auth";
 
 export default function HomePage() {
   const router = useRouter();
@@ -23,7 +23,8 @@ export default function HomePage() {
     };
 
     if (getAccessToken()) {
-      router.replace("/account");
+      const user = getStoredUser();
+      router.replace(user?.type === "agent" ? "/account/top-up" : "/account");
       queueMicrotask(finish);
       return () => {
         cancelled = true;
@@ -44,7 +45,7 @@ export default function HomePage() {
     try {
       const response = await login(identifier.trim(), password);
       setSession(response);
-      router.replace("/account");
+      router.replace(response.user.type === "agent" ? "/account/top-up" : "/account");
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Sign in failed.");
     } finally {

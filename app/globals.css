@@ -162,6 +162,30 @@ a {
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  align-content: start;
+}
+
+.sidebar--agent {
+  gap: 6px;
+  padding-top: 16px;
+  align-items: stretch;
+}
+
+.sidebar--agent .sidebar-head {
+  padding-bottom: 2px;
+}
+
+.sidebar--agent .brand {
+  gap: 6px;
+  padding: 0 2px 4px;
+}
+
+.sidebar--agent .nav {
+  flex: 0 0 auto;
+  width: 100%;
+  padding-top: 4px;
+  padding-right: 0;
+  justify-items: stretch;
 }
 
 .brand {
@@ -312,15 +336,16 @@ a {
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   width: 100%;
-  padding: 9px 10px;
+  padding: 7px 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-soft);
   text-align: left;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 600;
   box-shadow: inset 3px 0 0 transparent;
   transition:
@@ -330,20 +355,43 @@ a {
 }
 
 .nav-item-nested {
-  padding: 8px 10px;
-  font-size: 0.86rem;
+  padding: 6px 8px;
+  font-size: 0.84rem;
   font-weight: 500;
+}
+
+.nav-agent .nav-block {
+  gap: 1px;
+  width: 100%;
+}
+
+.nav-agent a.nav-item {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.nav-agent .nav-item {
+  padding: 6px 2px 6px 0;
+}
+
+.nav-agent .nav-label {
+  text-align: left;
 }
 
 .nav-icon-wrap {
   position: relative;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   flex-shrink: 0;
   background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.nav-agent .nav-icon-wrap {
+  width: 24px;
+  height: 24px;
 }
 
 .nav-icon {
@@ -417,10 +465,14 @@ a {
   display: none;
 }
 
-.app-shell[data-sidebar-collapsed="true"] .nav-item {
+.app-shell[data-sidebar-collapsed="true"]:not(:has(.sidebar--agent)) .nav-item {
   justify-content: center;
   padding: 8px;
   box-shadow: none;
+}
+
+.app-shell:has(.sidebar--agent) .nav-item {
+  justify-content: flex-start;
 }
 
 .app-shell[data-sidebar-collapsed="true"] .nav-item.active {
@@ -660,9 +712,9 @@ a {
 .account-menu-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 10px 10px;
+  padding: 7px 8px;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -1108,6 +1160,68 @@ table.data td.data-table-cell-ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
+}
+
+.data-table-ledger table.data {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.data-table-ledger .table-wrap {
+  overflow-x: hidden;
+}
+
+/* Fixed layout sets column widths; avoid global ellipsis max-width (e.g. 42vw) blowing out the table. */
+.data-table-ledger table.data td.data-table-cell-ellipsis {
+  max-width: 100%;
+}
+
+.data-table-ledger table.data th:nth-child(1),
+.data-table-ledger table.data td.ledger-col-date {
+  width: 8.25rem;
+  max-width: 8.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-table-ledger table.data th:nth-child(2),
+.data-table-ledger table.data td.ledger-col-kind {
+  width: 5.5rem;
+  max-width: 5.5rem;
+}
+
+.data-table-ledger table.data td.ledger-col-kind .badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-table-ledger table.data th:nth-child(3),
+.data-table-ledger table.data td.ledger-col-reference {
+  max-width: min(12ch, 16vw);
+  width: 11%;
+}
+
+.data-table-ledger table.data th:nth-child(4),
+.data-table-ledger table.data td.ledger-col-description {
+  max-width: min(18ch, 22vw);
+  width: 16%;
+}
+
+.data-table-ledger table.data th:nth-child(5),
+.data-table-ledger table.data th:nth-child(6),
+.data-table-ledger table.data td.ledger-col-amount {
+  width: 16%;
+  max-width: 16%;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-table-ledger table.data tbody tr {
+  cursor: pointer;
 }
 
 table.data td.data-table-cell-ellipsis .data-table-ellipsis-inner {

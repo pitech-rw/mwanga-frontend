@@ -50,6 +50,14 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "status", label: "Status", type: "text" },
         { name: "userId", label: "Portal user ID", type: "number" },
       ];
+    case "agents":
+      return [
+        { name: "name", label: "Display name", type: "text" },
+        { name: "email", label: "Email", type: "email" },
+        { name: "phone", label: "Phone", type: "text" },
+        { name: "status", label: "Status", type: "text" },
+        { name: "userId", label: "Portal user ID", type: "number" },
+      ];
     case "cards":
       return [
         { name: "token", label: "Token", type: "text" },
