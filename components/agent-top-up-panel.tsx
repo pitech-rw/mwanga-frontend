@@ -10,21 +10,6 @@ type FloatWallet = {
   currency: string;
 };
 
-type LedgerLine = {
-  direction: string;
-  amount: string | number;
-  walletId: number | null;
-};
-
-type LedgerRow = {
-  id: number;
-  kind: string;
-  description: string | null;
-  externalReference: string | null;
-  createdAt: string;
-  lines: LedgerLine[];
-};
-
 type TopUpTarget = {
   kind: "rider" | "owner";
   name: string;
@@ -41,7 +26,6 @@ function money(value: string | number): string {
 
 export function AgentTopUpPanel() {
   const [wallet, setWallet] = useState<FloatWallet | null>(null);
-  const [history, setHistory] = useState<LedgerRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [target, setTarget] = useState<TopUpTarget | null>(null);
@@ -59,17 +43,7 @@ export function AgentTopUpPanel() {
       throw new Error(await userMessageFromResponse("load", response));
     }
     const wallets = (await response.json()) as FloatWallet[];
-    const floatWallet = wallets[0] ?? null;
-    setWallet(floatWallet);
-    if (!floatWallet) {
-      setHistory([]);
-      return;
-    }
-    const ledger = await authFetch(`/wallets/${floatWallet.id}/transactions`);
-    if (!ledger.ok) {
-      throw new Error(await userMessageFromResponse("load", ledger));
-    }
-    setHistory((await ledger.json()) as LedgerRow[]);
+    setWallet(wallets[0] ?? null);
   }, []);
 
   useEffect(() => {
@@ -142,7 +116,7 @@ export function AgentTopUpPanel() {
         setFormError(await userMessageFromResponse("create", response));
         return;
       }
-      const created = (await response.json()) as LedgerRow;
+      const created = (await response.json()) as { externalReference?: string | null };
       setNotice(`Topped up ${target.name} · ${created.externalReference ?? externalReference.trim()}`);
       setAmount("");
       setExternalReference("");
@@ -241,26 +215,6 @@ export function AgentTopUpPanel() {
           {saving ? "Saving…" : "Apply top-up"}
         </button>
       </form>
-
-      {history.length > 0 ? (
-        <div className="agent-top-up-history">
-          <h3>Recent float movements</h3>
-          <ul>
-            {history.map((row) => {
-              const line = row.lines.find((entry) => entry.walletId === wallet?.id);
-              const signed =
-                line == null ? "" : `${line.direction === "debit" ? "−" : "+"}${money(line.amount)}`;
-              return (
-                <li key={row.id}>
-                  {row.kind.replaceAll("_", " ")} {signed}
-                  {row.externalReference ? ` · ${row.externalReference}` : ""}
-                  {row.description ? ` · ${row.description}` : ""}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ) : null}
     </article>
   );
 }
