@@ -482,7 +482,15 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             onResourceEditError={(message) => notify({ title: "Update failed", message, tone: "error" })}
             onResourceDeleteSuccess={() => {
               bumpResourceReload();
-              notify({ title: "Record deleted", message: "Removed from the list.", tone: "success" });
+              if (section === "users") {
+                notify({
+                  title: "User deactivated",
+                  message: "Sign-in disabled. The account stays in the list as inactive.",
+                  tone: "success",
+                });
+              } else {
+                notify({ title: "Record deleted", message: "Removed from the list.", tone: "success" });
+              }
             }}
             onResourceDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}
           />

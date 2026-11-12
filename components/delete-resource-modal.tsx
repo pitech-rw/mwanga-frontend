@@ -46,6 +46,12 @@ export function DeleteResourceModal({
   const recordLabel = recordLabelForRow(section, row);
   const formId = `delete-resource-${section}-${recordId}`;
   const canSubmit = confirmText.trim().toUpperCase() === "DELETE";
+  const isUserDeactivate = section === "users";
+  const actionLabel = isUserDeactivate ? "Deactivate" : "Delete";
+  const actionGerund = isUserDeactivate ? "Deactivating…" : "Deleting…";
+  const description = isUserDeactivate
+    ? `This deactivates ${recordLabel} and disables sign-in. Ledger history is kept; you can reactivate the account later by editing it and setting a new password.`
+    : `This permanently deletes ${recordLabel}. This cannot be undone.`;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -84,8 +90,8 @@ export function DeleteResourceModal({
     <Modal
       open={open}
       variant="panel"
-      title={`Delete ${menu.label}`}
-      description={`This permanently deletes ${recordLabel}. This cannot be undone.`}
+      title={isUserDeactivate ? `Deactivate ${menu.label}` : `Delete ${menu.label}`}
+      description={description}
       onClose={onClose}
       footer={
         <>
@@ -93,7 +99,7 @@ export function DeleteResourceModal({
             Cancel
           </button>
           <button type="submit" form={formId} className="btn primary btn-danger" disabled={deleting || !canSubmit}>
-            {deleting ? "Deleting…" : "Delete"}
+            {deleting ? actionGerund : actionLabel}
           </button>
         </>
       }
