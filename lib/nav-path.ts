@@ -12,6 +12,14 @@ export function sectionFromPathname(pathname: string, pathPrefix: string): Secti
   const rest = pathname === base ? "" : pathname.slice(base.length).replace(/^\/+/, "");
   const segment = rest.split("/")[0] ?? "";
 
+  if (segment === "top-up" || segment === "topUp") {
+    return "topUp";
+  }
+
+  if (segment === "riders") {
+    return "riders";
+  }
+
   if (segment === "" || segment === "overview") {
     return "overview";
   }
@@ -27,6 +35,9 @@ export function sectionHref(pathPrefix: string, section: Section): string {
   const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
   if (section === "overview") {
     return base || "/";
+  }
+  if (section === "topUp") {
+    return `${base}/top-up`;
   }
   return `${base}/${section}`;
 }

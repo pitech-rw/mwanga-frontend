@@ -5,6 +5,14 @@ export type WalletTopUpTargetRow = {
   currentBalance: number;
 };
 
+export type AgentWalletTopUpTarget = {
+  walletId: number;
+  name: string;
+  kind: "rider" | "owner";
+  currency: string;
+  currentBalance: number;
+};
+
 export function walletUserLabel(user: Record<string, unknown>): string {
   const first = typeof user.firstName === "string" ? user.firstName : "";
   const last = typeof user.lastName === "string" ? user.lastName : "";
@@ -74,6 +82,46 @@ export function walletTopUpTargetFromRow(row: Record<string, unknown>): WalletTo
     ownerLabel: label,
     currency: walletCurrency(row),
     currentBalance: walletBalanceNumber(row),
+  };
+}
+
+/** Agent directory row (`/users/riders`) → float top-up target. */
+export function agentDirectoryTopUpTargetFromRow(
+  row: Record<string, unknown>,
+): AgentWalletTopUpTarget | null {
+  const walletRaw =
+    row.directoryKind === "owner" ? row.wallet : (row.riderWallet ?? row.wallet);
+  if (!walletRaw || typeof walletRaw !== "object") {
+    return null;
+  }
+  const w = walletRaw as Record<string, unknown>;
+  const walletId = w.id;
+  if (typeof walletId !== "number") {
+    return null;
+  }
+
+  if (row.directoryKind === "owner") {
+    const name =
+      typeof row.name === "string" && row.name.trim()
+        ? row.name.trim()
+        : row.id != null
+          ? `Owner #${row.id}`
+          : `Wallet #${walletId}`;
+    return {
+      walletId,
+      name,
+      kind: "owner",
+      currency: walletCurrency(w),
+      currentBalance: walletBalanceNumber(w),
+    };
+  }
+
+  return {
+    walletId,
+    name: walletUserLabel(row),
+    kind: "rider",
+    currency: walletCurrency(w),
+    currentBalance: walletBalanceNumber(w),
   };
 }
 

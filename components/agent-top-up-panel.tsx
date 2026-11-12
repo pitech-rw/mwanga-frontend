@@ -158,93 +158,93 @@ export function AgentTopUpPanel() {
   };
 
   return (
-    <section className="stats" style={{ alignItems: "start" }}>
-      <article className="card stat">
-        <span>Float balance</span>
-        <strong>
-          {wallet ? `${money(wallet.balance)} ${wallet.currency}` : loadError ? "—" : "…"}
-        </strong>
-        {loadError ? <p className="login-error">{loadError}</p> : null}
-      </article>
+    <article className="card panel agent-top-up">
+      <div className="panel-head">
+        <div>
+          <h2>Top up a wallet</h2>
+          <p className="sub">
+            Float balance:{" "}
+            <strong>
+              {wallet ? `${money(wallet.balance)} ${wallet.currency}` : loadError ? "—" : "…"}
+            </strong>
+            {" · "}
+            Look up a rider or owner by phone, then move float.
+          </p>
+        </div>
+      </div>
+      {loadError ? <p className="login-error">{loadError}</p> : null}
+      <form className="form" onSubmit={submit}>
+        {formError ? (
+          <div className="login-error" role="alert">
+            {formError}
+          </div>
+        ) : null}
+        {notice ? <p>{notice}</p> : null}
 
-      <article className="card" style={{ gridColumn: "span 2" }}>
-        <h2>Top up a wallet</h2>
-        <p>Look up a rider or owner by phone, then move float into their wallet.</p>
-        <form className="form" onSubmit={submit}>
-          {formError ? (
-            <div className="login-error" role="alert">
-              {formError}
-            </div>
-          ) : null}
-          {notice ? <p>{notice}</p> : null}
+        <label className="field">
+          <span>Phone</span>
+          <input
+            type="text"
+            value={phone}
+            disabled={saving || lookingUp}
+            onChange={(event) => {
+              setPhone(event.target.value);
+              setTarget(null);
+            }}
+            placeholder="Exact rider or owner phone"
+            aria-label="Rider or owner phone"
+          />
+        </label>
+        <button type="button" className="btn" onClick={lookup} disabled={saving || lookingUp}>
+          {lookingUp ? "Looking up…" : "Find wallet"}
+        </button>
+        {target ? (
+          <p>
+            {target.kind === "rider" ? "Rider" : "Owner"} · {target.name}
+          </p>
+        ) : null}
 
-          <label className="field">
-            <span>Phone</span>
-            <input
-              type="text"
-              value={phone}
-              disabled={saving || lookingUp}
-              onChange={(event) => {
-                setPhone(event.target.value);
-                setTarget(null);
-              }}
-              placeholder="Exact rider or owner phone"
-              aria-label="Rider or owner phone"
-            />
-          </label>
-          <button type="button" className="btn" onClick={lookup} disabled={saving || lookingUp}>
-            {lookingUp ? "Looking up…" : "Find wallet"}
-          </button>
-          {target ? (
-            <p>
-              {target.kind === "rider" ? "Rider" : "Owner"} · {target.name}
-            </p>
-          ) : null}
+        <label className="field">
+          <span>Amount ({wallet?.currency ?? "CDF"})</span>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={amount}
+            disabled={saving}
+            onChange={(event) => setAmount(event.target.value)}
+            aria-label="Top-up amount"
+          />
+        </label>
+        <label className="field">
+          <span>Receipt reference</span>
+          <input
+            type="text"
+            value={externalReference}
+            disabled={saving}
+            onChange={(event) => setExternalReference(event.target.value)}
+            placeholder="Cash receipt id"
+            aria-label="Receipt reference"
+          />
+        </label>
+        <label className="field">
+          <span>Notes (optional)</span>
+          <input
+            type="text"
+            value={description}
+            disabled={saving}
+            onChange={(event) => setDescription(event.target.value)}
+            aria-label="Top-up notes"
+          />
+        </label>
+        <button type="submit" className="btn primary" disabled={saving || !wallet}>
+          {saving ? "Saving…" : "Apply top-up"}
+        </button>
+      </form>
 
-          <label className="field">
-            <span>Amount ({wallet?.currency ?? "CDF"})</span>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={amount}
-              disabled={saving}
-              onChange={(event) => setAmount(event.target.value)}
-              aria-label="Top-up amount"
-            />
-          </label>
-          <label className="field">
-            <span>Receipt reference</span>
-            <input
-              type="text"
-              value={externalReference}
-              disabled={saving}
-              onChange={(event) => setExternalReference(event.target.value)}
-              placeholder="Cash receipt id"
-              aria-label="Receipt reference"
-            />
-          </label>
-          <label className="field">
-            <span>Notes (optional)</span>
-            <input
-              type="text"
-              value={description}
-              disabled={saving}
-              onChange={(event) => setDescription(event.target.value)}
-              aria-label="Top-up notes"
-            />
-          </label>
-          <button type="submit" className="btn primary" disabled={saving || !wallet}>
-            {saving ? "Saving…" : "Apply top-up"}
-          </button>
-        </form>
-      </article>
-
-      <article className="card" style={{ gridColumn: "1 / -1" }}>
-        <h2>Recent float movements</h2>
-        {history.length === 0 ? (
-          <p>No ledger lines yet.</p>
-        ) : (
+      {history.length > 0 ? (
+        <div className="agent-top-up-history">
+          <h3>Recent float movements</h3>
           <ul>
             {history.map((row) => {
               const line = row.lines.find((entry) => entry.walletId === wallet?.id);
@@ -259,8 +259,8 @@ export function AgentTopUpPanel() {
               );
             })}
           </ul>
-        )}
-      </article>
-    </section>
+        </div>
+      ) : null}
+    </article>
   );
 }

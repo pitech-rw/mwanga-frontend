@@ -16,7 +16,7 @@ type AccountMenuProps = {
   theme: ThemeName;
   onToggleTheme: () => void;
   onSignOut: () => void;
-  onManageUsers: () => void;
+  onManageUsers?: () => void;
 };
 
 function initials(user: AuthUser | null): string {
@@ -92,18 +92,20 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onManageUse
             <em>{role}</em>
           </div>
           <hr className="menu-divider" />
-          <button
-            type="button"
-            className="account-menu-item"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onManageUsers();
-            }}
-          >
-            <IconUsers size={16} />
-            User administration
-          </button>
+          {onManageUsers ? (
+            <button
+              type="button"
+              className="account-menu-item"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onManageUsers();
+              }}
+            >
+              <IconUsers size={16} />
+              User administration
+            </button>
+          ) : null}
           <button
             type="button"
             className="account-menu-item"

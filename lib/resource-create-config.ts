@@ -1,7 +1,7 @@
 import type { Section } from "./nav";
 
 /** Every dashboard section that lists API resources (excludes overview). */
-export type ResourceSection = Exclude<Section, "overview">;
+export type ResourceSection = Exclude<Section, "overview" | "topUp">;
 
 export type FieldType = "text" | "email" | "password" | "number" | "select" | "datetime-local" | "textarea" | "checkbox";
 
@@ -198,6 +198,14 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     submitLabel: "Create wallet",
     fields: [{ name: "currency", label: "Currency", type: "text", placeholder: "CDF" }],
   },
+  riders: {
+    section: "riders",
+    apiPath: "/users/riders",
+    title: "Rider",
+    description: "Riders and fleet owners (read-only listing for agents).",
+    submitLabel: "Create rider",
+    fields: [],
+  },
   companyAccounts: {
     section: "companyAccounts",
     apiPath: "/company-accounts",
@@ -214,7 +222,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
 };
 
 export function getCreateConfig(section: Section): CreateResourceConfig | null {
-  if (section === "overview") {
+  if (section === "overview" || section === "topUp" || section === "riders") {
     return null;
   }
   return CONFIGS[section];

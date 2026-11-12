@@ -13,7 +13,9 @@ import {
   walletDeleteLabelFromRow,
   walletOwnerCell,
   walletTopUpTargetFromRow,
+  agentDirectoryTopUpTargetFromRow,
   agentFloatTopUpTargetFromRow,
+  type AgentWalletTopUpTarget,
 } from "../lib/wallet-row-helpers";
 import {
   getAvailableRowActions,
@@ -41,6 +43,7 @@ import { TableRowActionsMenu, type TableRowMenuItem } from "./table-row-actions-
 import { DeleteResourceModal } from "./delete-resource-modal";
 import { DeleteWalletModal } from "./delete-wallet-modal";
 import { EditResourceModal, type EditResourceTarget } from "./edit-resource-modal";
+import { AgentWalletTopUpModal } from "./agent-wallet-top-up-modal";
 import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
 import { WalletLedgerModal } from "./wallet-ledger-modal";
 
@@ -58,6 +61,7 @@ const SKIP_KEYS = new Set([
   "readings",
   "wallet",
   "owner",
+  "portalUser",
   "user",
   "role",
   "currentBattery",
@@ -355,6 +359,171 @@ function buildBatteryDataColumns(): Column<Row>[] {
   ];
 }
 
+function buildAgentColumns(): Column<Row>[] {
+  return [
+    {
+      key: "name",
+      header: "Name",
+      sortValue: (row) => String(row.name ?? ""),
+      searchValue: (row) => {
+        const parts = [row.name, row.email, row.phone, row.userId != null ? String(row.userId) : ""];
+        const portalUser = row.portalUser;
+        if (portalUser && typeof portalUser === "object") {
+          const u = portalUser as Record<string, unknown>;
+          parts.push(cellValue(u.username), cellValue(u.email));
+        }
+        return parts.map((value) => cellValue(value)).join(" ");
+      },
+      render: (row) => cellValue(row.name),
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      sortValue: (row) => String(row.phone ?? ""),
+      searchValue: (row) => String(row.phone ?? ""),
+      render: (row) => cellValue(row.phone),
+    },
+    {
+      key: "wallet",
+      header: "Wallet",
+      align: "right",
+      sortValue: (row) => {
+        const wallet = row.wallet;
+        if (wallet && typeof wallet === "object") {
+          return walletBalanceNumber(wallet as Record<string, unknown>);
+        }
+        return -1;
+      },
+      searchValue: (row) => {
+        const wallet = row.wallet;
+        if (!wallet || typeof wallet !== "object") {
+          return "no wallet";
+        }
+        const w = wallet as Record<string, unknown>;
+        return `${walletBalanceNumber(w)} ${walletCurrency(w)}`;
+      },
+      render: (row) => {
+        const wallet = row.wallet;
+        if (!wallet || typeof wallet !== "object") {
+          return "—";
+        }
+        const w = wallet as Record<string, unknown>;
+        return `${walletBalanceNumber(w).toLocaleString()} ${walletCurrency(w)}`;
+      },
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortValue: (row) => String(row.status ?? ""),
+      searchValue: (row) => String(row.status ?? ""),
+      render: (row) => <Badge status={String(row.status ?? "—")} />,
+    },
+  ];
+}
+
+function topUpDirectoryWallet(row: Row): Record<string, unknown> | null {
+  if (row.directoryKind === "owner") {
+    const wallet = row.wallet;
+    return wallet && typeof wallet === "object" ? (wallet as Record<string, unknown>) : null;
+  }
+  const riderWallet = row.riderWallet ?? row.wallet;
+  return riderWallet && typeof riderWallet === "object" ? (riderWallet as Record<string, unknown>) : null;
+}
+
+function topUpDirectoryName(row: Row): string {
+  if (row.directoryKind === "owner") {
+    return cellValue(row.name);
+  }
+  return userDisplayName(row);
+}
+
+function topUpDirectoryKind(row: Row): string {
+  return row.directoryKind === "owner" ? "owner" : "rider";
+}
+
+function buildAgentTopUpDirectoryColumns(): Column<Row>[] {
+  return [
+    {
+      key: "kind",
+      header: "Kind",
+      sortValue: (row) => topUpDirectoryKind(row),
+      searchValue: (row) => topUpDirectoryKind(row),
+      render: (row) => <Badge status={topUpDirectoryKind(row)} />,
+    },
+    {
+      key: "name",
+      header: "Name",
+      sortValue: (row) => topUpDirectoryName(row),
+      searchValue: (row) => {
+        const parts = [topUpDirectoryName(row), row.phone, row.email, row.username].map((value) =>
+          cellValue(value),
+        );
+        return parts.join(" ");
+      },
+      render: (row) => topUpDirectoryName(row),
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      sortValue: (row) => String(row.phone ?? ""),
+      searchValue: (row) => String(row.phone ?? ""),
+      render: (row) => cellValue(row.phone),
+    },
+    {
+      key: "email",
+      header: "Email",
+      sortValue: (row) => String(row.email ?? ""),
+      searchValue: (row) => String(row.email ?? ""),
+      render: (row) => cellValue(row.email),
+    },
+    {
+      key: "wallet",
+      header: "Wallet",
+      align: "right",
+      sortValue: (row) => {
+        const wallet = topUpDirectoryWallet(row);
+        return wallet ? walletBalanceNumber(wallet) : -1;
+      },
+      searchValue: (row) => {
+        const wallet = topUpDirectoryWallet(row);
+        if (!wallet) {
+          return "no wallet";
+        }
+        return `${walletBalanceNumber(wallet)} ${walletCurrency(wallet)}`;
+      },
+      render: (row) => {
+        const wallet = topUpDirectoryWallet(row);
+        if (!wallet) {
+          return "—";
+        }
+        return `${walletBalanceNumber(wallet).toLocaleString()} ${walletCurrency(wallet)}`;
+      },
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortValue: (row) => {
+        if (row.directoryKind === "owner") {
+          return String(row.status ?? "");
+        }
+        return row.isActive === false ? "inactive" : "active";
+      },
+      searchValue: (row) => {
+        if (row.directoryKind === "owner") {
+          return String(row.status ?? "");
+        }
+        return row.isActive === false ? "inactive" : "active";
+      },
+      render: (row) => {
+        if (row.directoryKind === "owner") {
+          return <Badge status={String(row.status ?? "—")} />;
+        }
+        return <Badge status={row.isActive === false ? "inactive" : "active"} />;
+      },
+    },
+  ];
+}
+
 function buildUserColumns(): Column<Row>[] {
   return [
     {
@@ -404,6 +573,7 @@ function buildRowActionMenuItems(
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
+  openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
   openWalletLedger: (wallet: WalletTopUpTarget) => void,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
@@ -506,6 +676,19 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.walletTopUp) {
+      if (section === "riders") {
+        const target = agentDirectoryTopUpTargetFromRow(row);
+        if (!target) {
+          continue;
+        }
+        items.push({
+          id: def.id,
+          label: def.label,
+          onSelect: () => openAgentWalletTopUp(target),
+        });
+        continue;
+      }
+
       if (section === "agents") {
         const target = agentFloatTopUpTargetFromRow(row);
         if (!target) {
@@ -568,7 +751,7 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.resourceEdit) {
-      if (section === "wallets" || section === "overview") {
+      if (section === "wallets" || section === "overview" || section === "topUp") {
         continue;
       }
       const id = row.id;
@@ -588,7 +771,7 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.resourceDelete) {
-      if (section === "wallets" || section === "overview") {
+      if (section === "wallets" || section === "overview" || section === "topUp") {
         continue;
       }
       const id = row.id;
@@ -619,6 +802,7 @@ function appendActionsColumn(
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
+  openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
   openWalletLedger: (wallet: WalletTopUpTarget) => void,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
@@ -644,6 +828,7 @@ function appendActionsColumn(
           openBikeRiderAttach,
           openCardRiderAssign,
           openWalletTopUp,
+          openAgentWalletTopUp,
           openWalletLedger,
           openWalletDelete,
           openResourceEdit,
@@ -664,6 +849,7 @@ function appendActionsColumn(
           openBikeRiderAttach,
           openCardRiderAssign,
           openWalletTopUp,
+          openAgentWalletTopUp,
           openWalletLedger,
           openWalletDelete,
           openResourceEdit,
@@ -755,6 +941,7 @@ export function ApiResourcePanel({
   const [attachBikeRider, setAttachBikeRider] = useState<BikeRiderAttachTarget | null>(null);
   const [assignCardRider, setAssignCardRider] = useState<CardRiderAssignTarget | null>(null);
   const [walletTopUp, setWalletTopUp] = useState<WalletTopUpTarget | null>(null);
+  const [agentWalletTopUp, setAgentWalletTopUp] = useState<AgentWalletTopUpTarget | null>(null);
   const [walletLedger, setWalletLedger] = useState<WalletTopUpTarget | null>(null);
   const [walletDelete, setWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
   const [resourceEdit, setResourceEdit] = useState<EditResourceTarget | null>(null);
@@ -900,6 +1087,10 @@ export function ApiResourcePanel({
     setWalletTopUp(wallet);
   }, []);
 
+  const openAgentWalletTopUpModal = useCallback((target: AgentWalletTopUpTarget) => {
+    setAgentWalletTopUp(target);
+  }, []);
+
   const openWalletLedgerModal = useCallback((wallet: WalletTopUpTarget) => {
     setWalletLedger(wallet);
   }, []);
@@ -921,12 +1112,16 @@ export function ApiResourcePanel({
   const columns = useMemo(() => {
     let base: Column<Row>[];
 
-    if (section === "users") {
+    if (section === "riders") {
+      base = buildAgentTopUpDirectoryColumns();
+    } else if (section === "users") {
       base = buildUserColumns();
     } else if (section === "batteries") {
       base = buildBatteryDataColumns();
     } else if (section === "wallets") {
       base = buildWalletDataColumns();
+    } else if (section === "agents") {
+      base = buildAgentColumns();
     } else {
       base = buildColumns(rows);
     }
@@ -943,6 +1138,7 @@ export function ApiResourcePanel({
       openBikeRiderAttach,
       openCardRiderAssign,
       openWalletTopUpModal,
+      openAgentWalletTopUpModal,
       openWalletLedgerModal,
       openWalletDeleteModal,
       openResourceEditModal,
@@ -957,6 +1153,7 @@ export function ApiResourcePanel({
     openBatteryBikeAttach,
     openBatteryStationAttach,
     openWalletTopUpModal,
+    openAgentWalletTopUpModal,
     openWalletLedgerModal,
     openWalletDeleteModal,
     openResourceEditModal,
@@ -969,15 +1166,19 @@ export function ApiResourcePanel({
   const searchPlaceholderFromSection =
     section === "users"
       ? "Search users…"
-      : section === "batteries"
+      : section === "riders"
+        ? "Search riders and owners…"
+        : section === "batteries"
         ? "Search batteries…"
         : section === "swaps"
           ? "Search swaps…"
           : section === "wallets"
             ? "Search wallets…"
-            : section === "companyAccounts"
-              ? "Search company accounts…"
-              : undefined;
+            : section === "agents"
+              ? "Search agents…"
+              : section === "companyAccounts"
+                ? "Search company accounts…"
+                : undefined;
 
   return (
     <>
@@ -1076,6 +1277,17 @@ export function ApiResourcePanel({
         open={walletTopUp !== null}
         wallet={walletTopUp}
         onClose={() => setWalletTopUp(null)}
+        onSaved={() => {
+          reload();
+          onWalletTopUpSuccess?.();
+        }}
+        onError={onWalletTopUpError}
+      />
+
+      <AgentWalletTopUpModal
+        open={agentWalletTopUp !== null}
+        target={agentWalletTopUp}
+        onClose={() => setAgentWalletTopUp(null)}
         onSaved={() => {
           reload();
           onWalletTopUpSuccess?.();

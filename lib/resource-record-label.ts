@@ -32,6 +32,19 @@ export function recordLabelForRow(section: ResourceSection, row: Record<string, 
       return pick("name", "email") ?? (idStr || "Owner");
     case "agents":
       return pick("name", "email") ?? (idStr || "Agent");
+    case "riders": {
+      if (row.directoryKind === "owner") {
+        return pick("name", "email", "phone") ?? (idStr || "Owner");
+      }
+      const u = pick("username");
+      const first = typeof row.firstName === "string" ? row.firstName : "";
+      const last = typeof row.lastName === "string" ? row.lastName : "";
+      const name = [first, last].filter(Boolean).join(" ").trim();
+      if (name) {
+        return u ? `${name} (@${u})` : name;
+      }
+      return u ? `@${u}` : idStr || "Rider";
+    }
     case "users": {
       const u = pick("username");
       const first = typeof row.firstName === "string" ? row.firstName : "";

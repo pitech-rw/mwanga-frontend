@@ -134,6 +134,48 @@ export function buildResourceDetailPayload(
       }
       break;
     }
+    case "riders": {
+      if (pickString(row, "directoryKind") === "owner") {
+        const ownerName = pickString(row, "name") ?? idStr;
+        headingTitle = `Owner · ${ownerName}`;
+        description = "Fleet owner wallet top-up target.";
+        usedKeys.add("name");
+        summary.push(["Name", ownerName]);
+        const email = pickString(row, "email");
+        if (email) {
+          usedKeys.add("email");
+          summary.push(["Email", email]);
+        }
+        const phone = pickString(row, "phone");
+        if (phone) {
+          usedKeys.add("phone");
+          summary.push(["Phone", phone]);
+        }
+        const status = pickString(row, "status");
+        if (status) {
+          usedKeys.add("status");
+          summary.push(["Status", status]);
+        }
+        break;
+      }
+      const username = pickString(row, "username") ?? idStr;
+      const name = [pickString(row, "firstName"), pickString(row, "lastName")].filter(Boolean).join(" ").trim();
+      headingTitle = name ? `Rider · ${name}` : `Rider · @${username}`;
+      description = "Rider account.";
+      usedKeys.add("username");
+      summary.push(["Username", `@${username}`]);
+      if (name) {
+        usedKeys.add("firstName");
+        usedKeys.add("lastName");
+        summary.push(["Name", name]);
+      }
+      const phone = pickString(row, "phone");
+      if (phone) {
+        usedKeys.add("phone");
+        summary.push(["Phone", phone]);
+      }
+      break;
+    }
     case "users": {
       const username = pickString(row, "username") ?? idStr;
       const name = [pickString(row, "firstName"), pickString(row, "lastName")].filter(Boolean).join(" ").trim();
