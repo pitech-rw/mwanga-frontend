@@ -120,7 +120,10 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       visibleForRow: (row) => row.type === "swapper",
     },
     genericEdit(PERMISSIONS.users.write),
-    genericDelete(PERMISSIONS.users.delete),
+  {
+    ...genericDelete(PERMISSIONS.users.delete),
+    label: "Deactivate",
+  },
   ],
   violations: [genericEdit(PERMISSIONS.violations.write), genericDelete(PERMISSIONS.violations.delete)],
   wallets: [
