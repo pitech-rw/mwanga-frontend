@@ -56,7 +56,11 @@ import { EditResourceModal, type EditResourceTarget } from "./edit-resource-moda
 import { AgentWalletTopUpModal } from "./agent-wallet-top-up-modal";
 import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
 import { WalletLedgerModal } from "./wallet-ledger-modal";
-import { buildUsersTableFilters, USERS_TABLE_SORT_OPTIONS } from "../lib/users-table-filters";
+import {
+  buildResourceTableFilters,
+  buildResourceTableSortOptions,
+  resourceTableDefaultSortKey,
+} from "../lib/resource-table-filters";
 import { stationDetailHref } from "../lib/nav-path";
 
 type Row = Record<string, unknown>;
@@ -1403,10 +1407,11 @@ export function ApiResourcePanel({
     title,
   ]);
 
-  const usersTableFilters = useMemo(
-    () => (section === "users" ? buildUsersTableFilters(rows) : undefined),
-    [rows, section],
-  );
+  const tableSelectFilters = useMemo(() => buildResourceTableFilters(section, rows), [rows, section]);
+
+  const tableSortOptions = useMemo(() => buildResourceTableSortOptions(section, columns), [columns, section]);
+
+  const tableDefaultSortKey = useMemo(() => resourceTableDefaultSortKey(section, columns), [columns, section]);
 
   const searchPlaceholderFromSection =
     section === "users"
@@ -1460,6 +1465,7 @@ export function ApiResourcePanel({
       </div>
       {error ? <p className="resource-error">{error}</p> : null}
       <DataTable
+        key={section}
         className="data-table-panel"
         columns={columns}
         rows={rows}
@@ -1467,10 +1473,10 @@ export function ApiResourcePanel({
         rowKey={(row) => String(row.id ?? JSON.stringify(row))}
         empty={error ? "Unable to load records." : "No records yet."}
         searchPlaceholder={searchPlaceholderFromSection}
-        selectFilters={usersTableFilters}
-        sortOptions={section === "users" ? [...USERS_TABLE_SORT_OPTIONS] : undefined}
-        defaultSortKey={section === "users" ? "name" : null}
-        defaultSortDirection={section === "users" ? "asc" : "asc"}
+        selectFilters={tableSelectFilters}
+        sortOptions={tableSortOptions}
+        defaultSortKey={tableDefaultSortKey}
+        defaultSortDirection={section === "swaps" ? "desc" : "asc"}
         onRowClick={
           section === "stations"
             ? openStationFromRow

@@ -7,6 +7,12 @@ import { authFetch } from "../lib/auth";
 import { sectionHref } from "../lib/nav-path";
 import { walletUserLabel } from "../lib/wallet-row-helpers";
 import { Badge } from "./badge";
+import {
+  buildStationDetailBatteryFilters,
+  buildStationDetailOperatorFilters,
+  buildStationDetailSwapFilters,
+  sortOptionsFromColumns,
+} from "../lib/resource-table-filters";
 import { DataTable, type Column } from "./data-table";
 
 type StationOperator = {
@@ -259,6 +265,10 @@ export function StationDetailPanel({ stationId, pathPrefix, onForbidden }: Stati
     });
   }, [station?.transactions]);
 
+  const batteryFilters = useMemo(() => buildStationDetailBatteryFilters(batteryRows), [batteryRows]);
+  const operatorFilters = useMemo(() => buildStationDetailOperatorFilters(), []);
+  const swapFilters = useMemo(() => buildStationDetailSwapFilters(swapRows), [swapRows]);
+
   const title = station ? `${station.code} — ${station.name}` : `Station #${stationId}`;
   const atStation = batteryRows.length;
   const chargingCapacity = station?.chargingCapacity ?? 0;
@@ -302,6 +312,9 @@ export function StationDetailPanel({ stationId, pathPrefix, onForbidden }: Stati
           rowKey={(row) => String(row.id)}
           empty={error ? "Unable to load batteries." : "No batteries assigned to this station."}
           searchPlaceholder="Search packs…"
+          selectFilters={batteryFilters}
+          sortOptions={sortOptionsFromColumns(BATTERY_COLUMNS)}
+          defaultSortKey="serial"
         />
       </section>
 
@@ -315,6 +328,9 @@ export function StationDetailPanel({ stationId, pathPrefix, onForbidden }: Stati
           rowKey={(row) => String(row.id)}
           empty={error ? "Unable to load operators." : "No swap operators assigned yet."}
           searchPlaceholder="Search operators…"
+          selectFilters={operatorFilters}
+          sortOptions={sortOptionsFromColumns(OPERATOR_COLUMNS)}
+          defaultSortKey="name"
         />
       </section>
 
@@ -328,6 +344,8 @@ export function StationDetailPanel({ stationId, pathPrefix, onForbidden }: Stati
           rowKey={(row) => String(row.id)}
           empty={error ? "Unable to load transactions." : "No swaps recorded at this station yet."}
           searchPlaceholder="Search swaps…"
+          selectFilters={swapFilters}
+          sortOptions={sortOptionsFromColumns(SWAP_COLUMNS)}
           defaultSortKey="when"
           defaultSortDirection="desc"
         />

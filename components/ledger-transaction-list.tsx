@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Badge } from "./badge";
+import { buildLedgerTransactionFilters, sortOptionsFromColumns } from "../lib/resource-table-filters";
 import { DataTable, type Column } from "./data-table";
 import { LedgerTransactionDetailModal } from "./ledger-transaction-detail-modal";
 
@@ -139,6 +140,8 @@ export function LedgerTransactionList({
     ];
   }, []);
 
+  const tableFilters = useMemo(() => buildLedgerTransactionFilters(transactions), [transactions]);
+
   if (error) {
     return (
       <div className="login-error" role="alert">
@@ -157,6 +160,10 @@ export function LedgerTransactionList({
         loading={loading}
         empty={emptyMessage}
         searchPlaceholder={searchPlaceholder}
+        selectFilters={tableFilters}
+        sortOptions={sortOptionsFromColumns(columns)}
+        defaultSortKey="createdAt"
+        defaultSortDirection="desc"
         defaultPageSize={25}
         pageSizeOptions={[10, 25, 50, 100]}
         onRowClick={(row) => setDetail(row)}
