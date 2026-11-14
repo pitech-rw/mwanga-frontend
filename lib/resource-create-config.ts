@@ -74,7 +74,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     section: "owners",
     apiPath: "/owners",
     title: "Register owner",
-    description: "Creates a fleet buyer record with a wallet.",
+    description: "Creates a fleet buyer record with a wallet. You can register bikes for the fleet in the same step.",
     submitLabel: "Create owner",
     fields: [
       { name: "name", label: "Display name", type: "text", required: true },

@@ -36,6 +36,45 @@ type AgentListRow = {
   userId?: number | null;
 };
 
+type OwnerBikeDraft = {
+  plateNumber: string;
+  serialNumber: string;
+  model: string;
+  chassisNumber: string;
+};
+
+function emptyOwnerBike(): OwnerBikeDraft {
+  return { plateNumber: "", serialNumber: "", model: "", chassisNumber: "" };
+}
+
+function ownerBikeDraftHasAny(draft: OwnerBikeDraft): boolean {
+  return [draft.plateNumber, draft.serialNumber, draft.model, draft.chassisNumber].some((v) => v.trim() !== "");
+}
+
+function buildOwnerBikesPayload(drafts: OwnerBikeDraft[]): Record<string, string>[] | null {
+  const bikes: Record<string, string>[] = [];
+
+  for (const draft of drafts) {
+    if (!ownerBikeDraftHasAny(draft)) {
+      continue;
+    }
+    const plateNumber = draft.plateNumber.trim();
+    const serialNumber = draft.serialNumber.trim();
+    const model = draft.model.trim();
+    if (!plateNumber || !serialNumber || !model) {
+      return null;
+    }
+    const bike: Record<string, string> = { plateNumber, serialNumber, model };
+    const chassisNumber = draft.chassisNumber.trim();
+    if (chassisNumber) {
+      bike.chassisNumber = chassisNumber;
+    }
+    bikes.push(bike);
+  }
+
+  return bikes;
+}
+
 function emptyValues(config: CreateResourceConfig): Record<string, string> {
   return Object.fromEntries(config.fields.map((field) => [field.name, ""]));
 }
@@ -65,6 +104,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [agentUserSearch, setAgentUserSearch] = useState("");
   const [agentUsers, setAgentUsers] = useState<AgentUserRow[]>([]);
   const [loadingAgentUsers, setLoadingAgentUsers] = useState(false);
+  const [registerOwnerFleet, setRegisterOwnerFleet] = useState(false);
+  const [ownerBikes, setOwnerBikes] = useState<OwnerBikeDraft[]>([emptyOwnerBike()]);
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
@@ -75,6 +116,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       setWalletOwnerSearch("");
       setAgentUserId(null);
       setAgentUserSearch("");
+      setRegisterOwnerFleet(false);
+      setOwnerBikes([emptyOwnerBike()]);
     }
   }, [open, section]);
 
@@ -262,6 +305,22 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       }
     }
 
+    let ownerBikesPayload: Record<string, string>[] | undefined;
+    if (config.section === "owners" && registerOwnerFleet) {
+      const bikes = buildOwnerBikesPayload(ownerBikes);
+      if (bikes === null) {
+        setError("Each fleet bike needs a plate number, serial number, and model.");
+        setSaving(false);
+        return;
+      }
+      if (bikes.length === 0) {
+        setError("Add at least one fleet bike, or turn off fleet registration.");
+        setSaving(false);
+        return;
+      }
+      ownerBikesPayload = bikes;
+    }
+
     try {
       let body: Record<string, unknown>;
 
@@ -283,6 +342,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         const currencyRaw = values.currency?.trim() ?? "";
         if (currencyRaw) {
           body.currency = currencyRaw;
+        }
+      } else if (config.section === "owners") {
+        body = buildCreatePayload(config, values);
+        if (ownerBikesPayload?.length) {
+          body.bikes = ownerBikesPayload;
         }
       } else {
         body = buildCreatePayload(config, values);
@@ -521,6 +585,127 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             )}
           </label>
         ))}
+
+        {config.section === "owners" ? (
+          <div className="owner-fleet-block">
+            <label className="field field-checkbox">
+              <input
+                type="checkbox"
+                checked={registerOwnerFleet}
+                disabled={saving}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setRegisterOwnerFleet(checked);
+                  if (checked && ownerBikes.length === 0) {
+                    setOwnerBikes([emptyOwnerBike()]);
+                  }
+                }}
+              />
+              <span>Register fleet bikes for this owner</span>
+            </label>
+            {registerOwnerFleet ? (
+              <p className="sub">Each bike is linked to the new owner automatically.</p>
+            ) : null}
+            {registerOwnerFleet
+              ? ownerBikes.map((draft, index) => (
+                  <fieldset key={index} className="owner-fleet-bike" disabled={saving}>
+                    <legend className="sub">Bike {index + 1}</legend>
+                    <label className="field">
+                      <span>
+                        Plate number
+                        <span className="col-required" aria-hidden="true">
+                          {" "}
+                          *
+                        </span>
+                      </span>
+                      <input
+                        type="text"
+                        value={draft.plateNumber}
+                        onChange={(event) => {
+                          const plateNumber = event.target.value;
+                          setOwnerBikes((rows) =>
+                            rows.map((row, i) => (i === index ? { ...row, plateNumber } : row)),
+                          );
+                        }}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>
+                        Serial number
+                        <span className="col-required" aria-hidden="true">
+                          {" "}
+                          *
+                        </span>
+                      </span>
+                      <input
+                        type="text"
+                        value={draft.serialNumber}
+                        onChange={(event) => {
+                          const serialNumber = event.target.value;
+                          setOwnerBikes((rows) =>
+                            rows.map((row, i) => (i === index ? { ...row, serialNumber } : row)),
+                          );
+                        }}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>
+                        Model
+                        <span className="col-required" aria-hidden="true">
+                          {" "}
+                          *
+                        </span>
+                      </span>
+                      <input
+                        type="text"
+                        value={draft.model}
+                        onChange={(event) => {
+                          const model = event.target.value;
+                          setOwnerBikes((rows) => rows.map((row, i) => (i === index ? { ...row, model } : row)));
+                        }}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Chassis number</span>
+                      <input
+                        type="text"
+                        value={draft.chassisNumber}
+                        onChange={(event) => {
+                          const chassisNumber = event.target.value;
+                          setOwnerBikes((rows) =>
+                            rows.map((row, i) => (i === index ? { ...row, chassisNumber } : row)),
+                          );
+                        }}
+                        autoComplete="off"
+                      />
+                    </label>
+                    {ownerBikes.length > 1 ? (
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setOwnerBikes((rows) => rows.filter((_, i) => i !== index))}
+                      >
+                        Remove bike
+                      </button>
+                    ) : null}
+                  </fieldset>
+                ))
+              : null}
+            {registerOwnerFleet ? (
+              <button
+                type="button"
+                className="btn"
+                disabled={saving}
+                onClick={() => setOwnerBikes((rows) => [...rows, emptyOwnerBike()])}
+              >
+                Add another bike
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </form>
     </Modal>
   );
