@@ -12,7 +12,7 @@ type CreateResourceModalProps = {
   open: boolean;
   section: Section;
   onClose: () => void;
-  onCreated?: () => void;
+  onCreated?: (created?: Record<string, unknown>) => void;
   onError?: (message: string) => void;
 };
 
@@ -79,7 +79,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   }, [open, section]);
 
   useEffect(() => {
-    if (!open || section !== "wallets") {
+    if (!open || (section !== "wallets" && section !== "bikes")) {
       return;
     }
 
@@ -234,9 +234,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     return null;
   }
 
+  const needsOwnerPicker = config.section === "wallets" || config.section === "bikes";
+
   const submitDisabled =
     saving ||
-    (config.section === "wallets" && (walletOwnerId === null || loadingWalletUsers)) ||
+    (needsOwnerPicker && (walletOwnerId === null || loadingWalletUsers)) ||
     (config.section === "agents" && (agentUserId === null || loadingAgentUsers));
 
   const submit = async (event: FormEvent) => {
@@ -244,7 +246,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     setSaving(true);
     setError(null);
 
-    if (config.section === "wallets") {
+    if (needsOwnerPicker) {
       if (walletOwnerId === null) {
         setError("Select a fleet owner.");
         setSaving(false);
@@ -273,6 +275,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         if (currencyRaw) {
           body.currency = currencyRaw;
         }
+      } else if (config.section === "bikes") {
+        body = buildCreatePayload(config, values);
+        body.ownerId = walletOwnerId;
       } else if (config.section === "agents") {
         body = { userId: agentUserId };
         const currencyRaw = values.currency?.trim() ?? "";
@@ -295,7 +300,17 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         return;
       }
 
-      onCreated?.();
+      let created: Record<string, unknown> | undefined;
+      try {
+        const data: unknown = await response.json();
+        if (data !== null && typeof data === "object" && !Array.isArray(data)) {
+          created = data as Record<string, unknown>;
+        }
+      } catch {
+        created = undefined;
+      }
+
+      onCreated?.(created);
       onClose();
     } catch {
       setError(userMessageForNetwork("create"));
@@ -385,10 +400,21 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
-        {config.section === "wallets" ? (
+        {needsOwnerPicker ? (
           <>
             <label className="field">
-              <span>Find owner</span>
+              <span>
+                Find owner
+                {config.section === "bikes" ? (
+                  <>
+                    <span className="col-required" aria-hidden="true">
+                      {" "}
+                      *
+                    </span>
+                    <span className="sr-only"> (required)</span>
+                  </>
+                ) : null}
+              </span>
               <input
                 type="search"
                 value={walletOwnerSearch}
@@ -396,24 +422,36 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 onChange={(event) => setWalletOwnerSearch(event.target.value)}
                 placeholder="Search by name, email, or phone…"
                 autoComplete="off"
-                aria-label="Search owners for wallet"
+                aria-label="Search fleet owners"
               />
             </label>
             {loadingWalletUsers ? (
               <p className="sub">Loading owners…</p>
             ) : (
               <label className="field">
-                <span>Owner ({filteredWalletOwners.length} shown)</span>
+                <span>
+                  Fleet owner ({filteredWalletOwners.length} shown)
+                  {config.section === "bikes" ? (
+                    <>
+                      <span className="col-required" aria-hidden="true">
+                        {" "}
+                        *
+                      </span>
+                      <span className="sr-only"> (required)</span>
+                    </>
+                  ) : null}
+                </span>
                 <select
                   value={walletOwnerId != null ? String(walletOwnerId) : ""}
                   disabled={saving || filteredWalletOwners.length === 0}
+                  required={config.section === "bikes"}
                   onChange={(event) => {
                     const v = event.target.value;
                     setWalletOwnerId(v === "" ? null : Number(v));
                   }}
                   size={Math.min(8, Math.max(4, filteredWalletOwners.length || 4))}
                   className="station-picker create-wallet-user-select"
-                  aria-label="Select fleet owner for wallet"
+                  aria-label="Select fleet owner"
                 >
                   <option value="">{filteredWalletOwners.length === 0 ? "No matches" : "Choose an owner…"}</option>
                   {filteredWalletOwners.map((o) => (

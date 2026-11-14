@@ -1,3 +1,4 @@
+import { BATTERY_STATUS_VALUES } from "./battery-status";
 import type { Section } from "./nav";
 
 /** Every dashboard section that lists API resources (excludes overview). */
@@ -45,7 +46,12 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
       { name: "model", label: "Model", type: "text", required: true },
       { name: "manufacturer", label: "Manufacturer", type: "text" },
       { name: "batteryType", label: "Battery type", type: "text" },
-      { name: "status", label: "Status", type: "text", placeholder: "available" },
+      {
+        name: "status",
+        label: "Status",
+        type: "select",
+        options: selectOptions(BATTERY_STATUS_VALUES),
+      },
       { name: "soc", label: "State of charge (%)", type: "number" },
       { name: "stationId", label: "Station ID", type: "number" },
     ],
@@ -60,7 +66,6 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
       { name: "plateNumber", label: "Plate number", type: "text", required: true },
       { name: "serialNumber", label: "Serial number", type: "text", required: true },
       { name: "model", label: "Model", type: "text", required: true },
-      { name: "ownerId", label: "Owner ID", type: "number", required: true },
       { name: "chassisNumber", label: "Chassis number", type: "text" },
       { name: "userId", label: "Rider user ID", type: "number" },
     ],

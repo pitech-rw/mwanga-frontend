@@ -23,12 +23,18 @@ import {
 import {
   getAvailableRowActions,
   TABLE_ROW_ACTION_IDS,
+  userMayUsePermission,
   type TableRowActionDef,
 } from "../lib/table-row-actions";
+import { PERMISSIONS } from "../lib/permission-strings";
 import {
   AttachBatteryBikeModal,
   type BatteryBikeAttachTarget,
 } from "./attach-battery-bike-modal";
+import {
+  AttachBikeBatteryModal,
+  type BikeBatteryAttachTarget,
+} from "./attach-bike-battery-modal";
 import {
   AttachBikeRiderModal,
   type BikeRiderAttachTarget,
@@ -991,6 +997,7 @@ export function ApiResourcePanel({
   const [attachBatteryStation, setAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
   const [attachBatteryBike, setAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
   const [attachBikeRider, setAttachBikeRider] = useState<BikeRiderAttachTarget | null>(null);
+  const [attachBikeBattery, setAttachBikeBattery] = useState<BikeBatteryAttachTarget | null>(null);
   const [assignCardRider, setAssignCardRider] = useState<CardRiderAssignTarget | null>(null);
   const [walletTopUp, setWalletTopUp] = useState<WalletTopUpTarget | null>(null);
   const [agentWalletTopUp, setAgentWalletTopUp] = useState<AgentWalletTopUpTarget | null>(null);
@@ -1259,9 +1266,21 @@ export function ApiResourcePanel({
           </span>
           <CreateResourceButton
             section={section}
-            onCreated={() => {
+            onCreated={(created) => {
               reload();
               onCreateSuccess?.();
+              if (
+                section === "bikes" &&
+                created &&
+                typeof created.id === "number" &&
+                userMayUsePermission(sessionPermissions, PERMISSIONS.batteries.write)
+              ) {
+                setAttachBikeBattery({
+                  id: created.id,
+                  plateNumber: typeof created.plateNumber === "string" ? created.plateNumber : undefined,
+                  serialNumber: typeof created.serialNumber === "string" ? created.serialNumber : undefined,
+                });
+              }
             }}
             onError={onCreateError}
           />
@@ -1331,6 +1350,18 @@ export function ApiResourcePanel({
           onBikeRiderSuccess?.();
         }}
         onError={onBikeRiderError}
+      />
+
+      <AttachBikeBatteryModal
+        key={attachBikeBattery != null ? `bike-battery-${attachBikeBattery.id}` : "bike-battery-closed"}
+        open={attachBikeBattery !== null}
+        bike={attachBikeBattery}
+        onClose={() => setAttachBikeBattery(null)}
+        onSaved={() => {
+          reload();
+          onBatteryBikeSuccess?.();
+        }}
+        onError={onBatteryBikeError}
       />
 
       <AssignCardRiderModal

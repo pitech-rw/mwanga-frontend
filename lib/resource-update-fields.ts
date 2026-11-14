@@ -1,3 +1,4 @@
+import { BATTERY_STATUS_VALUES } from "./battery-status";
 import type { FieldSpec } from "./resource-create-config";
 import type { ResourceSection } from "./resource-create-config";
 
@@ -22,7 +23,12 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "oem", label: "OEM", type: "text" },
         { name: "model", label: "Model", type: "text" },
         { name: "batteryType", label: "Battery type", type: "text" },
-        { name: "status", label: "Status", type: "text" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: selectOptions(BATTERY_STATUS_VALUES),
+        },
         { name: "soc", label: "State of charge (%)", type: "number", placeholder: "0–100" },
         { name: "soh", label: "State of health (%)", type: "number", placeholder: "0–100" },
         { name: "cycleCount", label: "Cycle count", type: "number" },

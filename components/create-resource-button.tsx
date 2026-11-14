@@ -8,7 +8,7 @@ import { IconPlus } from "./icons/icon";
 
 type CreateResourceButtonProps = {
   section: Section;
-  onCreated?: () => void;
+  onCreated?: (created?: Record<string, unknown>) => void;
   onError?: (message: string) => void;
 };
 
