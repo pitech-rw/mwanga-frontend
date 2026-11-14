@@ -87,6 +87,19 @@ export function buildUpdatePatchPayload(
   };
 
   for (const field of fields) {
+    if (field.type === "file") {
+      const raw = values[field.name] ?? "";
+      const trimmed = raw.trim();
+      if (trimmed === "") {
+        continue;
+      }
+      if (origStr(field.name) !== trimmed) {
+        patch[field.name] = trimmed;
+        anyChange = true;
+      }
+      continue;
+    }
+
     const raw = values[field.name] ?? "";
     const trimmed = raw.trim();
 

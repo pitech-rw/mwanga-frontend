@@ -4,8 +4,10 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
+import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import type { Section } from "../lib/nav";
 import { PlacesLocationPicker } from "./places-location-picker";
+import { ResourceFormField } from "./resource-form-field";
 import { Modal } from "./modal";
 
 type CreateResourceModalProps = {
@@ -106,11 +108,13 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [loadingAgentUsers, setLoadingAgentUsers] = useState(false);
   const [registerOwnerFleet, setRegisterOwnerFleet] = useState(false);
   const [ownerBikes, setOwnerBikes] = useState<OwnerBikeDraft[]>([emptyOwnerBike()]);
+  const [files, setFiles] = useState<Record<string, File | null>>({});
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
     if (open && cfg) {
       setValues(emptyValues(cfg));
+      setFiles(emptyFileState(cfg.fields));
       setError(null);
       setWalletOwnerId(null);
       setWalletOwnerSearch("");
@@ -352,6 +356,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         body = buildCreatePayload(config, values);
       }
 
+      await mergeUploadedFiles(config.fields, files, body);
+
       const response = await authFetch(config.apiPath, {
         method: "POST",
         body: JSON.stringify(body),
@@ -539,51 +545,15 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         ) : null}
 
         {config.fields.map((field) => (
-          <label key={field.name} className="field">
-            <span>
-              {field.label}
-              {field.required ? (
-                <>
-                  <span className="col-required" aria-hidden="true">
-                    {" "}
-                    *
-                  </span>
-                  <span className="sr-only"> (required)</span>
-                </>
-              ) : null}
-            </span>
-            {field.type === "select" ? (
-              <select
-                required={field.required}
-                value={values[field.name] ?? ""}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              >
-                <option value="">Select…</option>
-                {field.options?.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : field.type === "textarea" ? (
-              <textarea
-                required={field.required}
-                rows={3}
-                value={values[field.name] ?? ""}
-                placeholder={field.placeholder}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              />
-            ) : (
-              <input
-                required={field.required}
-                type={field.type}
-                value={values[field.name] ?? ""}
-                placeholder={field.placeholder}
-                minLength={field.type === "password" ? 8 : undefined}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              />
-            )}
-          </label>
+          <ResourceFormField
+            key={field.name}
+            field={field}
+            value={values[field.name] ?? ""}
+            disabled={saving}
+            onValueChange={(next) => setValues({ ...values, [field.name]: next })}
+            file={files[field.name] ?? null}
+            onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
+          />
         ))}
 
         {config.section === "owners" ? (

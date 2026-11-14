@@ -268,6 +268,14 @@ function buildBatteryDataColumns(): Column<Row>[] {
       render: (row) => <Badge status={String(row.status ?? "—")} />,
     },
     {
+      key: "capacity",
+      header: "Capacity",
+      align: "right",
+      sortValue: (row) => Number(row.capacity ?? 0),
+      searchValue: (row) => (row.capacity != null ? `${row.capacity} kWh` : ""),
+      render: (row) => (row.capacity != null ? `${row.capacity} kWh` : "—"),
+    },
+    {
       key: "station",
       header: "Station",
       sortValue: (row) => {

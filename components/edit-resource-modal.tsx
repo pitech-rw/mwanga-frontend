@@ -7,8 +7,10 @@ import type { ResourceSection } from "../lib/resource-create-config";
 import type { FieldSpec } from "../lib/resource-create-config";
 import { getMenuItem } from "../lib/nav";
 import { buildUpdatePatchPayload, initialValuesForUpdate } from "../lib/resource-edit-payload";
+import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import { recordLabelForRow } from "../lib/resource-record-label";
 import { PlacesLocationPicker } from "./places-location-picker";
+import { ResourceFormField } from "./resource-form-field";
 import { Modal } from "./modal";
 
 export type EditResourceTarget = {
@@ -28,12 +30,14 @@ type EditResourceModalProps = {
 
 export function EditResourceModal({ open, target, onClose, onSaved, onError }: EditResourceModalProps) {
   const [values, setValues] = useState<Record<string, string>>({});
+  const [files, setFiles] = useState<Record<string, File | null>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && target) {
       setValues(initialValuesForUpdate(target.section, target.row, target.fields));
+      setFiles(emptyFileState(target.fields));
       setError(null);
     }
   }, [open, target]);
@@ -61,16 +65,20 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const body = buildUpdatePatchPayload(section, target.row, fields, values);
-    if (body === null) {
-      setError("Change at least one field, or cancel.");
-      return;
-    }
 
     setSaving(true);
     setError(null);
 
     try {
+      const valuesForPatch = { ...values };
+      await mergeUploadedFiles(fields, files, valuesForPatch);
+
+      const body = buildUpdatePatchPayload(section, target.row, fields, valuesForPatch);
+      if (body === null) {
+        setError("Change at least one field, or cancel.");
+        setSaving(false);
+        return;
+      }
       const response = await authFetch(`${menu.apiPath}/${id}`, {
         method: "PATCH",
         body: JSON.stringify(body),
@@ -124,62 +132,20 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
         ) : null}
 
         {fields.map((field) => (
-          <label key={field.name} className="field">
-            <span>
-              {field.label}
-              {field.required ? (
-                <>
-                  <span className="col-required" aria-hidden="true">
-                    {" "}
-                    *
-                  </span>
-                  <span className="sr-only"> (required)</span>
-                </>
-              ) : null}
-            </span>
-            {field.type === "select" ? (
-              <select
-                required={field.required}
-                value={values[field.name] ?? ""}
-                disabled={saving}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              >
-                <option value="">Select…</option>
-                {field.options?.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : field.type === "textarea" ? (
-              <textarea
-                required={field.required}
-                rows={3}
-                value={values[field.name] ?? ""}
-                placeholder={field.placeholder}
-                disabled={saving}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              />
-            ) : field.type === "checkbox" ? (
-              <input
-                type="checkbox"
-                checked={(values[field.name] ?? "false") === "true"}
-                disabled={saving}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.checked ? "true" : "false" })}
-                aria-label={field.label}
-              />
-            ) : (
-              <input
-                required={field.required}
-                type={field.type === "number" ? "number" : field.type === "datetime-local" ? "datetime-local" : field.type}
-                value={values[field.name] ?? ""}
-                placeholder={field.placeholder}
-                disabled={saving}
-                minLength={field.type === "password" ? 8 : undefined}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              />
-            )}
-          </label>
+          <ResourceFormField
+            key={field.name}
+            field={field}
+            value={values[field.name] ?? ""}
+            disabled={saving}
+            onValueChange={(next) => setValues({ ...values, [field.name]: next })}
+            file={files[field.name] ?? null}
+            onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
+            existingFileUrl={
+              field.type === "file" && typeof target.row[field.name] === "string"
+                ? (target.row[field.name] as string)
+                : null
+            }
+          />
         ))}
       </form>
     </Modal>

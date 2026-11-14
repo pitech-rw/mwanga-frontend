@@ -63,6 +63,16 @@ export function buildResourceDetailPayload(
         usedKeys.add("status");
         summary.push(["Status", status]);
       }
+      const model = pickString(row, "model");
+      if (model) {
+        usedKeys.add("model");
+        summary.push(["Model", model]);
+      }
+      const capacityKwh = row.capacity;
+      if (capacityKwh != null && capacityKwh !== "") {
+        usedKeys.add("capacity");
+        summary.push(["Capacity", `${capacityKwh} kWh`]);
+      }
       usedKeys.add("soc");
       usedKeys.add("soh");
       summary.push(["SOC / SOH", `${cellText(row.soc)} / ${cellText(row.soh)}`]);
@@ -212,10 +222,20 @@ export function buildResourceDetailPayload(
         usedKeys.add("address");
         summary.push(["Address", street]);
       }
-      const cap = row.capacity;
-      if (cap != null) {
-        usedKeys.add("capacity");
-        summary.push(["Capacity", String(cap)]);
+      const chargingCap = row.chargingCapacity;
+      if (chargingCap != null) {
+        usedKeys.add("chargingCapacity");
+        summary.push(["Charging capacity", String(chargingCap)]);
+      }
+      const stationModel = pickString(row, "model");
+      if (stationModel) {
+        usedKeys.add("model");
+        summary.push(["Model", stationModel]);
+      }
+      const photo = pickString(row, "photo");
+      if (photo) {
+        usedKeys.add("photo");
+        summary.push(["Photo", "Uploaded image"]);
       }
       const st = pickString(row, "status");
       if (st) {

@@ -44,7 +44,9 @@ type StationDetail = {
   name: string;
   address?: string | null;
   status: string;
-  capacity: number;
+  chargingCapacity: number;
+  model?: string | null;
+  photo?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   operators?: StationOperator[];
@@ -259,18 +261,27 @@ export function StationDetailPanel({ stationId, pathPrefix, onForbidden }: Stati
 
   const title = station ? `${station.code} — ${station.name}` : `Station #${stationId}`;
   const atStation = batteryRows.length;
-  const capacity = station?.capacity ?? 0;
+  const chargingCapacity = station?.chargingCapacity ?? 0;
 
   return (
     <article className="card panel station-detail-panel">
       <div className="panel-head">
         <div>
+          {station?.photo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- served from API uploads
+            <img
+              src={station.photo}
+              alt=""
+              className="station-detail-photo"
+              style={{ maxWidth: 240, maxHeight: 140, objectFit: "cover", borderRadius: 8, marginBottom: 12 }}
+            />
+          ) : null}
           <h2>{title}</h2>
           {station ? (
             <p className="sub">
               {station.address ? `${station.address} · ` : ""}
               Status {station.status} · {atStation} pack{atStation === 1 ? "" : "s"} on site
-              {capacity > 0 ? ` · capacity ${capacity}` : ""}
+              {chargingCapacity > 0 ? ` · charging capacity ${chargingCapacity}` : ""}
             </p>
           ) : null}
         </div>

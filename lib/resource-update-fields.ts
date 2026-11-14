@@ -22,6 +22,7 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "manufacturer", label: "Manufacturer", type: "text" },
         { name: "oem", label: "OEM", type: "text" },
         { name: "model", label: "Model", type: "text" },
+        { name: "capacity", label: "Capacity (kWh)", type: "number" },
         { name: "batteryType", label: "Battery type", type: "text" },
         {
           name: "status",
@@ -81,7 +82,9 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "latitude", label: "Latitude", type: "number" },
         { name: "longitude", label: "Longitude", type: "number" },
         { name: "status", label: "Status", type: "text" },
-        { name: "capacity", label: "Capacity", type: "number" },
+        { name: "chargingCapacity", label: "Charging capacity", type: "number" },
+        { name: "model", label: "Model", type: "text" },
+        { name: "photo", label: "Station photo", type: "file", accept: "image/*" },
       ];
     case "swaps":
       return [

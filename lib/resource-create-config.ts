@@ -4,7 +4,16 @@ import type { Section } from "./nav";
 /** Every dashboard section that lists API resources (excludes overview). */
 export type ResourceSection = Exclude<Section, "overview" | "topUp" | "agentTransactions">;
 
-export type FieldType = "text" | "email" | "password" | "number" | "select" | "datetime-local" | "textarea" | "checkbox";
+export type FieldType =
+  | "text"
+  | "email"
+  | "password"
+  | "number"
+  | "select"
+  | "datetime-local"
+  | "textarea"
+  | "checkbox"
+  | "file";
 
 export type FieldSpec = {
   name: string;
@@ -12,6 +21,7 @@ export type FieldSpec = {
   type: FieldType;
   required?: boolean;
   placeholder?: string;
+  accept?: string;
   options?: { value: string; label: string }[];
 };
 
@@ -43,7 +53,8 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     submitLabel: "Create battery",
     fields: [
       { name: "serialNumber", label: "Serial number", type: "text", required: true },
-      { name: "model", label: "Model", type: "text", required: true },
+      { name: "model", label: "Model", type: "text" },
+      { name: "capacity", label: "Capacity (kWh)", type: "number" },
       { name: "manufacturer", label: "Manufacturer", type: "text" },
       { name: "batteryType", label: "Battery type", type: "text" },
       {
@@ -122,7 +133,9 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     fields: [
       { name: "name", label: "Name", type: "text", required: true },
       { name: "address", label: "Address", type: "text" },
-      { name: "capacity", label: "Capacity", type: "number" },
+      { name: "chargingCapacity", label: "Charging capacity", type: "number" },
+      { name: "model", label: "Model", type: "text" },
+      { name: "photo", label: "Station photo", type: "file", accept: "image/*" },
       { name: "latitude", label: "Latitude", type: "number" },
       { name: "longitude", label: "Longitude", type: "number" },
     ],
@@ -237,6 +250,10 @@ export function buildCreatePayload(config: CreateResourceConfig, values: Record<
   const payload: Record<string, unknown> = {};
 
   for (const field of config.fields) {
+    if (field.type === "file") {
+      continue;
+    }
+
     const raw = values[field.name]?.trim() ?? "";
 
     if (!raw) {
