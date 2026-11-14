@@ -1995,6 +1995,18 @@ table.data th.right {
   color: var(--text-soft);
 }
 
+.station-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.station-detail-section h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
 .session-chip {
   padding: 8px 12px;
   border-radius: 999px;

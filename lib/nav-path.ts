@@ -78,3 +78,30 @@ export function companyAccountTransactionsHref(pathPrefix: string, accountId: nu
   const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
   return `${base}/companyAccounts/${accountId}/transactions`;
 }
+
+export type StationDetailSubRoute = {
+  stationId: number;
+};
+
+/** `/account/stations/:id` — inventory, operators, and swap activity for one station. */
+export function stationDetailSubRoute(pathname: string, pathPrefix: string): StationDetailSubRoute | null {
+  const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  const rest = pathname === base ? "" : pathname.slice(base.length).replace(/^\/+/, "");
+  const parts = rest.split("/").filter(Boolean);
+
+  if (parts.length !== 2 || parts[0] !== "stations") {
+    return null;
+  }
+
+  const stationId = Number(parts[1]);
+  if (!Number.isFinite(stationId) || stationId < 1) {
+    return null;
+  }
+
+  return { stationId };
+}
+
+export function stationDetailHref(pathPrefix: string, stationId: number): string {
+  const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  return `${base}/stations/${stationId}`;
+}

@@ -199,7 +199,8 @@ export function buildResourceDetailPayload(
       const name = pickString(row, "name") ?? idStr;
       const code = pickString(row, "code");
       headingTitle = code ? `Station · ${code}` : `Station · ${name}`;
-      description = "Swap location. Capacity and coordinates appear in the fields below when set.";
+      description =
+        "Swap location. Open the station from the row actions menu to see batteries, assigned operators, and transactions.";
       if (code) {
         usedKeys.add("code");
         summary.push(["Code", code]);
@@ -215,6 +216,26 @@ export function buildResourceDetailPayload(
       if (cap != null) {
         usedKeys.add("capacity");
         summary.push(["Capacity", String(cap)]);
+      }
+      const st = pickString(row, "status");
+      if (st) {
+        usedKeys.add("status");
+        summary.push(["Status", st]);
+      }
+      const operators = row.operators;
+      const batteries = row.batteries;
+      const transactions = row.transactions;
+      if (Array.isArray(operators)) {
+        usedKeys.add("operators");
+        summary.push(["Operators", String(operators.length)]);
+      }
+      if (Array.isArray(batteries)) {
+        usedKeys.add("batteries");
+        summary.push(["Batteries on site", String(batteries.length)]);
+      }
+      if (Array.isArray(transactions)) {
+        usedKeys.add("transactions");
+        summary.push(["Swaps", String(transactions.length)]);
       }
       break;
     }
@@ -376,5 +397,7 @@ function isRelationOrMetaKey(key: string): boolean {
     "bike",
     "swapTransaction",
     "assignedStation",
+    "operators",
+    "batteries",
   ]).has(key);
 }

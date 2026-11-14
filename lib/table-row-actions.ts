@@ -16,6 +16,7 @@ export const TABLE_ROW_ACTION_IDS = {
   walletTopUp: "wallet-top-up",
   walletLedger: "wallet-ledger",
   companyAccountLedger: "company-account-ledger",
+  stationOpen: "station-open",
   walletDelete: "wallet-delete",
   resourceEdit: "resource-edit",
   resourceDelete: "resource-delete",
@@ -110,7 +111,15 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericDelete(PERMISSIONS.cards.delete),
   ],
   roles: [genericEdit(PERMISSIONS.roles.write), genericDelete(PERMISSIONS.roles.delete)],
-  stations: [genericEdit(PERMISSIONS.stations.write), genericDelete(PERMISSIONS.stations.delete)],
+  stations: [
+    {
+      id: TABLE_ROW_ACTION_IDS.stationOpen,
+      label: "Open station",
+      permission: PERMISSIONS.stations.read,
+    },
+    genericEdit(PERMISSIONS.stations.write),
+    genericDelete(PERMISSIONS.stations.delete),
+  ],
   swaps: [genericEdit(PERMISSIONS.swaps.write), genericDelete(PERMISSIONS.swaps.delete)],
   users: [
     {

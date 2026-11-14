@@ -56,6 +56,7 @@ import { AgentWalletTopUpModal } from "./agent-wallet-top-up-modal";
 import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
 import { WalletLedgerModal } from "./wallet-ledger-modal";
 import { buildUsersTableFilters, USERS_TABLE_SORT_OPTIONS } from "../lib/users-table-filters";
+import { stationDetailHref } from "../lib/nav-path";
 
 type Row = Record<string, unknown>;
 
@@ -609,6 +610,7 @@ function buildRowActionMenuItems(
   openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
   openWalletLedger: (account: AccountLedgerTarget) => void,
   navigateToCompanyAccountTransactions: (href: string) => void,
+  navigateToStationDetail: (href: string) => void,
   pathPrefix: string,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
@@ -784,6 +786,19 @@ function buildRowActionMenuItems(
       continue;
     }
 
+    if (def.id === TABLE_ROW_ACTION_IDS.stationOpen) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => navigateToStationDetail(stationDetailHref(pathPrefix, id)),
+      });
+      continue;
+    }
+
     if (def.id === TABLE_ROW_ACTION_IDS.walletDelete) {
       const id = row.id;
       if (typeof id !== "number") {
@@ -853,6 +868,7 @@ function appendActionsColumn(
   openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
   openWalletLedger: (account: AccountLedgerTarget) => void,
   navigateToCompanyAccountTransactions: (href: string) => void,
+  navigateToStationDetail: (href: string) => void,
   pathPrefix: string,
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
@@ -881,6 +897,7 @@ function appendActionsColumn(
           openAgentWalletTopUp,
           openWalletLedger,
           navigateToCompanyAccountTransactions,
+          navigateToStationDetail,
           pathPrefix,
           openWalletDelete,
           openResourceEdit,
@@ -904,6 +921,7 @@ function appendActionsColumn(
           openAgentWalletTopUp,
           openWalletLedger,
           navigateToCompanyAccountTransactions,
+          navigateToStationDetail,
           pathPrefix,
           openWalletDelete,
           openResourceEdit,
@@ -1161,6 +1179,25 @@ export function ApiResourcePanel({
     [router],
   );
 
+  const navigateToStationDetail = useCallback(
+    (href: string) => {
+      router.push(href);
+    },
+    [router],
+  );
+
+  const openStationFromRow = useCallback(
+    (row: Row) => {
+      const id = row.id;
+      if (typeof id === "number") {
+        router.push(stationDetailHref(pathPrefix, id));
+        return;
+      }
+      onDetail?.(buildResourceDetailPayload(section, title, row, cellValue));
+    },
+    [onDetail, pathPrefix, router, section, title],
+  );
+
   const openWalletDeleteModal = useCallback((payload: { id: number; ownerLabel: string }) => {
     setWalletDelete(payload);
   }, []);
@@ -1207,6 +1244,7 @@ export function ApiResourcePanel({
       openAgentWalletTopUpModal,
       openWalletLedgerModal,
       navigateToCompanyAccountTransactions,
+      navigateToStationDetail,
       pathPrefix,
       openWalletDeleteModal,
       openResourceEditModal,
@@ -1224,6 +1262,7 @@ export function ApiResourcePanel({
     openAgentWalletTopUpModal,
     openWalletLedgerModal,
     navigateToCompanyAccountTransactions,
+    navigateToStationDetail,
     pathPrefix,
     openWalletDeleteModal,
     openResourceEditModal,
@@ -1300,9 +1339,11 @@ export function ApiResourcePanel({
         defaultSortKey={section === "users" ? "name" : null}
         defaultSortDirection={section === "users" ? "asc" : "asc"}
         onRowClick={
-          onDetail
-            ? (row) => onDetail(buildResourceDetailPayload(section, title, row, cellValue))
-            : undefined
+          section === "stations"
+            ? openStationFromRow
+            : onDetail
+              ? (row) => onDetail(buildResourceDetailPayload(section, title, row, cellValue))
+              : undefined
         }
       />
       </article>
