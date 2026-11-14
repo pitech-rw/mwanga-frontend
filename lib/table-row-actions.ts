@@ -16,9 +16,13 @@ export const TABLE_ROW_ACTION_IDS = {
   walletTopUp: "wallet-top-up",
   walletLedger: "wallet-ledger",
   companyAccountLedger: "company-account-ledger",
+  stationOpen: "station-open",
   walletDelete: "wallet-delete",
   resourceEdit: "resource-edit",
   resourceDelete: "resource-delete",
+  issueInventoryBike: "issue-inventory-bike",
+  issueInventoryBatteryStation: "issue-inventory-battery-station",
+  issueInventoryBatteryBike: "issue-inventory-battery-bike",
 } as const;
 
 export type TableRowActionId = (typeof TABLE_ROW_ACTION_IDS)[keyof typeof TABLE_ROW_ACTION_IDS];
@@ -56,6 +60,28 @@ function batteryHasBike(row: Record<string, unknown>): boolean {
 }
 
 export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly TableRowActionDef[]> = {
+  inventory: [
+    {
+      id: TABLE_ROW_ACTION_IDS.issueInventoryBike,
+      label: "Issue to owner",
+      permission: PERMISSIONS.inventory.write,
+      visibleForRow: (row) => row.kind === "bike",
+    },
+    {
+      id: TABLE_ROW_ACTION_IDS.issueInventoryBatteryStation,
+      label: "Issue to station",
+      permission: PERMISSIONS.inventory.write,
+      visibleForRow: (row) => row.kind === "battery",
+    },
+    {
+      id: TABLE_ROW_ACTION_IDS.issueInventoryBatteryBike,
+      label: "Issue to bike",
+      permission: PERMISSIONS.inventory.write,
+      visibleForRow: (row) => row.kind === "battery",
+    },
+    genericEdit(PERMISSIONS.inventory.write),
+    genericDelete(PERMISSIONS.inventory.delete),
+  ],
   batteries: [
     {
       id: TABLE_ROW_ACTION_IDS.attachBatteryStation,
@@ -110,7 +136,15 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericDelete(PERMISSIONS.cards.delete),
   ],
   roles: [genericEdit(PERMISSIONS.roles.write), genericDelete(PERMISSIONS.roles.delete)],
-  stations: [genericEdit(PERMISSIONS.stations.write), genericDelete(PERMISSIONS.stations.delete)],
+  stations: [
+    {
+      id: TABLE_ROW_ACTION_IDS.stationOpen,
+      label: "Open station",
+      permission: PERMISSIONS.stations.read,
+    },
+    genericEdit(PERMISSIONS.stations.write),
+    genericDelete(PERMISSIONS.stations.delete),
+  ],
   swaps: [genericEdit(PERMISSIONS.swaps.write), genericDelete(PERMISSIONS.swaps.delete)],
   users: [
     {

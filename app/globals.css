@@ -1636,6 +1636,38 @@ table.data th.right {
   margin-top: 0;
 }
 
+.owner-fleet-block {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.field-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.field-checkbox input[type="checkbox"] {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.owner-fleet-bike {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.owner-fleet-bike legend {
+  padding: 0 4px;
+}
+
 .form-modal-panel .field input,
 .form-modal-panel .field select,
 .form-modal-panel .field textarea {
@@ -1961,6 +1993,18 @@ table.data th.right {
 
 .detail-list span {
   color: var(--text-soft);
+}
+
+.station-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.station-detail-section h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+  font-weight: 650;
 }
 
 .session-chip {

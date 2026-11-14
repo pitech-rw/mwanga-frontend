@@ -4,8 +4,10 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
+import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import type { Section } from "../lib/nav";
 import { PlacesLocationPicker } from "./places-location-picker";
+import { ResourceFormField } from "./resource-form-field";
 import { Modal } from "./modal";
 
 type CreateResourceModalProps = {
@@ -36,6 +38,45 @@ type AgentListRow = {
   userId?: number | null;
 };
 
+type OwnerBikeDraft = {
+  plateNumber: string;
+  serialNumber: string;
+  model: string;
+  chassisNumber: string;
+};
+
+function emptyOwnerBike(): OwnerBikeDraft {
+  return { plateNumber: "", serialNumber: "", model: "", chassisNumber: "" };
+}
+
+function ownerBikeDraftHasAny(draft: OwnerBikeDraft): boolean {
+  return [draft.plateNumber, draft.serialNumber, draft.model, draft.chassisNumber].some((v) => v.trim() !== "");
+}
+
+function buildOwnerBikesPayload(drafts: OwnerBikeDraft[]): Record<string, string>[] | null {
+  const bikes: Record<string, string>[] = [];
+
+  for (const draft of drafts) {
+    if (!ownerBikeDraftHasAny(draft)) {
+      continue;
+    }
+    const plateNumber = draft.plateNumber.trim();
+    const serialNumber = draft.serialNumber.trim();
+    const model = draft.model.trim();
+    if (!plateNumber || !serialNumber || !model) {
+      return null;
+    }
+    const bike: Record<string, string> = { plateNumber, serialNumber, model };
+    const chassisNumber = draft.chassisNumber.trim();
+    if (chassisNumber) {
+      bike.chassisNumber = chassisNumber;
+    }
+    bikes.push(bike);
+  }
+
+  return bikes;
+}
+
 function emptyValues(config: CreateResourceConfig): Record<string, string> {
   return Object.fromEntries(config.fields.map((field) => [field.name, ""]));
 }
@@ -65,16 +106,22 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [agentUserSearch, setAgentUserSearch] = useState("");
   const [agentUsers, setAgentUsers] = useState<AgentUserRow[]>([]);
   const [loadingAgentUsers, setLoadingAgentUsers] = useState(false);
+  const [registerOwnerFleet, setRegisterOwnerFleet] = useState(false);
+  const [ownerBikes, setOwnerBikes] = useState<OwnerBikeDraft[]>([emptyOwnerBike()]);
+  const [files, setFiles] = useState<Record<string, File | null>>({});
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
     if (open && cfg) {
       setValues(emptyValues(cfg));
+      setFiles(emptyFileState(cfg.fields));
       setError(null);
       setWalletOwnerId(null);
       setWalletOwnerSearch("");
       setAgentUserId(null);
       setAgentUserSearch("");
+      setRegisterOwnerFleet(false);
+      setOwnerBikes([emptyOwnerBike()]);
     }
   }, [open, section]);
 
@@ -234,11 +281,13 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     return null;
   }
 
-  const needsOwnerPicker = config.section === "wallets" || config.section === "bikes";
+  const needsOwnerPicker = config.section === "wallets";
+  const bikeOwnerPicker = config.section === "bikes";
 
   const submitDisabled =
     saving ||
     (needsOwnerPicker && (walletOwnerId === null || loadingWalletUsers)) ||
+    (bikeOwnerPicker && loadingWalletUsers) ||
     (config.section === "agents" && (agentUserId === null || loadingAgentUsers));
 
   const submit = async (event: FormEvent) => {
@@ -246,12 +295,10 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     setSaving(true);
     setError(null);
 
-    if (needsOwnerPicker) {
-      if (walletOwnerId === null) {
-        setError("Select a fleet owner.");
-        setSaving(false);
-        return;
-      }
+    if (needsOwnerPicker && walletOwnerId === null) {
+      setError("Select a fleet owner.");
+      setSaving(false);
+      return;
     }
 
     if (config.section === "agents") {
@@ -260,6 +307,22 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         setSaving(false);
         return;
       }
+    }
+
+    let ownerBikesPayload: Record<string, string>[] | undefined;
+    if (config.section === "owners" && registerOwnerFleet) {
+      const bikes = buildOwnerBikesPayload(ownerBikes);
+      if (bikes === null) {
+        setError("Each fleet bike needs a plate number, serial number, and model.");
+        setSaving(false);
+        return;
+      }
+      if (bikes.length === 0) {
+        setError("Add at least one fleet bike, or turn off fleet registration.");
+        setSaving(false);
+        return;
+      }
+      ownerBikesPayload = bikes;
     }
 
     try {
@@ -277,18 +340,44 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         }
       } else if (config.section === "bikes") {
         body = buildCreatePayload(config, values);
-        body.ownerId = walletOwnerId;
+        if (walletOwnerId !== null) {
+          body.ownerId = walletOwnerId;
+        }
+      } else if (config.section === "inventory") {
+        const kind = values.kind?.trim() === "battery" ? "battery" : "bike";
+        body = buildCreatePayload(config, values);
+        if (kind === "bike") {
+          if (!String(body.plateNumber ?? "").trim() || !String(body.model ?? "").trim()) {
+            setError("Bikes need a plate number and model.");
+            setSaving(false);
+            return;
+          }
+        }
+        delete body.kind;
       } else if (config.section === "agents") {
         body = { userId: agentUserId };
         const currencyRaw = values.currency?.trim() ?? "";
         if (currencyRaw) {
           body.currency = currencyRaw;
         }
+      } else if (config.section === "owners") {
+        body = buildCreatePayload(config, values);
+        if (ownerBikesPayload?.length) {
+          body.bikes = ownerBikesPayload;
+        }
       } else {
         body = buildCreatePayload(config, values);
       }
 
-      const response = await authFetch(config.apiPath, {
+      await mergeUploadedFiles(config.fields, files, body);
+
+      let postPath = config.apiPath;
+      if (config.section === "inventory") {
+        const kind = values.kind?.trim() === "battery" ? "battery" : "bike";
+        postPath = kind === "battery" ? "/inventory/receive/battery" : "/inventory/receive/bike";
+      }
+
+      const response = await authFetch(postPath, {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -400,12 +489,12 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
-        {needsOwnerPicker ? (
+        {needsOwnerPicker || bikeOwnerPicker ? (
           <>
             <label className="field">
               <span>
                 Find owner
-                {config.section === "bikes" ? (
+                {needsOwnerPicker ? (
                   <>
                     <span className="col-required" aria-hidden="true">
                       {" "}
@@ -413,7 +502,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                     </span>
                     <span className="sr-only"> (required)</span>
                   </>
-                ) : null}
+                ) : (
+                  <span className="sub"> (optional — leave unset for warehouse)</span>
+                )}
               </span>
               <input
                 type="search"
@@ -431,7 +522,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               <label className="field">
                 <span>
                   Fleet owner ({filteredWalletOwners.length} shown)
-                  {config.section === "bikes" ? (
+                  {needsOwnerPicker ? (
                     <>
                       <span className="col-required" aria-hidden="true">
                         {" "}
@@ -444,7 +535,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 <select
                   value={walletOwnerId != null ? String(walletOwnerId) : ""}
                   disabled={saving || filteredWalletOwners.length === 0}
-                  required={config.section === "bikes"}
+                  required={needsOwnerPicker}
                   onChange={(event) => {
                     const v = event.target.value;
                     setWalletOwnerId(v === "" ? null : Number(v));
@@ -475,52 +566,137 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         ) : null}
 
         {config.fields.map((field) => (
-          <label key={field.name} className="field">
-            <span>
-              {field.label}
-              {field.required ? (
-                <>
-                  <span className="col-required" aria-hidden="true">
-                    {" "}
-                    *
-                  </span>
-                  <span className="sr-only"> (required)</span>
-                </>
-              ) : null}
-            </span>
-            {field.type === "select" ? (
-              <select
-                required={field.required}
-                value={values[field.name] ?? ""}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              >
-                <option value="">Select…</option>
-                {field.options?.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : field.type === "textarea" ? (
-              <textarea
-                required={field.required}
-                rows={3}
-                value={values[field.name] ?? ""}
-                placeholder={field.placeholder}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              />
-            ) : (
-              <input
-                required={field.required}
-                type={field.type}
-                value={values[field.name] ?? ""}
-                placeholder={field.placeholder}
-                minLength={field.type === "password" ? 8 : undefined}
-                onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-              />
-            )}
-          </label>
+          <ResourceFormField
+            key={field.name}
+            field={field}
+            value={values[field.name] ?? ""}
+            disabled={saving}
+            onValueChange={(next) => setValues({ ...values, [field.name]: next })}
+            file={files[field.name] ?? null}
+            onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
+          />
         ))}
+
+        {config.section === "owners" ? (
+          <div className="owner-fleet-block">
+            <label className="field field-checkbox">
+              <input
+                type="checkbox"
+                checked={registerOwnerFleet}
+                disabled={saving}
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setRegisterOwnerFleet(checked);
+                  if (checked && ownerBikes.length === 0) {
+                    setOwnerBikes([emptyOwnerBike()]);
+                  }
+                }}
+              />
+              <span>Register fleet bikes for this owner</span>
+            </label>
+            {registerOwnerFleet ? (
+              <p className="sub">Each bike is linked to the new owner automatically.</p>
+            ) : null}
+            {registerOwnerFleet
+              ? ownerBikes.map((draft, index) => (
+                  <fieldset key={index} className="owner-fleet-bike" disabled={saving}>
+                    <legend className="sub">Bike {index + 1}</legend>
+                    <label className="field">
+                      <span>
+                        Plate number
+                        <span className="col-required" aria-hidden="true">
+                          {" "}
+                          *
+                        </span>
+                      </span>
+                      <input
+                        type="text"
+                        value={draft.plateNumber}
+                        onChange={(event) => {
+                          const plateNumber = event.target.value;
+                          setOwnerBikes((rows) =>
+                            rows.map((row, i) => (i === index ? { ...row, plateNumber } : row)),
+                          );
+                        }}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>
+                        Serial number
+                        <span className="col-required" aria-hidden="true">
+                          {" "}
+                          *
+                        </span>
+                      </span>
+                      <input
+                        type="text"
+                        value={draft.serialNumber}
+                        onChange={(event) => {
+                          const serialNumber = event.target.value;
+                          setOwnerBikes((rows) =>
+                            rows.map((row, i) => (i === index ? { ...row, serialNumber } : row)),
+                          );
+                        }}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>
+                        Model
+                        <span className="col-required" aria-hidden="true">
+                          {" "}
+                          *
+                        </span>
+                      </span>
+                      <input
+                        type="text"
+                        value={draft.model}
+                        onChange={(event) => {
+                          const model = event.target.value;
+                          setOwnerBikes((rows) => rows.map((row, i) => (i === index ? { ...row, model } : row)));
+                        }}
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Chassis number</span>
+                      <input
+                        type="text"
+                        value={draft.chassisNumber}
+                        onChange={(event) => {
+                          const chassisNumber = event.target.value;
+                          setOwnerBikes((rows) =>
+                            rows.map((row, i) => (i === index ? { ...row, chassisNumber } : row)),
+                          );
+                        }}
+                        autoComplete="off"
+                      />
+                    </label>
+                    {ownerBikes.length > 1 ? (
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setOwnerBikes((rows) => rows.filter((_, i) => i !== index))}
+                      >
+                        Remove bike
+                      </button>
+                    ) : null}
+                  </fieldset>
+                ))
+              : null}
+            {registerOwnerFleet ? (
+              <button
+                type="button"
+                className="btn"
+                disabled={saving}
+                onClick={() => setOwnerBikes((rows) => [...rows, emptyOwnerBike()])}
+              >
+                Add another bike
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </form>
     </Modal>
   );

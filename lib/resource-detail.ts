@@ -63,6 +63,16 @@ export function buildResourceDetailPayload(
         usedKeys.add("status");
         summary.push(["Status", status]);
       }
+      const model = pickString(row, "model");
+      if (model) {
+        usedKeys.add("model");
+        summary.push(["Model", model]);
+      }
+      const capacityKwh = row.capacity;
+      if (capacityKwh != null && capacityKwh !== "") {
+        usedKeys.add("capacity");
+        summary.push(["Capacity", `${capacityKwh} kWh`]);
+      }
       usedKeys.add("soc");
       usedKeys.add("soh");
       summary.push(["SOC / SOH", `${cellText(row.soc)} / ${cellText(row.soh)}`]);
@@ -199,7 +209,8 @@ export function buildResourceDetailPayload(
       const name = pickString(row, "name") ?? idStr;
       const code = pickString(row, "code");
       headingTitle = code ? `Station · ${code}` : `Station · ${name}`;
-      description = "Swap location. Capacity and coordinates appear in the fields below when set.";
+      description =
+        "Swap location. Open the station from the row actions menu to see batteries, assigned operators, and transactions.";
       if (code) {
         usedKeys.add("code");
         summary.push(["Code", code]);
@@ -211,10 +222,40 @@ export function buildResourceDetailPayload(
         usedKeys.add("address");
         summary.push(["Address", street]);
       }
-      const cap = row.capacity;
-      if (cap != null) {
-        usedKeys.add("capacity");
-        summary.push(["Capacity", String(cap)]);
+      const chargingCap = row.chargingCapacity;
+      if (chargingCap != null) {
+        usedKeys.add("chargingCapacity");
+        summary.push(["Charging capacity", String(chargingCap)]);
+      }
+      const stationModel = pickString(row, "model");
+      if (stationModel) {
+        usedKeys.add("model");
+        summary.push(["Model", stationModel]);
+      }
+      const photo = pickString(row, "photo");
+      if (photo) {
+        usedKeys.add("photo");
+        summary.push(["Photo", "Uploaded image"]);
+      }
+      const st = pickString(row, "status");
+      if (st) {
+        usedKeys.add("status");
+        summary.push(["Status", st]);
+      }
+      const operators = row.operators;
+      const batteries = row.batteries;
+      const transactions = row.transactions;
+      if (Array.isArray(operators)) {
+        usedKeys.add("operators");
+        summary.push(["Operators", String(operators.length)]);
+      }
+      if (Array.isArray(batteries)) {
+        usedKeys.add("batteries");
+        summary.push(["Batteries on site", String(batteries.length)]);
+      }
+      if (Array.isArray(transactions)) {
+        usedKeys.add("transactions");
+        summary.push(["Swaps", String(transactions.length)]);
       }
       break;
     }
@@ -331,6 +372,30 @@ export function buildResourceDetailPayload(
       }
       break;
     }
+    case "inventory": {
+      const kind = pickString(row, "kind") ?? "item";
+      usedKeys.add("kind");
+      summary.push(["Kind", kind]);
+      const bike = row.bike;
+      const battery = row.battery;
+      if (bike && typeof bike === "object") {
+        const plate = pickString(bike as Record<string, unknown>, "plateNumber");
+        if (plate) {
+          summary.push(["Bike", plate]);
+        }
+      }
+      if (battery && typeof battery === "object") {
+        const serial = pickString(battery as Record<string, unknown>, "serialNumber");
+        if (serial) {
+          summary.push(["Battery", serial]);
+        }
+      }
+      usedKeys.add("receivedAt");
+      summary.push(["Received", cellText(row.receivedAt)]);
+      headingTitle = `Inventory · ${kind} #${idStr}`;
+      description = "Warehouse stock waiting to be issued.";
+      break;
+    }
     default:
       headingTitle = `${resourceTitle} · ${idStr}`;
       description = `Details for this ${resourceTitle.toLowerCase()} record.`;
@@ -376,5 +441,8 @@ function isRelationOrMetaKey(key: string): boolean {
     "bike",
     "swapTransaction",
     "assignedStation",
+    "operators",
+    "batteries",
+    "movements",
   ]).has(key);
 }

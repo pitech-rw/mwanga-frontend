@@ -4,7 +4,16 @@ import type { Section } from "./nav";
 /** Every dashboard section that lists API resources (excludes overview). */
 export type ResourceSection = Exclude<Section, "overview" | "topUp" | "agentTransactions">;
 
-export type FieldType = "text" | "email" | "password" | "number" | "select" | "datetime-local" | "textarea" | "checkbox";
+export type FieldType =
+  | "text"
+  | "email"
+  | "password"
+  | "number"
+  | "select"
+  | "datetime-local"
+  | "textarea"
+  | "checkbox"
+  | "file";
 
 export type FieldSpec = {
   name: string;
@@ -12,6 +21,7 @@ export type FieldSpec = {
   type: FieldType;
   required?: boolean;
   placeholder?: string;
+  accept?: string;
   options?: { value: string; label: string }[];
 };
 
@@ -43,7 +53,8 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     submitLabel: "Create battery",
     fields: [
       { name: "serialNumber", label: "Serial number", type: "text", required: true },
-      { name: "model", label: "Model", type: "text", required: true },
+      { name: "model", label: "Model", type: "text" },
+      { name: "capacity", label: "Capacity (kWh)", type: "number" },
       { name: "manufacturer", label: "Manufacturer", type: "text" },
       { name: "batteryType", label: "Battery type", type: "text" },
       {
@@ -53,14 +64,40 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         options: selectOptions(BATTERY_STATUS_VALUES),
       },
       { name: "soc", label: "State of charge (%)", type: "number" },
-      { name: "stationId", label: "Station ID", type: "number" },
+    ],
+  },
+  inventory: {
+    section: "inventory",
+    apiPath: "/inventory/receive/bike",
+    title: "Receive into warehouse",
+    description: "New assets are registered here first, then issued to fleet owners, stations, or bikes.",
+    submitLabel: "Receive",
+    fields: [
+      {
+        name: "kind",
+        label: "Asset type",
+        type: "select",
+        required: true,
+        options: [
+          { value: "bike", label: "Bike" },
+          { value: "battery", label: "Battery" },
+        ],
+      },
+      { name: "plateNumber", label: "Plate number (bike)", type: "text" },
+      { name: "chassisNumber", label: "Chassis number (bike)", type: "text" },
+      { name: "serialNumber", label: "Serial number", type: "text", required: true },
+      { name: "model", label: "Model", type: "text" },
+      { name: "manufacturer", label: "Manufacturer (battery)", type: "text" },
+      { name: "capacity", label: "Capacity kWh (battery)", type: "number" },
+      { name: "soc", label: "SOC % (battery)", type: "number" },
+      { name: "notes", label: "Notes", type: "textarea" },
     ],
   },
   bikes: {
     section: "bikes",
     apiPath: "/bikes",
     title: "Register bike",
-    description: "Links a plate and serial to the fleet.",
+    description: "Links a plate and serial. Leave fleet owner empty to register in warehouse inventory instead.",
     submitLabel: "Create bike",
     fields: [
       { name: "plateNumber", label: "Plate number", type: "text", required: true },
@@ -74,7 +111,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     section: "owners",
     apiPath: "/owners",
     title: "Register owner",
-    description: "Creates a fleet buyer record with a wallet.",
+    description: "Creates a fleet buyer record with a wallet. You can register bikes for the fleet in the same step.",
     submitLabel: "Create owner",
     fields: [
       { name: "name", label: "Display name", type: "text", required: true },
@@ -122,7 +159,9 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     fields: [
       { name: "name", label: "Name", type: "text", required: true },
       { name: "address", label: "Address", type: "text" },
-      { name: "capacity", label: "Capacity", type: "number" },
+      { name: "chargingCapacity", label: "Charging capacity", type: "number" },
+      { name: "model", label: "Model", type: "text" },
+      { name: "photo", label: "Station photo", type: "file", accept: "image/*" },
       { name: "latitude", label: "Latitude", type: "number" },
       { name: "longitude", label: "Longitude", type: "number" },
     ],
@@ -237,6 +276,10 @@ export function buildCreatePayload(config: CreateResourceConfig, values: Record<
   const payload: Record<string, unknown> = {};
 
   for (const field of config.fields) {
+    if (field.type === "file") {
+      continue;
+    }
+
     const raw = values[field.name]?.trim() ?? "";
 
     if (!raw) {

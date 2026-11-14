@@ -17,8 +17,14 @@ import { useToast } from "./toast";
 import { getApiUrl } from "../lib/api";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../lib/auth";
 import { AGENT_API_MENU_ITEMS, API_MENU_ITEMS, getMenuItem, type Section } from "../lib/nav";
-import { companyAccountTransactionsSubRoute, sectionFromPathname, sectionHref } from "../lib/nav-path";
+import {
+  companyAccountTransactionsSubRoute,
+  sectionFromPathname,
+  sectionHref,
+  stationDetailSubRoute,
+} from "../lib/nav-path";
 import { CompanyAccountTransactionsPanel } from "./company-account-transactions-panel";
+import { StationDetailPanel } from "./station-detail-panel";
 import type { ResourceDetailPayload } from "../lib/resource-detail";
 
 type HealthResponse = {
@@ -53,6 +59,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
   const section = sectionFromPathname(pathname, pathPrefix);
   const companyAccountTx = companyAccountTransactionsSubRoute(pathname, pathPrefix);
+  const stationDetail = stationDetailSubRoute(pathname, pathPrefix);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -79,9 +86,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
       document.title = `Transactions · Company account #${companyAccountTx.accountId} — Mwanga`;
       return;
     }
+    if (stationDetail) {
+      document.title = `Station #${stationDetail.stationId} — Mwanga`;
+      return;
+    }
     const label = section === "overview" ? "Overview" : item.title;
     document.title = `${label} — Mwanga`;
-  }, [section, companyAccountTx]);
+  }, [section, companyAccountTx, stationDetail]);
 
   useEffect(() => {
     if (!getAccessToken()) {
@@ -175,14 +186,18 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const accountHome = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
   const pageTitle = companyAccountTx
     ? "Transactions"
-  : section === "overview"
-    ? "Overview"
-    : activeMenu.title;
+    : stationDetail
+      ? "Station detail"
+      : section === "overview"
+        ? "Overview"
+        : activeMenu.title;
   const breadcrumbLeaf = companyAccountTx
     ? "Transactions"
-    : section === "overview"
-      ? "Overview"
-      : activeMenu.label;
+    : stationDetail
+      ? "Station detail"
+      : section === "overview"
+        ? "Overview"
+        : activeMenu.label;
   const isAgent = sessionReady && sessionUser?.type === "agent";
   type AgentSection = "topUp" | "agentTransactions" | "riders";
   const agentSection: AgentSection =
@@ -321,7 +336,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           </button>
         </div>
         <SidebarNav
-          section={companyAccountTx ? "companyAccounts" : section}
+          section={companyAccountTx || stationDetail ? "stations" : section}
           counts={counts}
           collapsed={sidebarCollapsed}
           pathPrefix={pathPrefix}
@@ -357,6 +372,16 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
                         /
                       </li>
                       <li className="topbar-breadcrumb-current">Transactions</li>
+                    </>
+                  ) : stationDetail ? (
+                    <>
+                      <li>
+                        <Link href={sectionHref(pathPrefix, "stations")}>Stations</Link>
+                      </li>
+                      <li className="topbar-breadcrumb-sep" aria-hidden="true">
+                        /
+                      </li>
+                      <li className="topbar-breadcrumb-current">Station detail</li>
                     </>
                   ) : (
                     <li className="topbar-breadcrumb-current">{breadcrumbLeaf}</li>
@@ -429,7 +454,15 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           />
         ) : null}
 
-        {activeMenu.apiPath && section !== "overview" && !companyAccountTx ? (
+        {stationDetail ? (
+          <StationDetailPanel
+            stationId={stationDetail.stationId}
+            pathPrefix={pathPrefix}
+            onForbidden={handleForbidden}
+          />
+        ) : null}
+
+        {activeMenu.apiPath && section !== "overview" && !companyAccountTx && !stationDetail ? (
           <ApiResourcePanel
             section={section}
             apiPath={activeMenu.apiPath}

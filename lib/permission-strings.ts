@@ -65,4 +65,9 @@ export const PERMISSIONS = {
     write: "violations:write",
     delete: "violations:delete",
   },
+  inventory: {
+    read: "inventory:read",
+    write: "inventory:write",
+    delete: "inventory:delete",
+  },
 } as const;

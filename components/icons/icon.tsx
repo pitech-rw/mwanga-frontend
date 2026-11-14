@@ -82,6 +82,17 @@ export function IconBuilding(props: IconProps) {
   );
 }
 
+export function IconBoxes(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8" />
+      <path d="M3 8h18V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2z" />
+      <path d="M12 12v6" />
+      <path d="M9 15h6" />
+    </IconBase>
+  );
+}
+
 export function IconUser(props: IconProps) {
   return (
     <IconBase {...props}>
@@ -253,6 +264,7 @@ const NAV_ICON_MAP = {
   topUp: IconWallet,
   agentTransactions: IconArrowLeftRight,
   riders: IconUsers,
+  inventory: IconBoxes,
   batteries: IconBatteryCharging,
   bikes: IconBike,
   cards: IconNfc,
