@@ -16,6 +16,8 @@ function selectOptions(values: readonly string[]) {
  */
 export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] | null {
   switch (section) {
+    case "inventory":
+      return [{ name: "notes", label: "Notes", type: "textarea" }];
     case "batteries":
       return [
         { name: "serialNumber", label: "Serial number", type: "text" },

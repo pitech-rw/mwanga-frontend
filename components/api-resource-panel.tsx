@@ -44,6 +44,7 @@ import {
   type CardRiderAssignTarget,
 } from "./assign-card-rider-modal";
 import { AttachBatteryStationModal, type BatteryAttachTarget } from "./attach-battery-station-modal";
+import { IssueInventoryModal, type InventoryIssueTarget } from "./issue-inventory-modal";
 import { AssignSwapperStationModal, type SwapperAssignTarget } from "./assign-swapper-station-modal";
 import { Badge } from "./badge";
 import { CreateResourceButton } from "./create-resource-button";
@@ -82,6 +83,9 @@ const SKIP_KEYS = new Set([
   "user",
   "assignedStation",
   "stationId",
+  "movements",
+  "bikeId",
+  "batteryId",
 ]);
 
 function cellValue(value: unknown): string {
@@ -247,6 +251,63 @@ function buildWalletDataColumns(): Column<Row>[] {
       sortValue: (row) => walletBalanceNumber(row),
       searchValue: (row) => `${walletBalanceNumber(row)} ${walletCurrency(row)}`,
       render: (row) => `${walletBalanceNumber(row).toLocaleString()} ${walletCurrency(row)}`,
+    },
+  ];
+}
+
+function inventoryAssetLabel(row: Row): string {
+  if (row.kind === "bike" && row.bike && typeof row.bike === "object") {
+    const bike = row.bike as Record<string, unknown>;
+    const plate = typeof bike.plateNumber === "string" ? bike.plateNumber : "";
+    if (plate) {
+      return plate;
+    }
+  }
+  if (row.kind === "battery" && row.battery && typeof row.battery === "object") {
+    const battery = row.battery as Record<string, unknown>;
+    const serial = typeof battery.serialNumber === "string" ? battery.serialNumber : "";
+    if (serial) {
+      return serial;
+    }
+  }
+  return row.id != null ? `#${row.id}` : "—";
+}
+
+function buildInventoryDataColumns(): Column<Row>[] {
+  return [
+    {
+      key: "kind",
+      header: "Kind",
+      sortValue: (row) => String(row.kind ?? ""),
+      searchValue: (row) => String(row.kind ?? ""),
+      render: (row) => cellValue(row.kind),
+    },
+    {
+      key: "asset",
+      header: "Asset",
+      sortValue: (row) => inventoryAssetLabel(row),
+      searchValue: (row) => inventoryAssetLabel(row),
+      render: (row) => inventoryAssetLabel(row),
+    },
+    {
+      key: "receivedAt",
+      header: "Received",
+      sortValue: (row) => {
+        const v = row.receivedAt;
+        return v instanceof Date ? v.getTime() : typeof v === "string" ? Date.parse(v) : 0;
+      },
+      searchValue: (row) => cellValue(row.receivedAt),
+      render: (row) => cellValue(row.receivedAt),
+    },
+    {
+      key: "notes",
+      header: "Notes",
+      sortValue: (row) => String(row.notes ?? ""),
+      searchValue: (row) => String(row.notes ?? ""),
+      render: (row) => {
+        const text = typeof row.notes === "string" ? row.notes : "";
+        return text ? text.slice(0, 80) : "—";
+      },
     },
   ];
 }
@@ -623,6 +684,7 @@ function buildRowActionMenuItems(
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
+  openInventoryIssue?: (target: InventoryIssueTarget) => void,
 ): TableRowMenuItem[] {
   const items: TableRowMenuItem[] = [];
 
@@ -821,6 +883,60 @@ function buildRowActionMenuItems(
       continue;
     }
 
+    if (def.id === TABLE_ROW_ACTION_IDS.issueInventoryBike && openInventoryIssue) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () =>
+          openInventoryIssue({
+            inventoryId: id,
+            mode: "bike",
+            label: inventoryAssetLabel(row),
+          }),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.issueInventoryBatteryStation && openInventoryIssue) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () =>
+          openInventoryIssue({
+            inventoryId: id,
+            mode: "battery-station",
+            label: inventoryAssetLabel(row),
+          }),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.issueInventoryBatteryBike && openInventoryIssue) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () =>
+          openInventoryIssue({
+            inventoryId: id,
+            mode: "battery-bike",
+            label: inventoryAssetLabel(row),
+          }),
+      });
+      continue;
+    }
+
     if (def.id === TABLE_ROW_ACTION_IDS.resourceEdit) {
       if (section === "wallets" || section === "overview" || section === "topUp" || section === "agentTransactions") {
         continue;
@@ -881,6 +997,7 @@ function appendActionsColumn(
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
+  openInventoryIssue?: (target: InventoryIssueTarget) => void,
 ): Column<Row>[] {
   return [
     ...baseColumns,
@@ -910,6 +1027,7 @@ function appendActionsColumn(
           openWalletDelete,
           openResourceEdit,
           openResourceDelete,
+          openInventoryIssue,
         );
         return menuItems.map((item) => item.label).join(" ");
       },
@@ -934,6 +1052,7 @@ function appendActionsColumn(
           openWalletDelete,
           openResourceEdit,
           openResourceDelete,
+          openInventoryIssue,
         );
 
         if (menuItems.length === 0) {
@@ -1031,6 +1150,7 @@ export function ApiResourcePanel({
   const [walletDelete, setWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
   const [resourceEdit, setResourceEdit] = useState<EditResourceTarget | null>(null);
   const [resourceDelete, setResourceDelete] = useState<{ section: ResourceSection; id: number; row: Row } | null>(null);
+  const [inventoryIssue, setInventoryIssue] = useState<InventoryIssueTarget | null>(null);
   const onForbiddenRef = useRef(onForbidden);
   const onRecordsChangeRef = useRef(onRecordsChange);
 
@@ -1229,6 +1349,8 @@ export function ApiResourcePanel({
       base = buildUserColumns();
     } else if (section === "batteries") {
       base = buildBatteryDataColumns();
+    } else if (section === "inventory") {
+      base = buildInventoryDataColumns();
     } else if (section === "wallets") {
       base = buildWalletDataColumns();
     } else if (section === "agents") {
@@ -1257,6 +1379,7 @@ export function ApiResourcePanel({
       openWalletDeleteModal,
       openResourceEditModal,
       openResourceDeleteModal,
+      setInventoryIssue,
     );
   }, [
     allRowActionsForSection,
@@ -1292,6 +1415,8 @@ export function ApiResourcePanel({
         ? "Search riders and owners…"
         : section === "batteries"
         ? "Search batteries…"
+        : section === "inventory"
+          ? "Search warehouse stock…"
         : section === "swaps"
           ? "Search swaps…"
           : section === "wallets"
@@ -1463,6 +1588,17 @@ export function ApiResourcePanel({
           onWalletDeleteSuccess?.();
         }}
         onError={onWalletDeleteError}
+      />
+
+      <IssueInventoryModal
+        open={inventoryIssue !== null}
+        target={inventoryIssue}
+        onClose={() => setInventoryIssue(null)}
+        onSaved={() => {
+          reload();
+          onAssignSuccess?.();
+        }}
+        onError={onAssignError}
       />
 
       <EditResourceModal

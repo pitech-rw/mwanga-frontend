@@ -14,7 +14,8 @@ export type Section =
   | "agents"
   | "violations"
   | "wallets"
-  | "companyAccounts";
+  | "companyAccounts"
+  | "inventory";
 
 export type MenuItem = {
   id: Section;
@@ -71,6 +72,13 @@ const MENU_ITEM_MAP: Record<Section, MenuItem> = {
     apiPath: "/swaps",
     eyebrow: "Ledger",
     title: "Swap transactions",
+  },
+  inventory: {
+    id: "inventory",
+    label: "Inventory",
+    apiPath: "/inventory",
+    eyebrow: "Warehouse",
+    title: "Warehouse stock",
   },
   batteries: {
     id: "batteries",
@@ -150,7 +158,7 @@ export const NAV_PRIMARY_ITEMS: MenuItem[] = [MENU_ITEM_MAP.overview];
 /** Collapsible sections — multi-item groups only (no single-link sections). */
 const NAV_GROUP_SECTIONS: { label: string; sections: Section[] }[] = [
   { label: "Network", sections: ["stations", "swaps"] },
-  { label: "Fleet & inventory", sections: ["batteries", "bikes", "owners", "agents"] },
+  { label: "Fleet & inventory", sections: ["inventory", "batteries", "bikes", "owners", "agents"] },
   { label: "People & access", sections: ["users", "roles", "cards"] },
   { label: "Finance", sections: ["wallets", "companyAccounts"] },
 ];

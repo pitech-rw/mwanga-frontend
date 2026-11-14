@@ -372,6 +372,30 @@ export function buildResourceDetailPayload(
       }
       break;
     }
+    case "inventory": {
+      const kind = pickString(row, "kind") ?? "item";
+      usedKeys.add("kind");
+      summary.push(["Kind", kind]);
+      const bike = row.bike;
+      const battery = row.battery;
+      if (bike && typeof bike === "object") {
+        const plate = pickString(bike as Record<string, unknown>, "plateNumber");
+        if (plate) {
+          summary.push(["Bike", plate]);
+        }
+      }
+      if (battery && typeof battery === "object") {
+        const serial = pickString(battery as Record<string, unknown>, "serialNumber");
+        if (serial) {
+          summary.push(["Battery", serial]);
+        }
+      }
+      usedKeys.add("receivedAt");
+      summary.push(["Received", cellText(row.receivedAt)]);
+      headingTitle = `Inventory · ${kind} #${idStr}`;
+      description = "Warehouse stock waiting to be issued.";
+      break;
+    }
     default:
       headingTitle = `${resourceTitle} · ${idStr}`;
       description = `Details for this ${resourceTitle.toLowerCase()} record.`;
@@ -419,5 +443,6 @@ function isRelationOrMetaKey(key: string): boolean {
     "assignedStation",
     "operators",
     "batteries",
+    "movements",
   ]).has(key);
 }
