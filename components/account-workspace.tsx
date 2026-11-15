@@ -478,7 +478,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             onCreateError={(message) => notify({ title: "Create failed", message, tone: "error" })}
             onCreateSuccess={() => notify({ title: "Created", message: `${activeMenu.title} saved.`, tone: "success" })}
             onAssignSuccess={() =>
-              notify({ title: "Assignment saved", message: "Swapper station assignment updated.", tone: "success" })
+              notify({ title: "Assignment saved", message: "Assignment updated.", tone: "success" })
             }
             onAssignError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
             onBatteryStationSuccess={() => {

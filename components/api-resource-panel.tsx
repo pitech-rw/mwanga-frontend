@@ -45,6 +45,14 @@ import {
 } from "./assign-card-rider-modal";
 import { AttachBatteryStationModal, type BatteryAttachTarget } from "./attach-battery-station-modal";
 import { IssueInventoryModal, type InventoryIssueTarget } from "./issue-inventory-modal";
+import {
+  AssociateOwnerRiderModal,
+  type OwnerRiderAssociateTarget,
+} from "./associate-owner-rider-modal";
+import {
+  AssignRiderFleetOwnerModal,
+  type RiderFleetOwnerAssignTarget,
+} from "./assign-rider-fleet-owner-modal";
 import { AssignSwapperStationModal, type SwapperAssignTarget } from "./assign-swapper-station-modal";
 import { Badge } from "./badge";
 import { CreateResourceButton } from "./create-resource-button";
@@ -675,6 +683,8 @@ function buildRowActionMenuItems(
   section: Section,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
+  openAssignRiderFleetOwner: (user: RiderFleetOwnerAssignTarget) => void,
+  openAssociateOwnerRider: (owner: OwnerRiderAssociateTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
@@ -782,6 +792,29 @@ function buildRowActionMenuItems(
         id: def.id,
         label: def.label,
         onSelect: () => openAssign(row as unknown as SwapperAssignTarget),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.assignRiderFleetOwner) {
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openAssignRiderFleetOwner(row as unknown as RiderFleetOwnerAssignTarget),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.associateOwnerRider) {
+      const id = row.id;
+      const name = typeof row.name === "string" ? row.name : `Owner #${id ?? "—"}`;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openAssociateOwnerRider({ id, name }),
       });
       continue;
     }
@@ -988,6 +1021,8 @@ function appendActionsColumn(
   section: Section,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
+  openAssignRiderFleetOwner: (user: RiderFleetOwnerAssignTarget) => void,
+  openAssociateOwnerRider: (owner: OwnerRiderAssociateTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
@@ -1018,6 +1053,8 @@ function appendActionsColumn(
           section,
           title,
           openAssign,
+          openAssignRiderFleetOwner,
+          openAssociateOwnerRider,
           openBatteryStationAttach,
           openBatteryBikeAttach,
           openBikeRiderAttach,
@@ -1043,6 +1080,8 @@ function appendActionsColumn(
           section,
           title,
           openAssign,
+          openAssignRiderFleetOwner,
+          openAssociateOwnerRider,
           openBatteryStationAttach,
           openBatteryBikeAttach,
           openBikeRiderAttach,
@@ -1143,6 +1182,8 @@ export function ApiResourcePanel({
   const [reloadToken, setReloadToken] = useState(0);
   const [sessionPermissions, setSessionPermissions] = useState<string[]>([]);
   const [assignUser, setAssignUser] = useState<SwapperAssignTarget | null>(null);
+  const [assignRiderFleetOwner, setAssignRiderFleetOwner] = useState<RiderFleetOwnerAssignTarget | null>(null);
+  const [associateOwnerRider, setAssociateOwnerRider] = useState<OwnerRiderAssociateTarget | null>(null);
   const [attachBatteryStation, setAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
   const [attachBatteryBike, setAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
   const [attachBikeRider, setAttachBikeRider] = useState<BikeRiderAttachTarget | null>(null);
@@ -1276,6 +1317,14 @@ export function ApiResourcePanel({
     setAssignUser(user);
   }, []);
 
+  const openAssignRiderFleetOwner = useCallback((user: RiderFleetOwnerAssignTarget) => {
+    setAssignRiderFleetOwner(user);
+  }, []);
+
+  const openAssociateOwnerRider = useCallback((owner: OwnerRiderAssociateTarget) => {
+    setAssociateOwnerRider(owner);
+  }, []);
+
   const openBatteryStationAttach = useCallback((battery: BatteryAttachTarget) => {
     setAttachBatteryStation(battery);
   }, []);
@@ -1370,6 +1419,8 @@ export function ApiResourcePanel({
       section,
       title,
       openAssign,
+      openAssignRiderFleetOwner,
+      openAssociateOwnerRider,
       openBatteryStationAttach,
       openBatteryBikeAttach,
       openBikeRiderAttach,
@@ -1389,6 +1440,8 @@ export function ApiResourcePanel({
     allRowActionsForSection,
     onDetail,
     openAssign,
+    openAssignRiderFleetOwner,
+    openAssociateOwnerRider,
     openBikeRiderAttach,
     openCardRiderAssign,
     openBatteryBikeAttach,
@@ -1491,6 +1544,28 @@ export function ApiResourcePanel({
         open={assignUser !== null}
         user={assignUser}
         onClose={() => setAssignUser(null)}
+        onSaved={() => {
+          reload();
+          onAssignSuccess?.();
+        }}
+        onError={onAssignError}
+      />
+
+      <AssignRiderFleetOwnerModal
+        open={assignRiderFleetOwner !== null}
+        user={assignRiderFleetOwner}
+        onClose={() => setAssignRiderFleetOwner(null)}
+        onSaved={() => {
+          reload();
+          onAssignSuccess?.();
+        }}
+        onError={onAssignError}
+      />
+
+      <AssociateOwnerRiderModal
+        open={associateOwnerRider !== null}
+        owner={associateOwnerRider}
+        onClose={() => setAssociateOwnerRider(null)}
         onSaved={() => {
           reload();
           onAssignSuccess?.();

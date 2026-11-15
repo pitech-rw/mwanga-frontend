@@ -104,7 +104,6 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
       { name: "serialNumber", label: "Serial number", type: "text", required: true },
       { name: "model", label: "Model", type: "text", required: true },
       { name: "chassisNumber", label: "Chassis number", type: "text" },
-      { name: "userId", label: "Rider user ID", type: "number" },
     ],
   },
   owners: {
@@ -202,7 +201,6 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         options: selectOptions(USER_TYPES),
       },
       { name: "phone", label: "Phone", type: "text" },
-      { name: "ownerId", label: "Fleet owner ID (required for riders)", type: "number" },
       { name: "kycStatus", label: "KYC status", type: "text", placeholder: "pending" },
     ],
   },

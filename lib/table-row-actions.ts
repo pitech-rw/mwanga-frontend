@@ -13,6 +13,8 @@ export const TABLE_ROW_ACTION_IDS = {
   attachBikeRider: "attach-bike-rider",
   assignCardRider: "assign-card-rider",
   assignSwapperStation: "assign-swapper-station",
+  assignRiderFleetOwner: "assign-rider-fleet-owner",
+  associateOwnerRider: "associate-owner-rider",
   walletTopUp: "wallet-top-up",
   walletLedger: "wallet-ledger",
   companyAccountLedger: "company-account-ledger",
@@ -98,7 +100,15 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericEdit(PERMISSIONS.batteries.write),
     genericDelete(PERMISSIONS.batteries.delete),
   ],
-  owners: [genericEdit(PERMISSIONS.owners.write), genericDelete(PERMISSIONS.owners.delete)],
+  owners: [
+    {
+      id: TABLE_ROW_ACTION_IDS.associateOwnerRider,
+      label: "Associate rider",
+      permission: PERMISSIONS.users.write,
+    },
+    genericEdit(PERMISSIONS.owners.write),
+    genericDelete(PERMISSIONS.owners.delete),
+  ],
   riders: [
     {
       id: TABLE_ROW_ACTION_IDS.walletTopUp,
@@ -152,6 +162,12 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       label: "Assign station",
       permission: PERMISSIONS.users.write,
       visibleForRow: (row) => row.type === "swapper",
+    },
+    {
+      id: TABLE_ROW_ACTION_IDS.assignRiderFleetOwner,
+      label: "Assign fleet owner",
+      permission: PERMISSIONS.users.write,
+      visibleForRow: (row) => row.type === "rider",
     },
     genericEdit(PERMISSIONS.users.write),
   {
