@@ -8,7 +8,7 @@ import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import type { Section } from "../lib/nav";
 import { PlacesLocationPicker } from "./places-location-picker";
 import { ResourceFormField } from "./resource-form-field";
-import { Modal } from "./modal";
+import { SlideOverDrawer, type SlideOverDrawerTab } from "./slide-over-drawer";
 
 type CreateResourceModalProps = {
   open: boolean;
@@ -109,6 +109,31 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [registerOwnerFleet, setRegisterOwnerFleet] = useState(false);
   const [ownerBikes, setOwnerBikes] = useState<OwnerBikeDraft[]>([emptyOwnerBike()]);
   const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [drawerTab, setDrawerTab] = useState("details");
+
+  const drawerTabs = useMemo((): SlideOverDrawerTab[] => {
+    if (section === "bikes") {
+      return [
+        { id: "details", label: "Bike details" },
+        { id: "assignment", label: "Assignment" },
+      ];
+    }
+    if (section === "owners") {
+      return [
+        { id: "details", label: "Owner details" },
+        { id: "fleet", label: "Fleet bikes" },
+      ];
+    }
+    if (section === "stations") {
+      return [
+        { id: "details", label: "Station details" },
+        { id: "location", label: "Location" },
+      ];
+    }
+    return [];
+  }, [section]);
+
+  const useDrawerTabs = drawerTabs.length > 0;
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
@@ -122,6 +147,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       setAgentUserSearch("");
       setRegisterOwnerFleet(false);
       setOwnerBikes([emptyOwnerBike()]);
+      setDrawerTab("details");
     }
   }, [open, section]);
 
@@ -411,13 +437,21 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
   const formId = `create-resource-${section}`;
 
+  const showDrawerPanel = (panelId: string) => !useDrawerTabs || drawerTab === panelId;
+
+  const bikeDetailFields = config.fields.filter((field) => field.name !== "userId");
+  const bikeAssignmentFields = config.fields.filter((field) => field.name === "userId");
+  const formFields = useDrawerTabs && config.section === "bikes" ? bikeDetailFields : config.fields;
+
   return (
-    <Modal
+    <SlideOverDrawer
       open={open}
-      variant="panel"
       title={config.title}
       description={config.description}
       onClose={onClose}
+      tabs={useDrawerTabs ? drawerTabs : undefined}
+      activeTab={drawerTab}
+      onTabChange={setDrawerTab}
       footer={
         <>
           <button type="button" className="btn" onClick={onClose}>
@@ -436,7 +470,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </div>
         ) : null}
 
-        {config.section === "agents" ? (
+        {config.section === "agents" && showDrawerPanel("details") ? (
           <>
             <p className="sub">
               Create the sign-in account under <strong>Users</strong> first (role type <strong>agent</strong>), then
@@ -489,7 +523,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
-        {needsOwnerPicker || bikeOwnerPicker ? (
+        {needsOwnerPicker || (bikeOwnerPicker && (!useDrawerTabs || showDrawerPanel("assignment"))) ? (
           <>
             <label className="field">
               <span>
@@ -561,23 +595,39 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
-        {config.section === "stations" ? (
+        {config.section === "stations" && (!useDrawerTabs || showDrawerPanel("location")) ? (
           <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
         ) : null}
 
-        {config.fields.map((field) => (
-          <ResourceFormField
-            key={field.name}
-            field={field}
-            value={values[field.name] ?? ""}
-            disabled={saving}
-            onValueChange={(next) => setValues({ ...values, [field.name]: next })}
-            file={files[field.name] ?? null}
-            onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
-          />
-        ))}
+        {(!useDrawerTabs || showDrawerPanel("details"))
+          ? formFields.map((field) => (
+              <ResourceFormField
+                key={field.name}
+                field={field}
+                value={values[field.name] ?? ""}
+                disabled={saving}
+                onValueChange={(next) => setValues({ ...values, [field.name]: next })}
+                file={files[field.name] ?? null}
+                onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
+              />
+            ))
+          : null}
 
-        {config.section === "owners" ? (
+        {useDrawerTabs && config.section === "bikes" && showDrawerPanel("assignment")
+          ? bikeAssignmentFields.map((field) => (
+              <ResourceFormField
+                key={field.name}
+                field={field}
+                value={values[field.name] ?? ""}
+                disabled={saving}
+                onValueChange={(next) => setValues({ ...values, [field.name]: next })}
+                file={files[field.name] ?? null}
+                onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
+              />
+            ))
+          : null}
+
+        {config.section === "owners" && (!useDrawerTabs || showDrawerPanel("fleet")) ? (
           <div className="owner-fleet-block">
             <label className="field field-checkbox">
               <input
@@ -698,6 +748,6 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </div>
         ) : null}
       </form>
-    </Modal>
+    </SlideOverDrawer>
   );
 }

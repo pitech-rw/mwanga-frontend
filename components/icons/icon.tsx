@@ -259,6 +259,15 @@ export function IconPlus(props: IconProps) {
   );
 }
 
+export function IconX(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </IconBase>
+  );
+}
+
 const NAV_ICON_MAP = {
   overview: IconLayoutDashboard,
   topUp: IconWallet,
