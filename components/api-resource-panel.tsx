@@ -45,6 +45,14 @@ import {
 } from "./assign-card-rider-modal";
 import { AttachBatteryStationModal, type BatteryAttachTarget } from "./attach-battery-station-modal";
 import { IssueInventoryModal, type InventoryIssueTarget } from "./issue-inventory-modal";
+import {
+  AssociateOwnerRiderModal,
+  type OwnerRiderAssociateTarget,
+} from "./associate-owner-rider-modal";
+import {
+  AssignRiderFleetOwnerModal,
+  type RiderFleetOwnerAssignTarget,
+} from "./assign-rider-fleet-owner-modal";
 import { AssignSwapperStationModal, type SwapperAssignTarget } from "./assign-swapper-station-modal";
 import { Badge } from "./badge";
 import { CreateResourceButton } from "./create-resource-button";
@@ -56,7 +64,11 @@ import { EditResourceModal, type EditResourceTarget } from "./edit-resource-moda
 import { AgentWalletTopUpModal } from "./agent-wallet-top-up-modal";
 import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
 import { WalletLedgerModal } from "./wallet-ledger-modal";
-import { buildUsersTableFilters, USERS_TABLE_SORT_OPTIONS } from "../lib/users-table-filters";
+import {
+  buildResourceTableFilters,
+  buildResourceTableSortOptions,
+  resourceTableDefaultSortKey,
+} from "../lib/resource-table-filters";
 import { stationDetailHref } from "../lib/nav-path";
 
 type Row = Record<string, unknown>;
@@ -671,6 +683,8 @@ function buildRowActionMenuItems(
   section: Section,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
+  openAssignRiderFleetOwner: (user: RiderFleetOwnerAssignTarget) => void,
+  openAssociateOwnerRider: (owner: OwnerRiderAssociateTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
@@ -778,6 +792,29 @@ function buildRowActionMenuItems(
         id: def.id,
         label: def.label,
         onSelect: () => openAssign(row as unknown as SwapperAssignTarget),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.assignRiderFleetOwner) {
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openAssignRiderFleetOwner(row as unknown as RiderFleetOwnerAssignTarget),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.associateOwnerRider) {
+      const id = row.id;
+      const name = typeof row.name === "string" ? row.name : `Owner #${id ?? "—"}`;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openAssociateOwnerRider({ id, name }),
       });
       continue;
     }
@@ -984,6 +1021,8 @@ function appendActionsColumn(
   section: Section,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
+  openAssignRiderFleetOwner: (user: RiderFleetOwnerAssignTarget) => void,
+  openAssociateOwnerRider: (owner: OwnerRiderAssociateTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
@@ -1014,6 +1053,8 @@ function appendActionsColumn(
           section,
           title,
           openAssign,
+          openAssignRiderFleetOwner,
+          openAssociateOwnerRider,
           openBatteryStationAttach,
           openBatteryBikeAttach,
           openBikeRiderAttach,
@@ -1039,6 +1080,8 @@ function appendActionsColumn(
           section,
           title,
           openAssign,
+          openAssignRiderFleetOwner,
+          openAssociateOwnerRider,
           openBatteryStationAttach,
           openBatteryBikeAttach,
           openBikeRiderAttach,
@@ -1139,6 +1182,8 @@ export function ApiResourcePanel({
   const [reloadToken, setReloadToken] = useState(0);
   const [sessionPermissions, setSessionPermissions] = useState<string[]>([]);
   const [assignUser, setAssignUser] = useState<SwapperAssignTarget | null>(null);
+  const [assignRiderFleetOwner, setAssignRiderFleetOwner] = useState<RiderFleetOwnerAssignTarget | null>(null);
+  const [associateOwnerRider, setAssociateOwnerRider] = useState<OwnerRiderAssociateTarget | null>(null);
   const [attachBatteryStation, setAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
   const [attachBatteryBike, setAttachBatteryBike] = useState<BatteryBikeAttachTarget | null>(null);
   const [attachBikeRider, setAttachBikeRider] = useState<BikeRiderAttachTarget | null>(null);
@@ -1272,6 +1317,14 @@ export function ApiResourcePanel({
     setAssignUser(user);
   }, []);
 
+  const openAssignRiderFleetOwner = useCallback((user: RiderFleetOwnerAssignTarget) => {
+    setAssignRiderFleetOwner(user);
+  }, []);
+
+  const openAssociateOwnerRider = useCallback((owner: OwnerRiderAssociateTarget) => {
+    setAssociateOwnerRider(owner);
+  }, []);
+
   const openBatteryStationAttach = useCallback((battery: BatteryAttachTarget) => {
     setAttachBatteryStation(battery);
   }, []);
@@ -1366,6 +1419,8 @@ export function ApiResourcePanel({
       section,
       title,
       openAssign,
+      openAssignRiderFleetOwner,
+      openAssociateOwnerRider,
       openBatteryStationAttach,
       openBatteryBikeAttach,
       openBikeRiderAttach,
@@ -1385,6 +1440,8 @@ export function ApiResourcePanel({
     allRowActionsForSection,
     onDetail,
     openAssign,
+    openAssignRiderFleetOwner,
+    openAssociateOwnerRider,
     openBikeRiderAttach,
     openCardRiderAssign,
     openBatteryBikeAttach,
@@ -1403,10 +1460,11 @@ export function ApiResourcePanel({
     title,
   ]);
 
-  const usersTableFilters = useMemo(
-    () => (section === "users" ? buildUsersTableFilters(rows) : undefined),
-    [rows, section],
-  );
+  const tableSelectFilters = useMemo(() => buildResourceTableFilters(section, rows), [rows, section]);
+
+  const tableSortOptions = useMemo(() => buildResourceTableSortOptions(section, columns), [columns, section]);
+
+  const tableDefaultSortKey = useMemo(() => resourceTableDefaultSortKey(section, columns), [columns, section]);
 
   const searchPlaceholderFromSection =
     section === "users"
@@ -1460,6 +1518,7 @@ export function ApiResourcePanel({
       </div>
       {error ? <p className="resource-error">{error}</p> : null}
       <DataTable
+        key={section}
         className="data-table-panel"
         columns={columns}
         rows={rows}
@@ -1467,10 +1526,10 @@ export function ApiResourcePanel({
         rowKey={(row) => String(row.id ?? JSON.stringify(row))}
         empty={error ? "Unable to load records." : "No records yet."}
         searchPlaceholder={searchPlaceholderFromSection}
-        selectFilters={usersTableFilters}
-        sortOptions={section === "users" ? [...USERS_TABLE_SORT_OPTIONS] : undefined}
-        defaultSortKey={section === "users" ? "name" : null}
-        defaultSortDirection={section === "users" ? "asc" : "asc"}
+        selectFilters={tableSelectFilters}
+        sortOptions={tableSortOptions}
+        defaultSortKey={tableDefaultSortKey}
+        defaultSortDirection={section === "swaps" ? "desc" : "asc"}
         onRowClick={
           section === "stations"
             ? openStationFromRow
@@ -1485,6 +1544,28 @@ export function ApiResourcePanel({
         open={assignUser !== null}
         user={assignUser}
         onClose={() => setAssignUser(null)}
+        onSaved={() => {
+          reload();
+          onAssignSuccess?.();
+        }}
+        onError={onAssignError}
+      />
+
+      <AssignRiderFleetOwnerModal
+        open={assignRiderFleetOwner !== null}
+        user={assignRiderFleetOwner}
+        onClose={() => setAssignRiderFleetOwner(null)}
+        onSaved={() => {
+          reload();
+          onAssignSuccess?.();
+        }}
+        onError={onAssignError}
+      />
+
+      <AssociateOwnerRiderModal
+        open={associateOwnerRider !== null}
+        owner={associateOwnerRider}
+        onClose={() => setAssociateOwnerRider(null)}
         onSaved={() => {
           reload();
           onAssignSuccess?.();

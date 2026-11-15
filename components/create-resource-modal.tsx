@@ -8,7 +8,9 @@ import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import type { Section } from "../lib/nav";
 import { PlacesLocationPicker } from "./places-location-picker";
 import { ResourceFormField } from "./resource-form-field";
-import { Modal } from "./modal";
+import { ownerListSearchHaystack, ownerOptionLine, type OwnerListRow } from "../lib/owner-list-format";
+import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
+import { SlideOverDrawer, type SlideOverDrawerTab } from "./slide-over-drawer";
 
 type CreateResourceModalProps = {
   open: boolean;
@@ -18,11 +20,14 @@ type CreateResourceModalProps = {
   onError?: (message: string) => void;
 };
 
-type OwnerListRow = {
+type RiderUserRow = {
   id: number;
-  name: string;
-  email?: string | null;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   phone?: string | null;
+  createdAt?: string | null;
 };
 
 type AgentUserRow = {
@@ -36,6 +41,14 @@ type AgentUserRow = {
 
 type AgentListRow = {
   userId?: number | null;
+};
+
+type StationListRow = {
+  id: number;
+  code: string;
+  name: string;
+  status?: string;
+  createdAt?: string | null;
 };
 
 type OwnerBikeDraft = {
@@ -81,16 +94,24 @@ function emptyValues(config: CreateResourceConfig): Record<string, string> {
   return Object.fromEntries(config.fields.map((field) => [field.name, ""]));
 }
 
-function ownerOptionLine(o: OwnerListRow): string {
-  const contact = o.email ?? o.phone ?? "";
-  return contact ? `${o.id} · ${o.name} · ${contact}` : `${o.id} · ${o.name}`;
-}
-
 function agentUserOptionLine(user: AgentUserRow): string {
   const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
   const label = name ? `${name} (@${user.username})` : `@${user.username}`;
   const contact = user.email ?? user.phone ?? "";
   return contact ? `${user.id} · ${label} · ${contact}` : `${user.id} · ${label}`;
+}
+
+function riderUserOptionLine(user: RiderUserRow): string {
+  return agentUserOptionLine(user);
+}
+
+function stationOptionLine(station: StationListRow): string {
+  const base = `${station.code} — ${station.name}`;
+  return station.status && station.status !== "active" ? `${base} (${station.status})` : base;
+}
+
+function stationSearchHaystack(station: StationListRow): string {
+  return [station.code, station.name, station.status ?? "", String(station.id)].join(" ").toLowerCase();
 }
 
 export function CreateResourceModal({ open, section, onClose, onCreated, onError }: CreateResourceModalProps) {
@@ -109,6 +130,50 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [registerOwnerFleet, setRegisterOwnerFleet] = useState(false);
   const [ownerBikes, setOwnerBikes] = useState<OwnerBikeDraft[]>([emptyOwnerBike()]);
   const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [bikeRiderId, setBikeRiderId] = useState<number | null>(null);
+  const [bikeRiderSearch, setBikeRiderSearch] = useState("");
+  const [bikeRiders, setBikeRiders] = useState<RiderUserRow[]>([]);
+  const [loadingBikeRiders, setLoadingBikeRiders] = useState(false);
+  const [userStationId, setUserStationId] = useState<number | null>(null);
+  const [userStationSearch, setUserStationSearch] = useState("");
+  const [userStations, setUserStations] = useState<StationListRow[]>([]);
+  const [loadingUserStations, setLoadingUserStations] = useState(false);
+  const [drawerTab, setDrawerTab] = useState("details");
+
+  const drawerTabs = useMemo((): SlideOverDrawerTab[] => {
+    if (section === "bikes") {
+      return [
+        { id: "details", label: "Bike details" },
+        { id: "assignment", label: "Assignment" },
+      ];
+    }
+    if (section === "owners") {
+      return [
+        { id: "details", label: "Owner details" },
+        { id: "fleet", label: "Fleet bikes" },
+      ];
+    }
+    if (section === "stations") {
+      return [
+        { id: "details", label: "Station details" },
+        { id: "location", label: "Location" },
+      ];
+    }
+    if (section === "users") {
+      const tabs: SlideOverDrawerTab[] = [{ id: "details", label: "Account" }];
+      const accountType = values.type?.trim();
+      if (accountType === "rider") {
+        tabs.push({ id: "fleet", label: "Fleet owner" });
+      }
+      if (accountType === "swapper") {
+        tabs.push({ id: "station", label: "Station" });
+      }
+      return tabs;
+    }
+    return [];
+  }, [section, values.type]);
+
+  const useDrawerTabs = section === "users" ? drawerTabs.length > 1 : drawerTabs.length > 0;
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
@@ -122,11 +187,29 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       setAgentUserSearch("");
       setRegisterOwnerFleet(false);
       setOwnerBikes([emptyOwnerBike()]);
+      setBikeRiderId(null);
+      setBikeRiderSearch("");
+      setUserStationId(null);
+      setUserStationSearch("");
+      setDrawerTab("details");
     }
   }, [open, section]);
 
   useEffect(() => {
-    if (!open || (section !== "wallets" && section !== "bikes")) {
+    if (!open || section !== "users") {
+      return;
+    }
+    const accountType = values.type?.trim();
+    if (drawerTab === "fleet" && accountType !== "rider") {
+      setDrawerTab("details");
+    }
+    if (drawerTab === "station" && accountType !== "swapper") {
+      setDrawerTab("details");
+    }
+  }, [drawerTab, open, section, values.type]);
+
+  useEffect(() => {
+    if (!open || (section !== "wallets" && section !== "bikes" && section !== "users")) {
       return;
     }
 
@@ -157,6 +240,90 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       } finally {
         if (active) {
           setLoadingWalletUsers(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "users") {
+      return;
+    }
+
+    let active = true;
+    setLoadingUserStations(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch("/stations");
+        if (!response.ok) {
+          if (active) {
+            setUserStations([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        if (!active) {
+          return;
+        }
+        setUserStations(Array.isArray(data) ? (data as StationListRow[]) : []);
+        setError(null);
+      } catch {
+        if (active) {
+          setUserStations([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingUserStations(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "bikes") {
+      return;
+    }
+
+    let active = true;
+    setLoadingBikeRiders(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch("/users?type=rider");
+        if (!response.ok) {
+          if (active) {
+            setBikeRiders([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        if (!active) {
+          return;
+        }
+        setBikeRiders(Array.isArray(data) ? (data as RiderUserRow[]) : []);
+        setError(null);
+      } catch {
+        if (active) {
+          setBikeRiders([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingBikeRiders(false);
         }
       }
     };
@@ -225,19 +392,62 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   }, [open, section]);
 
   const filteredWalletOwners = useMemo(() => {
-    const needle = walletOwnerSearch.trim().toLowerCase();
-    if (!needle) {
-      return walletOwners;
-    }
-    return walletOwners.filter((o) => {
-      const haystack = [o.name, o.email ?? "", o.phone ?? "", String(o.id)].join(" ").toLowerCase();
-      return haystack.includes(needle);
-    });
-  }, [walletOwnerSearch, walletOwners]);
+    return recentPickerOptions(
+      walletOwners,
+      walletOwnerSearch,
+      walletOwnerId,
+      (owner, needle) => ownerListSearchHaystack(owner).includes(needle),
+      section === "bikes" || section === "users",
+    );
+  }, [section, walletOwnerId, walletOwnerSearch, walletOwners]);
+
+  const filteredBikeRiders = useMemo(() => {
+    return recentPickerOptions(
+      bikeRiders,
+      bikeRiderSearch,
+      bikeRiderId,
+      (user, needle) => {
+        const haystack = [
+          user.username,
+          user.firstName,
+          user.lastName,
+          user.email,
+          user.phone ?? "",
+          String(user.id),
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(needle);
+      },
+      true,
+    );
+  }, [bikeRiderId, bikeRiderSearch, bikeRiders]);
 
   const selectedWalletOwner = useMemo(
     () => (walletOwnerId != null ? walletOwners.find((o) => o.id === walletOwnerId) : undefined),
     [walletOwnerId, walletOwners],
+  );
+
+  const selectedBikeRider = useMemo(
+    () => (bikeRiderId != null ? bikeRiders.find((user) => user.id === bikeRiderId) : undefined),
+    [bikeRiderId, bikeRiders],
+  );
+
+  const filteredUserStations = useMemo(
+    () =>
+      recentPickerOptions(
+        userStations,
+        userStationSearch,
+        userStationId,
+        (station, needle) => stationSearchHaystack(station).includes(needle),
+        true,
+      ),
+    [userStationId, userStationSearch, userStations],
+  );
+
+  const selectedUserStation = useMemo(
+    () => (userStationId != null ? userStations.find((station) => station.id === userStationId) : undefined),
+    [userStationId, userStations],
   );
 
   const filteredAgentUsers = useMemo(() => {
@@ -283,11 +493,13 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
   const needsOwnerPicker = config.section === "wallets";
   const bikeOwnerPicker = config.section === "bikes";
+  const userCreateIsRider = config.section === "users" && values.type?.trim() === "rider";
+  const userCreateIsSwapper = config.section === "users" && values.type?.trim() === "swapper";
 
   const submitDisabled =
     saving ||
     (needsOwnerPicker && (walletOwnerId === null || loadingWalletUsers)) ||
-    (bikeOwnerPicker && loadingWalletUsers) ||
+    (bikeOwnerPicker && (loadingWalletUsers || loadingBikeRiders)) ||
     (config.section === "agents" && (agentUserId === null || loadingAgentUsers));
 
   const submit = async (event: FormEvent) => {
@@ -307,6 +519,13 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         setSaving(false);
         return;
       }
+    }
+
+    if (userCreateIsRider && walletOwnerId === null) {
+      setError("Select a fleet owner on the Fleet owner tab.");
+      setDrawerTab("fleet");
+      setSaving(false);
+      return;
     }
 
     let ownerBikesPayload: Record<string, string>[] | undefined;
@@ -343,6 +562,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         if (walletOwnerId !== null) {
           body.ownerId = walletOwnerId;
         }
+        if (bikeRiderId !== null) {
+          body.userId = bikeRiderId;
+        }
       } else if (config.section === "inventory") {
         const kind = values.kind?.trim() === "battery" ? "battery" : "bike";
         body = buildCreatePayload(config, values);
@@ -364,6 +586,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         body = buildCreatePayload(config, values);
         if (ownerBikesPayload?.length) {
           body.bikes = ownerBikesPayload;
+        }
+      } else if (config.section === "users") {
+        body = buildCreatePayload(config, values);
+        if (userCreateIsRider && walletOwnerId !== null) {
+          body.ownerId = walletOwnerId;
+        }
+        if (userCreateIsSwapper && userStationId !== null) {
+          body.stationId = userStationId;
         }
       } else {
         body = buildCreatePayload(config, values);
@@ -411,13 +641,19 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
   const formId = `create-resource-${section}`;
 
+  const showDrawerPanel = (panelId: string) => !useDrawerTabs || drawerTab === panelId;
+
+  const formFields = config.fields;
+
   return (
-    <Modal
+    <SlideOverDrawer
       open={open}
-      variant="panel"
       title={config.title}
       description={config.description}
       onClose={onClose}
+      tabs={useDrawerTabs ? drawerTabs : undefined}
+      activeTab={drawerTab}
+      onTabChange={setDrawerTab}
       footer={
         <>
           <button type="button" className="btn" onClick={onClose}>
@@ -436,7 +672,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </div>
         ) : null}
 
-        {config.section === "agents" ? (
+        {config.section === "agents" && showDrawerPanel("details") ? (
           <>
             <p className="sub">
               Create the sign-in account under <strong>Users</strong> first (role type <strong>agent</strong>), then
@@ -489,12 +725,85 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
-        {needsOwnerPicker || bikeOwnerPicker ? (
+        {config.section === "users" && showDrawerPanel("fleet") && !userCreateIsRider ? (
+          <p className="sub">
+            Fleet owner association applies to <strong>rider</strong> accounts. Choose role type <strong>rider</strong> on
+            the Account tab first.
+          </p>
+        ) : null}
+
+        {config.section === "users" && showDrawerPanel("station") && !userCreateIsSwapper ? (
+          <p className="sub">
+            Station assignment applies to <strong>swapper</strong> accounts. Choose role type <strong>swapper</strong> on the
+            Account tab first.
+          </p>
+        ) : null}
+
+        {config.section === "users" && showDrawerPanel("station") && userCreateIsSwapper ? (
+          <>
+            <p className="sub">Optional — assign the swap station this operator works from.</p>
+            <label className="field">
+              <span>
+                Find station
+                <span className="sub">
+                  {" "}
+                  (showing {RECENT_PICKER_LIMIT} most recent, search for more)
+                </span>
+              </span>
+              <input
+                type="search"
+                value={userStationSearch}
+                disabled={saving || loadingUserStations}
+                onChange={(event) => setUserStationSearch(event.target.value)}
+                placeholder="Search by code, name, or ID…"
+                autoComplete="off"
+                aria-label="Search stations"
+              />
+            </label>
+            {loadingUserStations ? (
+              <p className="sub">Loading stations…</p>
+            ) : (
+              <label className="field">
+                <span>
+                  Station ({filteredUserStations.length} shown
+                  {!userStationSearch.trim() ? ` · ${RECENT_PICKER_LIMIT} most recent` : ""})
+                </span>
+                <select
+                  value={userStationId != null ? String(userStationId) : ""}
+                  disabled={saving || filteredUserStations.length === 0}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setUserStationId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredUserStations.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label="Select station"
+                >
+                  <option value="">{filteredUserStations.length === 0 ? "No matches" : "Unassigned"}</option>
+                  {filteredUserStations.map((station) => (
+                    <option key={station.id} value={String(station.id)}>
+                      {stationOptionLine(station)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedUserStation ? (
+              <p className="create-wallet-selection sub" role="status">
+                <strong>Selected:</strong> {stationOptionLine(selectedUserStation)}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {needsOwnerPicker ||
+        (bikeOwnerPicker && (!useDrawerTabs || showDrawerPanel("assignment"))) ||
+        (config.section === "users" && showDrawerPanel("fleet") && userCreateIsRider) ? (
           <>
             <label className="field">
               <span>
                 Find owner
-                {needsOwnerPicker ? (
+                {needsOwnerPicker || (config.section === "users" && userCreateIsRider) ? (
                   <>
                     <span className="col-required" aria-hidden="true">
                       {" "}
@@ -503,7 +812,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                     <span className="sr-only"> (required)</span>
                   </>
                 ) : (
-                  <span className="sub"> (optional — leave unset for warehouse)</span>
+                  <span className="sub">
+                    {" "}
+                    (optional — leave unset for warehouse
+                    {bikeOwnerPicker || config.section === "users" ? `; showing ${RECENT_PICKER_LIMIT} most recent, search for more` : ""})
+                  </span>
                 )}
               </span>
               <input
@@ -521,8 +834,12 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             ) : (
               <label className="field">
                 <span>
-                  Fleet owner ({filteredWalletOwners.length} shown)
-                  {needsOwnerPicker ? (
+                  Fleet owner ({filteredWalletOwners.length} shown
+                  {(bikeOwnerPicker || config.section === "users") && !walletOwnerSearch.trim()
+                    ? ` · ${RECENT_PICKER_LIMIT} most recent`
+                    : ""}
+                  )
+                  {needsOwnerPicker || (config.section === "users" && userCreateIsRider) ? (
                     <>
                       <span className="col-required" aria-hidden="true">
                         {" "}
@@ -535,7 +852,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 <select
                   value={walletOwnerId != null ? String(walletOwnerId) : ""}
                   disabled={saving || filteredWalletOwners.length === 0}
-                  required={needsOwnerPicker}
+                  required={needsOwnerPicker || (config.section === "users" && userCreateIsRider)}
                   onChange={(event) => {
                     const v = event.target.value;
                     setWalletOwnerId(v === "" ? null : Number(v));
@@ -561,23 +878,76 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
-        {config.section === "stations" ? (
+        {config.section === "bikes" && showDrawerPanel("assignment") ? (
+          <>
+            <p className="sub">Optional rider assignment. Leave unset if the bike has no rider yet.</p>
+            <label className="field">
+              <span>Find rider</span>
+              <input
+                type="search"
+                value={bikeRiderSearch}
+                disabled={saving || loadingBikeRiders}
+                onChange={(event) => setBikeRiderSearch(event.target.value)}
+                placeholder="Search by name, username, email, or phone…"
+                autoComplete="off"
+                aria-label="Search riders"
+              />
+            </label>
+            {loadingBikeRiders ? (
+              <p className="sub">Loading riders…</p>
+            ) : (
+              <label className="field">
+                <span>
+                  Rider ({filteredBikeRiders.length} shown
+                  {!bikeRiderSearch.trim() ? ` · ${RECENT_PICKER_LIMIT} most recent` : ""})
+                </span>
+                <select
+                  value={bikeRiderId != null ? String(bikeRiderId) : ""}
+                  disabled={saving || filteredBikeRiders.length === 0}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setBikeRiderId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredBikeRiders.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label="Select rider"
+                >
+                  <option value="">{filteredBikeRiders.length === 0 ? "No matches" : "No rider assigned"}</option>
+                  {filteredBikeRiders.map((user) => (
+                    <option key={user.id} value={String(user.id)}>
+                      {riderUserOptionLine(user)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedBikeRider ? (
+              <p className="create-wallet-selection sub" role="status">
+                <strong>Selected:</strong> {riderUserOptionLine(selectedBikeRider)}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {config.section === "stations" && (!useDrawerTabs || showDrawerPanel("location")) ? (
           <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
         ) : null}
 
-        {config.fields.map((field) => (
-          <ResourceFormField
-            key={field.name}
-            field={field}
-            value={values[field.name] ?? ""}
-            disabled={saving}
-            onValueChange={(next) => setValues({ ...values, [field.name]: next })}
-            file={files[field.name] ?? null}
-            onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
-          />
-        ))}
+        {(!useDrawerTabs || showDrawerPanel("details"))
+          ? formFields.map((field) => (
+              <ResourceFormField
+                key={field.name}
+                field={field}
+                value={values[field.name] ?? ""}
+                disabled={saving}
+                onValueChange={(next) => setValues({ ...values, [field.name]: next })}
+                file={files[field.name] ?? null}
+                onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
+              />
+            ))
+          : null}
 
-        {config.section === "owners" ? (
+        {config.section === "owners" && (!useDrawerTabs || showDrawerPanel("fleet")) ? (
           <div className="owner-fleet-block">
             <label className="field field-checkbox">
               <input
@@ -698,6 +1068,6 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </div>
         ) : null}
       </form>
-    </Modal>
+    </SlideOverDrawer>
   );
 }

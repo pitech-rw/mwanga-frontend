@@ -111,6 +111,17 @@ export function buildResourceDetailPayload(
         usedKeys.add("status");
         summary.push(["Status", status]);
       }
+      const owner = row.owner;
+      if (owner && typeof owner === "object") {
+        const o = owner as Record<string, unknown>;
+        usedKeys.add("ownerId");
+        usedKeys.add("owner");
+        const ownerName = typeof o.name === "string" ? o.name.trim() : "";
+        summary.push(["Owner", ownerName || cellText(owner)]);
+      } else if (row.ownerId != null) {
+        usedKeys.add("ownerId");
+        summary.push(["Owner", `Owner #${row.ownerId}`]);
+      }
       break;
     }
     case "owners": {
