@@ -12,6 +12,7 @@ import { AccountMenu } from "./account-menu";
 import { SidebarNav } from "./sidebar-nav";
 import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight } from "./icons/icon";
 import { RecordDetailModal } from "./record-detail-modal";
+import { LocaleSwitch } from "./locale-switch";
 import { useTheme } from "./theme";
 import { useToast } from "./toast";
 import { getApiUrl } from "../lib/api";
@@ -264,6 +265,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
               </div>
             </div>
             <div className="topbar-actions">
+              <LocaleSwitch />
               <AccountMenu user={sessionUser} theme={theme} onToggleTheme={toggleTheme} onSignOut={signOut} />
             </div>
           </header>
@@ -392,6 +394,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             </div>
           </div>
           <div className="topbar-actions">
+            <LocaleSwitch />
             <div className="notice-panel">
               <button type="button" className="icon-button" onClick={() => setNoticesOpen((open) => !open)} aria-label="Open notifications">
                 <IconBell size={18} />
