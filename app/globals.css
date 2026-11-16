@@ -1921,6 +1921,71 @@ table.data th.right {
   text-align: right;
 }
 
+.incident-review {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.incident-review-muted {
+  color: var(--text-soft);
+  font-size: 0.86rem;
+}
+
+.incident-thread {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.incident-thread-item {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.5);
+  background: var(--surface);
+}
+
+.incident-thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  margin-bottom: 0.35rem;
+}
+
+.incident-thread-kind {
+  text-transform: capitalize;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.incident-thread-body {
+  margin: 0;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.incident-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.incident-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
 .modal h2 {
   font-size: 1.15rem;
 }

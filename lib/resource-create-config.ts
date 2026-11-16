@@ -204,6 +204,18 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
       { name: "kycStatus", label: "KYC status", type: "text", placeholder: "pending" },
     ],
   },
+  incidents: {
+    section: "incidents",
+    apiPath: "/incidents",
+    title: "Report battery incident",
+    description: "Report a faulty or damaged pack at your assigned station.",
+    submitLabel: "Submit report",
+    fields: [
+      { name: "batteryId", label: "Battery ID", type: "number", required: true },
+      { name: "description", label: "What is wrong with the pack?", type: "textarea", required: true },
+      { name: "image", label: "Photo (optional)", type: "file", accept: "image/*" },
+    ],
+  },
   violations: {
     section: "violations",
     apiPath: "/violations",

@@ -284,6 +284,7 @@ const NAV_ICON_MAP = {
   owners: IconBuilding,
   agents: IconUser,
   violations: IconTriangleAlert,
+  incidents: IconTriangleAlert,
   wallets: IconWallet,
   companyAccounts: IconLandmark,
 } as const satisfies Record<Section, (props: IconProps) => React.JSX.Element>;

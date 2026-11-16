@@ -13,6 +13,7 @@ export type Section =
   | "owners"
   | "agents"
   | "violations"
+  | "incidents"
   | "wallets"
   | "companyAccounts"
   | "inventory";
@@ -150,6 +151,13 @@ const MENU_ITEM_MAP: Record<Section, MenuItem> = {
     eyebrow: "Compliance",
     title: "Violations",
   },
+  incidents: {
+    id: "incidents",
+    label: "Battery incidents",
+    apiPath: "/incidents",
+    eyebrow: "Compliance",
+    title: "Battery incidents",
+  },
 };
 
 /** Top-level destinations (ungrouped) — common SaaS pattern for home / dashboard. */
@@ -169,7 +177,7 @@ export const NAV_MENU_GROUPS: NavMenuGroup[] = NAV_GROUP_SECTIONS.map(({ label, 
 }));
 
 /** Pinned below groups — infrequent / compliance items without a noisy header. */
-export const NAV_SECONDARY_ITEMS: MenuItem[] = [MENU_ITEM_MAP.violations];
+export const NAV_SECONDARY_ITEMS: MenuItem[] = [MENU_ITEM_MAP.incidents, MENU_ITEM_MAP.violations];
 
 export const MENU_ITEMS: MenuItem[] = [
   ...NAV_PRIMARY_ITEMS,

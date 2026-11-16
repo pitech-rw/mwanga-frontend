@@ -42,8 +42,17 @@ const SECTIONS_WITH_TABLE_FILTERS: Section[] = [
   "wallets",
   "companyAccounts",
   "violations",
+  "incidents",
   "agentTransactions",
 ];
+
+const INCIDENT_STATUS_VALUES = [
+  "open",
+  "awaiting_swapper",
+  "awaiting_review",
+  "damaged",
+  "dismissed",
+] as const;
 
 function humanizeToken(value: string): string {
   return value.replace(/_/g, " ");
@@ -348,6 +357,12 @@ export function buildResourceTableFilters(section: Section, rows: Row[]): DataTa
         ),
         enumSelectFilter("severity", "Severity", "All severities", VIOLATION_SEVERITY_VALUES, rows, (row) =>
           normalizeString(row.severity),
+        ),
+      ];
+    case "incidents":
+      return [
+        enumSelectFilter("status", "Status", "All statuses", INCIDENT_STATUS_VALUES, rows, (row) =>
+          normalizeString(row.status),
         ),
       ];
     case "wallets":

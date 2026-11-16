@@ -1,4 +1,5 @@
 import type { FieldSpec } from "./resource-create-config";
+import { uploadIncidentPhoto } from "./upload-incident-photo";
 import { uploadStationPhoto } from "./upload-station-photo";
 
 export function emptyFileState(fields: FieldSpec[]): Record<string, File | null> {
@@ -21,6 +22,8 @@ export async function mergeUploadedFiles(
     }
     if (field.name === "photo") {
       target[field.name] = await uploadStationPhoto(file);
+    } else if (field.name === "image") {
+      target[field.name] = await uploadIncidentPhoto(file);
     }
   }
 }

@@ -176,6 +176,7 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
   },
   ],
   violations: [genericEdit(PERMISSIONS.violations.write), genericDelete(PERMISSIONS.violations.delete)],
+  incidents: [],
   wallets: [
     {
       id: TABLE_ROW_ACTION_IDS.walletTopUp,

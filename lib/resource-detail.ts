@@ -358,6 +358,33 @@ export function buildResourceDetailPayload(
       }
       break;
     }
+    case "incidents": {
+      const track = pickString(row, "trackId") ?? idStr;
+      headingTitle = `Incident · ${track}`;
+      description = "Damaged or faulty battery pack reported at a station.";
+      usedKeys.add("trackId");
+      summary.push(["Track ID", track]);
+      const st = pickString(row, "status");
+      if (st) {
+        usedKeys.add("status");
+        summary.push(["Status", st.replace(/_/g, " ")]);
+      }
+      const battery = row.battery;
+      if (battery && typeof battery === "object") {
+        const serial = pickString(battery as Record<string, unknown>, "serialNumber");
+        if (serial) {
+          summary.push(["Battery", serial]);
+        }
+      }
+      const station = row.station;
+      if (station && typeof station === "object") {
+        const name = pickString(station as Record<string, unknown>, "name");
+        if (name) {
+          summary.push(["Station", name]);
+        }
+      }
+      break;
+    }
     case "violations": {
       const t = pickString(row, "title");
       headingTitle = t ? `Violation · ${t}` : `Violation · #${idStr}`;
@@ -455,5 +482,15 @@ function isRelationOrMetaKey(key: string): boolean {
     "operators",
     "batteries",
     "movements",
+    "messages",
+    "reporter",
+    "damagedBy",
+    "dismissedBy",
+    "damagedAt",
+    "dismissedAt",
+    "damagedById",
+    "dismissedById",
+    "reporterId",
+    "swapTransactionId",
   ]).has(key);
 }

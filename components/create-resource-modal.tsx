@@ -51,6 +51,22 @@ type StationListRow = {
   createdAt?: string | null;
 };
 
+type SwapListUser = {
+  id: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string | null;
+};
+
+type SwapListRow = {
+  id: number;
+  status: string;
+  createdAt?: string | null;
+  user?: SwapListUser | null;
+};
+
 type OwnerBikeDraft = {
   plateNumber: string;
   serialNumber: string;
@@ -114,6 +130,38 @@ function stationSearchHaystack(station: StationListRow): string {
   return [station.code, station.name, station.status ?? "", String(station.id)].join(" ").toLowerCase();
 }
 
+function swapRiderLabel(user: SwapListUser | null | undefined): string {
+  if (!user) {
+    return "Unknown rider";
+  }
+  const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  return name ? `${name} (@${user.username})` : `@${user.username}`;
+}
+
+function swapOptionLine(swap: SwapListRow): string {
+  const rider = swapRiderLabel(swap.user);
+  const phone = swap.user?.phone?.trim();
+  const contact = phone || swap.user?.email?.trim() || "";
+  const status = swap.status.replace(/_/g, " ");
+  const riderPart = contact ? `${rider} · ${contact}` : rider;
+  return `#${swap.id} · ${riderPart} · ${status}`;
+}
+
+function swapSearchHaystack(swap: SwapListRow): string {
+  const user = swap.user;
+  return [
+    String(swap.id),
+    swap.status,
+    user?.username ?? "",
+    user?.firstName ?? "",
+    user?.lastName ?? "",
+    user?.email ?? "",
+    user?.phone ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
 export function CreateResourceModal({ open, section, onClose, onCreated, onError }: CreateResourceModalProps) {
   const config = getCreateConfig(section);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -138,6 +186,10 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [userStationSearch, setUserStationSearch] = useState("");
   const [userStations, setUserStations] = useState<StationListRow[]>([]);
   const [loadingUserStations, setLoadingUserStations] = useState(false);
+  const [incidentSwapId, setIncidentSwapId] = useState<number | null>(null);
+  const [incidentSwapSearch, setIncidentSwapSearch] = useState("");
+  const [incidentSwaps, setIncidentSwaps] = useState<SwapListRow[]>([]);
+  const [loadingIncidentSwaps, setLoadingIncidentSwaps] = useState(false);
   const [drawerTab, setDrawerTab] = useState("details");
 
   const drawerTabs = useMemo((): SlideOverDrawerTab[] => {
@@ -170,10 +222,17 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       }
       return tabs;
     }
+    if (section === "incidents") {
+      return [
+        { id: "details", label: "Incident details" },
+        { id: "swap", label: "Related swap" },
+      ];
+    }
     return [];
   }, [section, values.type]);
 
-  const useDrawerTabs = section === "users" ? drawerTabs.length > 1 : drawerTabs.length > 0;
+  const useDrawerTabs =
+    section === "users" || section === "incidents" ? drawerTabs.length > 1 : drawerTabs.length > 0;
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
@@ -191,6 +250,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       setBikeRiderSearch("");
       setUserStationId(null);
       setUserStationSearch("");
+      setIncidentSwapId(null);
+      setIncidentSwapSearch("");
       setDrawerTab("details");
     }
   }, [open, section]);
@@ -282,6 +343,49 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       } finally {
         if (active) {
           setLoadingUserStations(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "incidents") {
+      return;
+    }
+
+    let active = true;
+    setLoadingIncidentSwaps(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch("/swaps");
+        if (!response.ok) {
+          if (active) {
+            setIncidentSwaps([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        if (!active) {
+          return;
+        }
+        const rows = Array.isArray(data) ? (data as SwapListRow[]) : [];
+        setIncidentSwaps(rows.filter((row) => row.status !== "cancelled" && row.status !== "reversed"));
+        setError(null);
+      } catch {
+        if (active) {
+          setIncidentSwaps([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingIncidentSwaps(false);
         }
       }
     };
@@ -450,6 +554,23 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     [userStationId, userStations],
   );
 
+  const filteredIncidentSwaps = useMemo(
+    () =>
+      recentPickerOptions(
+        incidentSwaps,
+        incidentSwapSearch,
+        incidentSwapId,
+        (swap, needle) => swapSearchHaystack(swap).includes(needle),
+        true,
+      ),
+    [incidentSwapId, incidentSwapSearch, incidentSwaps],
+  );
+
+  const selectedIncidentSwap = useMemo(
+    () => (incidentSwapId != null ? incidentSwaps.find((swap) => swap.id === incidentSwapId) : undefined),
+    [incidentSwapId, incidentSwaps],
+  );
+
   const filteredAgentUsers = useMemo(() => {
     const needle = agentUserSearch.trim().toLowerCase();
     if (!needle) {
@@ -594,6 +715,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         }
         if (userCreateIsSwapper && userStationId !== null) {
           body.stationId = userStationId;
+        }
+      } else if (config.section === "incidents") {
+        body = buildCreatePayload(config, values);
+        if (incidentSwapId !== null) {
+          body.swapTransactionId = incidentSwapId;
         }
       } else {
         body = buildCreatePayload(config, values);
@@ -873,6 +999,59 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             {selectedWalletOwner ? (
               <p className="create-wallet-selection sub" role="status">
                 <strong>Selected:</strong> {ownerOptionLine(selectedWalletOwner)}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {config.section === "incidents" && showDrawerPanel("swap") ? (
+          <>
+            <p className="sub">Optional — link this report to a swap if the damage was noticed during a handover.</p>
+            <label className="field">
+              <span>Find swap</span>
+              <input
+                type="search"
+                value={incidentSwapSearch}
+                disabled={saving || loadingIncidentSwaps}
+                onChange={(event) => setIncidentSwapSearch(event.target.value)}
+                placeholder="Search by rider name or phone…"
+                autoComplete="off"
+                aria-label="Search swaps by rider"
+              />
+            </label>
+            {loadingIncidentSwaps ? (
+              <p className="sub">Loading swaps…</p>
+            ) : (
+              <label className="field">
+                <span>
+                  Swap ({filteredIncidentSwaps.length} shown
+                  {!incidentSwapSearch.trim() ? ` · ${RECENT_PICKER_LIMIT} most recent` : ""})
+                </span>
+                <select
+                  value={incidentSwapId != null ? String(incidentSwapId) : ""}
+                  disabled={saving || filteredIncidentSwaps.length === 0}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setIncidentSwapId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredIncidentSwaps.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label="Select related swap"
+                >
+                  <option value="">
+                    {filteredIncidentSwaps.length === 0 ? "No matches" : "No swap linked"}
+                  </option>
+                  {filteredIncidentSwaps.map((swap) => (
+                    <option key={swap.id} value={String(swap.id)}>
+                      {swapOptionLine(swap)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedIncidentSwap ? (
+              <p className="create-wallet-selection sub" role="status">
+                <strong>Selected:</strong> {swapOptionLine(selectedIncidentSwap)}
               </p>
             ) : null}
           </>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ResourceDetailPayload } from "../lib/resource-detail";
+import { IncidentReviewPanel } from "./incident-review-panel";
 import { Modal } from "./modal";
 
 type RecordDetailModalProps = {
@@ -58,6 +59,13 @@ export function RecordDetailModal({ open, payload, onClose }: RecordDetailModalP
               ))}
             </div>
           </>
+        ) : null}
+
+        {payload.section === "incidents" && typeof payload.row.id === "number" ? (
+          <IncidentReviewPanel
+            incidentId={payload.row.id}
+            listStatus={typeof payload.row.status === "string" ? payload.row.status : undefined}
+          />
         ) : null}
       </div>
     </Modal>
