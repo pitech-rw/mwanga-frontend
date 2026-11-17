@@ -90,6 +90,34 @@ export async function authFetch(path: string, init?: RequestInit): Promise<Respo
   });
 }
 
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const response = await fetch(`${getApiUrl()}/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email.trim() }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await userMessageFromResponse("forgotPassword", response));
+  }
+
+  return (await response.json()) as { message: string };
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const response = await fetch(`${getApiUrl()}/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await userMessageFromResponse("resetPassword", response));
+  }
+
+  return (await response.json()) as { message: string };
+}
+
 export async function login(identifier: string, password: string): Promise<LoginResponse> {
   const response = await fetch(`${getApiUrl()}/auth/login`, {
     method: "POST",
