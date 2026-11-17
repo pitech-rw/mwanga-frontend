@@ -3,6 +3,8 @@ export const API_USER_MESSAGES = {
   load: "Unable to load records. Please try again.",
   signIn: "Unable to sign in. Please try again.",
   signInInvalid: "Invalid credentials.",
+  forgotPassword: "Unable to send reset instructions. Please try again.",
+  resetPassword: "Unable to reset your password. Please try again.",
   offline: "Unable to reach the server. Please try again.",
 } as const;
 

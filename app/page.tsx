@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { PasswordInput } from "../components/password-input";
@@ -122,6 +123,12 @@ export default function HomePage() {
             <button type="submit" className="btn primary login-submit" disabled={submitting}>
               {submitting ? "Signing in…" : "Sign in "}
             </button>
+
+            <p className="login-form-footer">
+              <Link href="/forgot-password" className="login-inline-link">
+                Forgot password?
+              </Link>
+            </p>
           </form>
         </div>
 
