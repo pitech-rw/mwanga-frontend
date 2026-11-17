@@ -1,16 +1,12 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApiResourcePanel } from "./api-resource-panel";
 import { AgentTopUpPanel } from "./agent-top-up-panel";
 import { AgentTransactionsPanel } from "./agent-transactions-panel";
-import { AgentSidebarNav } from "./agent-sidebar-nav";
-import { AccountMenu } from "./account-menu";
-import { SidebarNav } from "./sidebar-nav";
-import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight } from "./icons/icon";
+import { AppHeader, type AppHeaderCrumb } from "./app-header";
+import { AppSidebar } from "./app-sidebar";
 import { RecordDetailModal } from "./record-detail-modal";
 import { LocaleSwitch } from "./locale-switch";
 import { useTheme } from "./theme";
@@ -27,6 +23,9 @@ import {
 import { CompanyAccountTransactionsPanel } from "./company-account-transactions-panel";
 import { StationDetailPanel } from "./station-detail-panel";
 import type { ResourceDetailPayload } from "../lib/resource-detail";
+import { useNavRecents } from "../lib/use-nav-recents";
+
+const MOBILE_SHELL_MQ = "(max-width: 980px)";
 
 type HealthResponse = {
   ok: boolean;
@@ -57,8 +56,11 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const [resourceReloadKey, setResourceReloadKey] = useState(0);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isMobileShell, setIsMobileShell] = useState(false);
 
   const section = sectionFromPathname(pathname, pathPrefix);
+  const { recents } = useNavRecents(section);
   const companyAccountTx = companyAccountTransactionsSubRoute(pathname, pathPrefix);
   const stationDetail = stationDetailSubRoute(pathname, pathPrefix);
 
@@ -108,6 +110,23 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
       /* ignore */
     }
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_SHELL_MQ);
+    const apply = () => {
+      setIsMobileShell(mq.matches);
+      if (!mq.matches) {
+        setMobileNavOpen(false);
+      }
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => setMobileNavOpen(false));
+  }, [pathname]);
 
   useEffect(() => {
     if (!sessionReady) {
@@ -217,58 +236,76 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     return <div className="app-shell" />;
   }
 
+  const navSectionKey = companyAccountTx || stationDetail ? "stations" : section;
+  const apiOnline = Boolean(health?.ok);
+
+  const staffBreadcrumbs = (): AppHeaderCrumb[] | undefined => {
+    if (section === "overview" && !companyAccountTx && !stationDetail) {
+      return undefined;
+    }
+    const crumbs: AppHeaderCrumb[] = [{ href: accountHome, label: "Account" }];
+    if (companyAccountTx) {
+      crumbs.push({ href: sectionHref(pathPrefix, "companyAccounts"), label: "Company accounts" });
+      crumbs.push({ label: "Transactions" });
+      return crumbs;
+    }
+    if (stationDetail) {
+      crumbs.push({ href: sectionHref(pathPrefix, "stations"), label: "Stations" });
+      crumbs.push({ label: "Station detail" });
+      return crumbs;
+    }
+    if (section !== "overview") {
+      crumbs.push({ label: breadcrumbLeaf });
+    }
+    return crumbs;
+  };
+
+  const headerAuthProps = {
+    user: sessionUser,
+    theme,
+    onToggleTheme: toggleTheme,
+    onSignOut: signOut,
+    apiOnline,
+  };
+
+  const shellProps = {
+    pathPrefix,
+    apiOnline,
+    mobileOpen: mobileNavOpen,
+    onMobileClose: () => setMobileNavOpen(false),
+    recents,
+    counts,
+    collapsed: isAgent ? false : sidebarCollapsed,
+    onToggleCollapsed: () => setSidebarCollapsed((value) => !value),
+    collapsible: !isAgent && !isMobileShell,
+    section: navSectionKey,
+  };
+
   if (isAgent) {
     const agentMenu = getMenuItem(agentSection);
     const agentTitle = agentMenu.title;
-    const agentBreadcrumb = agentMenu.label;
 
     return (
-      <div className="app-shell" data-sidebar-collapsed="false">
-        <aside className="sidebar sidebar--agent">
-          <div className="sidebar-head">
-            <div className="brand">
-              <Image
-                src="/assets/logo.png"
-                alt="Mwanga"
-                width={168}
-                height={48}
-                className="brand-logo"
-                priority
-              />
-              <span className="brand-tagline">Agent</span>
-            </div>
-          </div>
-          <AgentSidebarNav section={agentSection} pathPrefix={pathPrefix} />
-          <div className="sidebar-foot">
-            <span className="sidebar-foot-full">{health ? "API online" : "Waiting on the API."}</span>
-            <span className="sidebar-foot-compact" title={health ? "API online" : "API offline"} aria-hidden="true">
-              <span className={`status-dot ${health ? "online" : ""}`} />
-            </span>
-          </div>
-        </aside>
+      <div
+        className={`app-shell${isMobileShell ? " app-shell--mobile" : ""}${mobileNavOpen ? " app-shell--nav-open" : ""}`}
+        data-sidebar-collapsed="false"
+      >
+        <AppSidebar {...shellProps} variant="agent" agentSection={agentSection} />
         <main className="workspace">
-          <header className="topbar">
-            <div className="topbar-title">
-              <div className="topbar-heading">
-                <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
-                  <ol>
-                    <li>
-                      <Link href={sectionHref(pathPrefix, "topUp")}>Agent</Link>
-                    </li>
-                    <li className="topbar-breadcrumb-sep" aria-hidden="true">
-                      /
-                    </li>
-                    <li className="topbar-breadcrumb-current">{agentBreadcrumb}</li>
-                  </ol>
-                </nav>
-                <h1>{agentTitle}</h1>
-              </div>
-            </div>
-            <div className="topbar-actions">
-              <LocaleSwitch />
-              <AccountMenu user={sessionUser} theme={theme} onToggleTheme={toggleTheme} onSignOut={signOut} />
-            </div>
-          </header>
+          <AppHeader
+            showMenuButton={isMobileShell}
+            onMenuOpen={() => setMobileNavOpen(true)}
+            pageTitle={agentTitle}
+            showPageTitle
+            breadcrumbs={[
+              { href: sectionHref(pathPrefix, "topUp"), label: "Agent" },
+              { label: agentMenu.label },
+            ]}
+            noticesOpen={false}
+            onNoticesToggle={() => undefined}
+            showNotifications={false}
+            {...headerAuthProps}
+          />
 
           {apiError ? (
             <div className="banner" role="status">
@@ -309,112 +346,27 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     );
   }
 
+  const showStaffTitle = true;
+
   return (
-    <div className="app-shell" data-sidebar-collapsed={sidebarCollapsed ? "true" : "false"}>
-      <aside className="sidebar">
-        <div className="sidebar-head">
-          <div className="brand">
-            <Image
-              src="/assets/logo.png"
-              alt="Mwanga"
-              width={168}
-              height={48}
-              className="brand-logo"
-              priority
-            />
-            <span className="brand-compact" aria-hidden="true">
-              <IconBatteryCharging size={20} />
-            </span>
-            <span className="brand-tagline">Station ops</span>
-          </div>
-          <button
-            type="button"
-            className="sidebar-toggle"
-            onClick={() => setSidebarCollapsed((value) => !value)}
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!sidebarCollapsed}
-          >
-            {sidebarCollapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
-          </button>
-        </div>
-        <SidebarNav
-          section={companyAccountTx || stationDetail ? "stations" : section}
-          counts={counts}
-          collapsed={sidebarCollapsed}
-          pathPrefix={pathPrefix}
-        />
-        <div className="sidebar-foot">
-          <span className="sidebar-foot-full">
-            {health ? `API online · ${health.userCount} users` : "Waiting on the operations API."}
-          </span>
-          <span className="sidebar-foot-compact" title={health ? "API online" : "API offline"} aria-hidden="true">
-            <span className={`status-dot ${health ? "online" : ""}`} />
-          </span>
-        </div>
-      </aside>
+    <div
+      className={`app-shell${isMobileShell ? " app-shell--mobile" : ""}${mobileNavOpen ? " app-shell--nav-open" : ""}`}
+      data-sidebar-collapsed={sidebarCollapsed ? "true" : "false"}
+    >
+      <AppSidebar {...shellProps} variant="staff" />
 
       <main className="workspace">
-        <header className="topbar">
-          <div className="topbar-title">
-            <div className="topbar-heading">
-              <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
-                <ol>
-                  <li>
-                    <Link href={accountHome}>Account</Link>
-                  </li>
-                  <li className="topbar-breadcrumb-sep" aria-hidden="true">
-                    /
-                  </li>
-                  {companyAccountTx ? (
-                    <>
-                      <li>
-                        <Link href={sectionHref(pathPrefix, "companyAccounts")}>Company accounts</Link>
-                      </li>
-                      <li className="topbar-breadcrumb-sep" aria-hidden="true">
-                        /
-                      </li>
-                      <li className="topbar-breadcrumb-current">Transactions</li>
-                    </>
-                  ) : stationDetail ? (
-                    <>
-                      <li>
-                        <Link href={sectionHref(pathPrefix, "stations")}>Stations</Link>
-                      </li>
-                      <li className="topbar-breadcrumb-sep" aria-hidden="true">
-                        /
-                      </li>
-                      <li className="topbar-breadcrumb-current">Station detail</li>
-                    </>
-                  ) : (
-                    <li className="topbar-breadcrumb-current">{breadcrumbLeaf}</li>
-                  )}
-                </ol>
-              </nav>
-              <h1>{pageTitle}</h1>
-            </div>
-          </div>
-          <div className="topbar-actions">
-            <LocaleSwitch />
-            <div className="notice-panel">
-              <button type="button" className="icon-button" onClick={() => setNoticesOpen((open) => !open)} aria-label="Open notifications">
-                <IconBell size={18} />
-                <span className="dot" />
-              </button>
-              {noticesOpen ? (
-                <div className="notice-pop card">
-                  <p className="notice-empty">No notifications</p>
-                </div>
-              ) : null}
-            </div>
-            <AccountMenu
-              user={sessionUser}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              onSignOut={signOut}
-              onManageUsers={() => router.push(sectionHref(pathPrefix, "users"))}
-            />
-          </div>
-        </header>
+        <AppHeader
+          showMenuButton={isMobileShell}
+          onMenuOpen={() => setMobileNavOpen(true)}
+          pageTitle={pageTitle}
+          showPageTitle={showStaffTitle}
+          breadcrumbs={staffBreadcrumbs()}
+          noticesOpen={noticesOpen}
+          onNoticesToggle={() => setNoticesOpen((open) => !open)}
+          onManageUsers={() => router.push(sectionHref(pathPrefix, "users"))}
+          {...headerAuthProps}
+        />
 
         {apiError ? (
           <div className="banner" role="status">
@@ -428,8 +380,8 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           </div>
         ) : null}
 
-        {section === "overview" ? (
-          <section className="stats">
+        {section === "overview" && !companyAccountTx && !stationDetail ? (
+          <section className="stats" aria-label="Key metrics">
             <article className="card stat">
               <span>Batteries</span>
               <strong>{counts.batteries != null ? counts.batteries.toLocaleString() : "—"}</strong>

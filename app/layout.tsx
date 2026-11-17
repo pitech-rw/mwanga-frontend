@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Inter } from "next/font/google";
 import { LocaleProvider } from "../components/locale";
 import { ThemeProvider } from "../components/theme";
 import { ToastProvider } from "../components/toast";
 import "./globals.css";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -30,8 +30,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${geistMono.variable}`} data-theme="dark" data-locale="en" suppressHydrationWarning>
-      <body>
+    <html lang="en" className={`${inter.variable} ${geistMono.variable}`} data-theme="dark" data-locale="en" suppressHydrationWarning>
+      <body className={inter.className}>
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem("mwanga-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;var l=localStorage.getItem("mwanga-locale");if(l==="en"||l==="fr"){document.documentElement.lang=l;document.documentElement.dataset.locale=l;}}catch(e){}`,

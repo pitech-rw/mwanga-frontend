@@ -8,13 +8,15 @@ import { NavIcon } from "./icons/icon";
 type AgentSidebarNavProps = {
   section: "topUp" | "agentTransactions" | "riders";
   pathPrefix: string;
+  collapsed?: boolean;
 };
 
-export function AgentSidebarNav({ section, pathPrefix }: AgentSidebarNavProps) {
+export function AgentSidebarNav({ section, pathPrefix, collapsed = false }: AgentSidebarNavProps) {
   const active = section;
 
   return (
     <nav className="nav nav-agent" aria-label="Agent">
+      {!collapsed ? <p className="nav-section-heading">Operations</p> : null}
       <div className="nav-block">
         {AGENT_NAV_ITEMS.map((item) => (
           <Link
@@ -22,6 +24,7 @@ export function AgentSidebarNav({ section, pathPrefix }: AgentSidebarNavProps) {
             href={sectionHref(pathPrefix, item.id)}
             className={`nav-item${active === item.id ? " active" : ""}`}
             aria-current={active === item.id ? "page" : undefined}
+            {...(collapsed ? { "data-tooltip": item.label } : {})}
           >
             <span className="nav-icon-wrap" aria-hidden="true">
               <NavIcon section={item.id} className="nav-icon" size={18} />

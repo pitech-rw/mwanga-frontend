@@ -103,7 +103,7 @@ export default function HomePage() {
                 autoComplete="username"
                 value={identifier}
                 onChange={(event) => setIdentifier(event.target.value)}
-                placeholder="you@mwanga.com"
+                placeholder="romain@gmail.com"
               />
             </label>
 

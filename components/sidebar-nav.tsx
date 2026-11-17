@@ -64,6 +64,7 @@ function NavLink({
       aria-current={active ? "page" : undefined}
       title={collapsed ? item.label : undefined}
       aria-label={collapsed ? item.label : undefined}
+      {...(collapsed ? { "data-tooltip": item.label } : {})}
     >
       <span className="nav-icon-wrap" aria-hidden="true">
         <NavIcon section={item.id} className="nav-icon" size={18} />
@@ -100,6 +101,7 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
 
   return (
     <nav className="nav" aria-label="Main">
+      {!collapsed ? <p className="nav-section-heading">Operations</p> : null}
       <div className="nav-block">
         {NAV_PRIMARY_ITEMS.map((item) => (
           <NavLink
@@ -161,6 +163,8 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
           </div>
         );
       })}
+
+      {!collapsed ? <p className="nav-section-heading nav-section-heading--compliance">Compliance</p> : null}
 
       <div className="nav-divider" role="presentation" aria-hidden />
 

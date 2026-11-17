@@ -17,6 +17,8 @@ type AccountMenuProps = {
   onToggleTheme: () => void;
   onSignOut: () => void;
   onManageUsers?: () => void;
+  placement?: "header" | "sidebar";
+  collapsed?: boolean;
 };
 
 function initials(user: AuthUser | null): string {
@@ -30,7 +32,15 @@ function initials(user: AuthUser | null): string {
     .join("") || "?";
 }
 
-export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onManageUsers }: AccountMenuProps) {
+export function AccountMenu({
+  user,
+  theme,
+  onToggleTheme,
+  onSignOut,
+  onManageUsers,
+  placement = "header",
+  collapsed = false,
+}: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -64,8 +74,13 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onManageUse
   const name = displayName(user);
   const role = user?.role.name ?? "member";
 
+  const email = user?.email ?? "Signed in";
+
   return (
-    <div className="account-menu" ref={rootRef}>
+    <div
+      className={`account-menu account-menu--${placement}${collapsed ? " account-menu--collapsed" : ""}`}
+      ref={rootRef}
+    >
       <button
         type="button"
         className="account-menu-trigger"
@@ -77,15 +92,26 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onManageUse
         <span className="account-avatar" aria-hidden="true">
           {initials(user)}
         </span>
-        <span className="account-trigger-copy">
-          <strong>{name}</strong>
-          <span>{role}</span>
-        </span>
-        <IconChevronDown size={16} className={`account-chevron ${open ? "open" : ""}`} />
+        {placement === "sidebar" && !collapsed ? (
+          <span className="account-trigger-copy account-trigger-copy--sidebar">
+            <strong>{name}</strong>
+            <span className="account-trigger-email">{email}</span>
+          </span>
+        ) : placement === "header" ? (
+          <span className="account-trigger-copy">
+            <strong>{name}</strong>
+            <span>{role}</span>
+          </span>
+        ) : null}
+        {!collapsed ? <IconChevronDown size={16} className={`account-chevron ${open ? "open" : ""}`} /> : null}
       </button>
 
       {open ? (
-        <div id={menuId} className="account-menu-pop card" role="menu">
+        <div
+          id={menuId}
+          className={`account-menu-pop card${placement === "sidebar" ? " account-menu-pop--up" : ""}`}
+          role="menu"
+        >
           <div className="account-menu-head">
             <strong>{name}</strong>
             <span>{user?.email ?? "Signed in"}</span>
