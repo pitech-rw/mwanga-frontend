@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
+import { getDefaultCreatePassword } from "../lib/default-password";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
 import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import type { Section } from "../lib/nav";
@@ -107,7 +108,10 @@ function buildOwnerBikesPayload(drafts: OwnerBikeDraft[]): Record<string, string
 }
 
 function emptyValues(config: CreateResourceConfig): Record<string, string> {
-  return Object.fromEntries(config.fields.map((field) => [field.name, ""]));
+  const defaultPassword = getDefaultCreatePassword();
+  return Object.fromEntries(
+    config.fields.map((field) => [field.name, field.type === "password" ? defaultPassword : ""]),
+  );
 }
 
 function agentUserOptionLine(user: AgentUserRow): string {

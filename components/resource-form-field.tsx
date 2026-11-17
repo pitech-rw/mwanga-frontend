@@ -1,6 +1,7 @@
 "use client";
 
 import type { FieldSpec } from "../lib/resource-create-config";
+import { PasswordInput } from "./password-input";
 
 type ResourceFormFieldProps = {
   field: FieldSpec;
@@ -92,20 +93,23 @@ export function ResourceFormField({
             </p>
           ) : null}
         </div>
-      ) : (
-        <input
+      ) : field.type === "password" ? (
+        <PasswordInput
           required={field.required}
-          type={
-            field.type === "number"
-              ? "number"
-              : field.type === "datetime-local"
-                ? "datetime-local"
-                : field.type
-          }
           value={value}
           placeholder={field.placeholder}
           disabled={disabled}
-          minLength={field.type === "password" ? 8 : undefined}
+          minLength={8}
+          autoComplete="new-password"
+          onChange={onValueChange}
+        />
+      ) : (
+        <input
+          required={field.required}
+          type={field.type === "number" ? "number" : field.type === "datetime-local" ? "datetime-local" : field.type}
+          value={value}
+          placeholder={field.placeholder}
+          disabled={disabled}
           onChange={(event) => onValueChange(event.target.value)}
         />
       )}

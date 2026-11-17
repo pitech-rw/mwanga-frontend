@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { PasswordInput } from "../components/password-input";
 import { getAccessToken, getStoredUser, login, setSession } from "../lib/auth";
 
 export default function HomePage() {
@@ -108,13 +109,12 @@ export default function HomePage() {
 
             <label className="field">
               <span>Password</span>
-              <input
+              <PasswordInput
                 required
-                type="password"
                 autoComplete="current-password"
                 minLength={8}
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={setPassword}
                 placeholder="At least 8 characters"
               />
             </label>
