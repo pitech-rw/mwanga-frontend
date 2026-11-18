@@ -17,6 +17,7 @@ import { useTheme } from "./theme";
 import { useToast } from "./toast";
 import { getApiUrl } from "../lib/api";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../lib/auth";
+import { ProfileModal } from "./profile-modal";
 import { AGENT_API_MENU_ITEMS, API_MENU_ITEMS, getMenuItem, type Section } from "../lib/nav";
 import {
   companyAccountTransactionsSubRoute,
@@ -57,6 +58,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const [resourceReloadKey, setResourceReloadKey] = useState(0);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const section = sectionFromPathname(pathname, pathPrefix);
   const companyAccountTx = companyAccountTransactionsSubRoute(pathname, pathPrefix);
@@ -174,6 +176,19 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     router.replace("/");
   };
 
+  const openProfile = useCallback(() => {
+    setProfileOpen(true);
+  }, []);
+
+  const openUserAdministration = useCallback(() => {
+    router.push(sectionHref(pathPrefix, "users"));
+  }, [router, pathPrefix]);
+
+  const onProfileSaved = useCallback(() => {
+    setSessionUser(getStoredUser());
+    notify({ title: "Profile updated", message: "Your account details were saved.", tone: "success" });
+  }, [notify]);
+
   const handleForbidden = () => {
     clearSession();
     router.replace("/");
@@ -266,7 +281,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             </div>
             <div className="topbar-actions">
               <LocaleSwitch />
-              <AccountMenu user={sessionUser} theme={theme} onToggleTheme={toggleTheme} onSignOut={signOut} />
+              <AccountMenu
+                user={sessionUser}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                onSignOut={signOut}
+                onOpenProfile={openProfile}
+              />
             </div>
           </header>
 
@@ -305,6 +326,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         </main>
 
         <RecordDetailModal open={detail !== null} payload={detail} onClose={() => setDetail(null)} />
+        <ProfileModal
+          open={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          onSaved={onProfileSaved}
+          onError={(message) => notify({ title: "Profile", message, tone: "error" })}
+          onOpenUserAdministration={openUserAdministration}
+        />
       </div>
     );
   }
@@ -411,6 +439,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
               theme={theme}
               onToggleTheme={toggleTheme}
               onSignOut={signOut}
+              onOpenProfile={openProfile}
               onManageUsers={() => router.push(sectionHref(pathPrefix, "users"))}
             />
           </div>
@@ -534,6 +563,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
       </main>
 
       <RecordDetailModal open={detail !== null} payload={detail} onClose={() => setDetail(null)} />
+      <ProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        onSaved={onProfileSaved}
+        onError={(message) => notify({ title: "Profile", message, tone: "error" })}
+        onOpenUserAdministration={openUserAdministration}
+      />
     </div>
   );
 }

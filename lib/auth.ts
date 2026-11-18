@@ -16,6 +16,16 @@ export type AuthUser = {
   isActive: boolean;
 };
 
+export type MyProfile = AuthUser & {
+  phone?: string | null;
+  address?: string | null;
+  image?: string | null;
+  nationalId?: string | null;
+  lastLoginAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type LoginResponse = {
   accessToken: string;
   tokenType: "Bearer";
@@ -51,6 +61,65 @@ export function getStoredUser(): AuthUser | null {
 export function setSession(response: LoginResponse): void {
   localStorage.setItem(TOKEN_KEY, response.accessToken);
   localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+}
+
+export function setStoredUser(user: AuthUser): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+function authUserFromMyProfile(profile: MyProfile): AuthUser {
+  return {
+    id: profile.id,
+    username: profile.username,
+    email: profile.email,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    type: profile.type,
+    role: profile.role,
+    permissions: profile.permissions,
+    isActive: profile.isActive,
+  };
+}
+
+export async function fetchMyProfile(view: "persona" | "full" = "full"): Promise<MyProfile> {
+  const response = await authFetch(`/auth/me?view=${view}`);
+
+  if (!response.ok) {
+    throw new Error(await userMessageFromResponse("profileLoad", response));
+  }
+
+  return (await response.json()) as MyProfile;
+}
+
+export type UpdateMePayload = {
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  image?: string;
+  password?: string;
+  currentPassword?: string;
+};
+
+export async function updateMyProfile(payload: UpdateMePayload): Promise<MyProfile> {
+  const response = await authFetch("/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(await userMessageFromResponse("profileUpdate", response));
+  }
+
+  const profile = (await response.json()) as MyProfile;
+  setStoredUser(authUserFromMyProfile(profile));
+  return profile;
 }
 
 export function clearSession(): void {
