@@ -172,6 +172,8 @@ function swapOptionLine(swap: SwapListRow, unknownRider: string): string {
   return `#${swap.id} · ${riderPart} · ${status}`;
 }
 
+const STATION_LOCATION_FIELD_NAMES = new Set(["address", "latitude", "longitude"]);
+
 function swapSearchHaystack(swap: SwapListRow): string {
   const user = swap.user;
   return [
@@ -898,6 +900,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const showDrawerPanel = (panelId: string) => !useDrawerTabs || drawerTab === panelId;
 
   const formFields = config.fields;
+  const stationDetailFields =
+    config.section === "stations"
+      ? formFields.filter((field) => !STATION_LOCATION_FIELD_NAMES.has(field.name))
+      : formFields;
+  const stationLocationFields =
+    config.section === "stations"
+      ? formFields.filter((field) => STATION_LOCATION_FIELD_NAMES.has(field.name))
+      : [];
 
   return (
     <SlideOverDrawer
@@ -1245,7 +1255,20 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         ) : null}
 
         {config.section === "stations" && (!useDrawerTabs || showDrawerPanel("location")) ? (
-          <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
+          <>
+            <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
+            {stationLocationFields.map((field) => (
+              <ResourceFormField
+                key={field.name}
+                field={field}
+                value={values[field.name] ?? ""}
+                disabled={saving}
+                onValueChange={(next) => setValues({ ...values, [field.name]: next })}
+                file={files[field.name] ?? null}
+                onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
+              />
+            ))}
+          </>
         ) : null}
 
         {config.section === "stations" && showDrawerPanel("swapper") ? (
@@ -1308,7 +1331,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         ) : null}
 
         {(!useDrawerTabs || showDrawerPanel("details"))
-          ? formFields.map((field) => (
+          ? stationDetailFields.map((field) => (
               <ResourceFormField
                 key={field.name}
                 field={field}

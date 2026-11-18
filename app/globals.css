@@ -1317,6 +1317,16 @@ table.data td.data-table-cell-ellipsis .data-table-ellipsis-inner {
   white-space: nowrap;
 }
 
+a.data-table-maps-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+a.data-table-maps-link:hover {
+  text-decoration-color: currentColor;
+}
+
 table.data th {
   color: var(--text-faint);
   font-size: 0.72rem;

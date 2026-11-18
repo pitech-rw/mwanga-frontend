@@ -16,12 +16,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_API_URL=http://localhost:3005
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyDVTthFzNKbOyN0ta1NQmYzClBx997lz7s
 RUN npm run build
 
 FROM node:24-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyDVTthFzNKbOyN0ta1NQmYzClBx997lz7s
 RUN useradd -ms /bin/sh -u 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
