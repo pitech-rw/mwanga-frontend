@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -42,6 +44,7 @@ export function AttachBatteryStationModal({
   onSaved,
   onError,
 }: AttachBatteryStationModalProps) {
+  const t = useT();
   const [stations, setStations] = useState<StationOption[]>([]);
   const [loadingStations, setLoadingStations] = useState(false);
   const [query, setQuery] = useState("");
@@ -140,7 +143,7 @@ export function AttachBatteryStationModal({
     event.preventDefault();
 
     if (selectedId == null) {
-      setError("Choose a station.");
+      setError(t("modals.attachBatteryStation.errorSelect"));
       return;
     }
 
@@ -177,13 +180,13 @@ export function AttachBatteryStationModal({
     <Modal
       open={open}
       variant="panel"
-      title="Attach to station"
-      description={`Choose a station for ${batteryHeading(battery)}. Search by station ID, code, or name.`}
+      title={t("modals.attachBatteryStation.title")}
+      description={t("modals.attachBatteryStation.description", { battery: batteryHeading(battery) })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn" onClick={onClose} disabled={saving}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="submit"
@@ -191,7 +194,7 @@ export function AttachBatteryStationModal({
             className="btn primary"
             disabled={saving || loadingStations || selectedId == null}
           >
-            {saving ? "Saving…" : "Attach battery"}
+            {saving ? t("common.saving") : t("common.attachBattery")}
           </button>
         </>
       }
@@ -204,7 +207,7 @@ export function AttachBatteryStationModal({
         ) : null}
 
         <label className="field">
-          <span>Find station</span>
+          <span>{t("modals.attachBatteryStation.findStation")}</span>
           <input
             type="search"
             value={query}
@@ -217,10 +220,12 @@ export function AttachBatteryStationModal({
         </label>
 
         {loadingStations ? (
-          <p className="sub">Loading stations…</p>
+          <p className="sub">{t("modals.picker.loadingStations")}</p>
         ) : (
           <label className="field">
-            <span>Station ({filteredStations.length} shown)</span>
+            <span>
+              {t("modals.attachBatteryStation.stationField")} ({filteredStations.length})
+            </span>
             <select
               value={selectedId != null ? String(selectedId) : ""}
               disabled={saving || filteredStations.length === 0}
@@ -232,7 +237,9 @@ export function AttachBatteryStationModal({
               className="station-picker"
               aria-label="Select station"
             >
-              <option value="">{filteredStations.length === 0 ? "No matches" : "Choose…"}</option>
+              <option value="">
+                {filteredStations.length === 0 ? t("common.noMatches") : t("common.choose")}
+              </option>
               {filteredStations.map((station) => (
                 <option key={station.id} value={String(station.id)}>
                   {stationOptionText(station)}
@@ -244,7 +251,7 @@ export function AttachBatteryStationModal({
 
         {selectedStation ? (
           <p className="sub">
-            Selected: <strong>{stationOptionText(selectedStation)}</strong>
+            {t("modals.picker.selectedPrefix")} <strong>{stationOptionText(selectedStation)}</strong>
           </p>
         ) : null}
       </form>

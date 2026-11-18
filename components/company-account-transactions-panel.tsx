@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
@@ -27,6 +29,7 @@ export function CompanyAccountTransactionsPanel({
   pathPrefix,
   onForbidden,
 }: CompanyAccountTransactionsPanelProps) {
+  const t = useT();
   const [account, setAccount] = useState<CompanyAccount | null>(null);
   const [transactions, setTransactions] = useState<LedgerTransactionRow[]>([]);
   const [loading, setLoading] = useState(true);

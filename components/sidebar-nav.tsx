@@ -4,13 +4,11 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { IconChevronRight, NavIcon } from "./icons/icon";
 import { NAV_MENU_GROUPS, NAV_PRIMARY_ITEMS, NAV_SECONDARY_ITEMS, type MenuItem, type Section } from "../lib/nav";
+import { localizedMenuItem } from "../lib/nav-i18n";
 import { sectionHref } from "../lib/nav-path";
+import { useT } from "./locale";
 
 const NAV_GROUPS_STORAGE_KEY = "mwanga-nav-groups-collapsed";
-
-function navGroupSlug(label: string): string {
-  return label.replace(/\s+/g, "-").toLowerCase();
-}
 
 function readCollapsedGroups(): Set<string> {
   try {
@@ -81,6 +79,7 @@ function itemBadge(item: MenuItem, counts: Partial<Record<Section, number>>): st
 }
 
 export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNavProps) {
+  const t = useT();
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() =>
     typeof window === "undefined" ? new Set() : readCollapsedGroups(),
   );
@@ -104,7 +103,7 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
         {NAV_PRIMARY_ITEMS.map((item) => (
           <NavLink
             key={item.id}
-            item={item}
+            item={localizedMenuItem(item.id, t)}
             active={section === item.id}
             badge={itemBadge(item, counts)}
             collapsed={collapsed}
@@ -114,8 +113,9 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
       </div>
 
       {NAV_MENU_GROUPS.map((group) => {
-        const slug = navGroupSlug(group.label);
+        const slug = group.groupKey;
         const panelId = `nav-group-panel-${slug}`;
+        const groupLabel = t(`nav.groups.${group.groupKey}` as import("../lib/i18n/translate").MessageKey);
         const groupHasActive = group.items.some((item) => item.id === section);
         const isGroupOpen = collapsed || !collapsedGroups.has(slug) || groupHasActive;
 
@@ -134,7 +134,7 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
                   size={14}
                   aria-hidden
                 />
-                <span className="nav-group-label">{group.label}</span>
+                <span className="nav-group-label">{groupLabel}</span>
               </button>
             ) : null}
 
@@ -148,7 +148,7 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
                   group.items.map((item) => (
                     <NavLink
                       key={item.id}
-                      item={item}
+                      item={localizedMenuItem(item.id, t)}
                       active={section === item.id}
                       badge={itemBadge(item, counts)}
                       collapsed={collapsed}
@@ -168,7 +168,7 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
         {NAV_SECONDARY_ITEMS.map((item) => (
           <NavLink
             key={item.id}
-            item={item}
+            item={localizedMenuItem(item.id, t)}
             active={section === item.id}
             badge={itemBadge(item, counts)}
             collapsed={collapsed}

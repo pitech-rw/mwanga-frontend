@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -16,6 +18,7 @@ type TableRowActionsMenuProps = {
 const DROPDOWN_MIN_WIDTH = 180;
 
 export function TableRowActionsMenu({ items }: TableRowActionsMenuProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -11,6 +13,7 @@ type AgentTransactionsPanelProps = {
 };
 
 export function AgentTransactionsPanel({ reloadKey = 0, onForbidden }: AgentTransactionsPanelProps) {
+  const t = useT();
   const [transactions, setTransactions] = useState<LedgerTransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

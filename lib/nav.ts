@@ -26,7 +26,11 @@ export type MenuItem = {
   title: string;
 };
 
+export type NavMenuGroupKey = "network" | "fleetInventory" | "peopleAccess" | "finance";
+
 export type NavMenuGroup = {
+  /** Stable key for i18n (`nav.groups.*`). */
+  groupKey: NavMenuGroupKey;
   label: string;
   items: MenuItem[];
 };
@@ -164,14 +168,15 @@ const MENU_ITEM_MAP: Record<Section, MenuItem> = {
 export const NAV_PRIMARY_ITEMS: MenuItem[] = [MENU_ITEM_MAP.overview];
 
 /** Collapsible sections — multi-item groups only (no single-link sections). */
-const NAV_GROUP_SECTIONS: { label: string; sections: Section[] }[] = [
-  { label: "Network", sections: ["stations", "swaps"] },
-  { label: "Fleet & inventory", sections: ["inventory", "batteries", "bikes", "owners", "agents"] },
-  { label: "People & access", sections: ["users", "roles", "cards"] },
-  { label: "Finance", sections: ["wallets", "companyAccounts"] },
+const NAV_GROUP_SECTIONS: { groupKey: NavMenuGroupKey; label: string; sections: Section[] }[] = [
+  { groupKey: "network", label: "Network", sections: ["stations", "swaps"] },
+  { groupKey: "fleetInventory", label: "Fleet & inventory", sections: ["inventory", "batteries", "bikes", "owners", "agents"] },
+  { groupKey: "peopleAccess", label: "People & access", sections: ["users", "roles", "cards"] },
+  { groupKey: "finance", label: "Finance", sections: ["wallets", "companyAccounts"] },
 ];
 
-export const NAV_MENU_GROUPS: NavMenuGroup[] = NAV_GROUP_SECTIONS.map(({ label, sections }) => ({
+export const NAV_MENU_GROUPS: NavMenuGroup[] = NAV_GROUP_SECTIONS.map(({ groupKey, label, sections }) => ({
+  groupKey,
   label,
   items: sections.map((id) => MENU_ITEM_MAP[id]),
 }));

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import type { ResourceDetailPayload } from "../lib/resource-detail";
 import { IncidentReviewPanel } from "./incident-review-panel";
 import { Modal } from "./modal";
@@ -11,6 +13,7 @@ type RecordDetailModalProps = {
 };
 
 export function RecordDetailModal({ open, payload, onClose }: RecordDetailModalProps) {
+  const t = useT();
   if (!payload) {
     return null;
   }
@@ -25,7 +28,7 @@ export function RecordDetailModal({ open, payload, onClose }: RecordDetailModalP
       footer={
         <>
           <button type="button" className="btn" onClick={onClose}>
-            Close
+            {t("common.close")}
           </button>
         </>
       }
@@ -34,8 +37,8 @@ export function RecordDetailModal({ open, payload, onClose }: RecordDetailModalP
         {payload.eyebrow ? <p className="record-detail-eyebrow">{payload.eyebrow}</p> : null}
 
         {payload.summary.length > 0 ? (
-          <div className="record-detail-summary" role="region" aria-label="Summary">
-            <p className="record-detail-summary-label">Summary</p>
+          <div className="record-detail-summary" role="region" aria-label={t("recordDetail.summary")}>
+            <p className="record-detail-summary-label">{t("recordDetail.summary")}</p>
             <ul className="record-detail-summary-list">
               {payload.summary.map(([label, value]) => (
                 <li key={label}>
@@ -49,7 +52,7 @@ export function RecordDetailModal({ open, payload, onClose }: RecordDetailModalP
 
         {payload.rows.length > 0 ? (
           <>
-            <p className="record-detail-fields-label">All fields</p>
+            <p className="record-detail-fields-label">{t("recordDetail.allFields")}</p>
             <div className="record-detail-fields">
               {payload.rows.map(([label, value]) => (
                 <div key={`${label}-${value}`} className="record-detail-field-row">

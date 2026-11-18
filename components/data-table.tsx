@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { useMemo, useState, type ReactNode } from "react";
 import { IconSearch } from "./icons/icon";
 
@@ -101,9 +103,9 @@ export function DataTable<T>({
   rows,
   rowKey,
   onRowClick,
-  empty = "Nothing to show.",
+  empty,
   loading = false,
-  searchPlaceholder = "Search this table…",
+  searchPlaceholder,
   pageSizeOptions = [10, 25, 50],
   defaultPageSize = 10,
   toolbarActions,
@@ -114,6 +116,9 @@ export function DataTable<T>({
   defaultSortDirection = "asc",
   className,
 }: DataTableProps<T>) {
+  const t = useT();
+  const emptyText = empty ?? t("table.empty");
+  const searchPh = searchPlaceholder ?? t("table.searchPlaceholder");
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(defaultSortKey);
   const [sortDirection, setSortDirection] = useState<SortDirection>(defaultSortDirection);
@@ -222,7 +227,7 @@ export function DataTable<T>({
                 setQuery(event.target.value);
                 setPage(0);
               }}
-              placeholder={searchPlaceholder}
+              placeholder={searchPh}
               aria-label="Search table"
             />
           </label>
@@ -348,7 +353,7 @@ export function DataTable<T>({
             ) : pageRows.length === 0 ? (
               <tr>
                 <td className="empty" colSpan={columns.length}>
-                  {empty}
+                  {emptyText}
                 </td>
               </tr>
             ) : (

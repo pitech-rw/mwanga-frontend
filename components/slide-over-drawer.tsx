@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { useEffect, useId, type ReactNode } from "react";
 import { IconX } from "./icons/icon";
 
@@ -31,6 +33,7 @@ export function SlideOverDrawer({
   activeTab,
   onTabChange,
 }: SlideOverDrawerProps) {
+  const t = useT();
   const titleId = useId();
   const tablistId = useId();
 
@@ -74,7 +77,7 @@ export function SlideOverDrawer({
             <h2 id={titleId}>{title}</h2>
             {description ? <p className="sub">{description}</p> : null}
           </div>
-          <button type="button" className="btn icon-only drawer-close" aria-label="Close" onClick={onClose}>
+          <button type="button" className="btn icon-only drawer-close" aria-label={t("common.close")} onClick={onClose}>
             <IconX size={18} />
           </button>
         </header>

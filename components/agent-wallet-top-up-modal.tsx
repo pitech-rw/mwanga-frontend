@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -29,6 +31,7 @@ export function AgentWalletTopUpModal({
   onSaved,
   onError,
 }: AgentWalletTopUpModalProps) {
+  const t = useT();
   const [amount, setAmount] = useState("");
   const [externalReference, setExternalReference] = useState("");
   const [description, setDescription] = useState("");

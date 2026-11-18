@@ -2,6 +2,7 @@ import { PERMISSIONS } from "./permission-strings";
 import type { ResourceSection } from "./resource-create-config";
 import type { Section } from "./nav";
 import { agentDirectoryTopUpTargetFromRow, agentFloatTopUpTargetFromRow } from "./wallet-row-helpers";
+import type { MessageKey, TranslateFn } from "./i18n/translate";
 
 /**
  * Row-level actions for API resource tables. Permission strings match
@@ -232,4 +233,44 @@ export function getRowActionsForRecord(
   return getAvailableRowActions(section, permissions).filter(
     (def) => !def.visibleForRow || def.visibleForRow(row),
   );
+}
+
+const ROW_ACTION_MESSAGE_KEYS: Partial<Record<TableRowActionId, MessageKey>> = {
+  [TABLE_ROW_ACTION_IDS.resourceEdit]: "actions.row.edit",
+  [TABLE_ROW_ACTION_IDS.resourceDelete]: "actions.row.delete",
+  [TABLE_ROW_ACTION_IDS.attachBatteryStation]: "actions.row.attachBatteryStation",
+  [TABLE_ROW_ACTION_IDS.attachBatteryBike]: "actions.row.attachBatteryBike",
+  [TABLE_ROW_ACTION_IDS.attachBikeRider]: "actions.row.attachBikeRider",
+  [TABLE_ROW_ACTION_IDS.assignCardRider]: "actions.row.assignCardRider",
+  [TABLE_ROW_ACTION_IDS.associateOwnerRider]: "actions.row.associateOwnerRider",
+  [TABLE_ROW_ACTION_IDS.walletTopUp]: "actions.row.walletTopUp",
+  [TABLE_ROW_ACTION_IDS.walletLedger]: "actions.row.walletLedger",
+  [TABLE_ROW_ACTION_IDS.companyAccountLedger]: "actions.row.companyAccountLedger",
+  [TABLE_ROW_ACTION_IDS.stationOpen]: "actions.row.stationOpen",
+  [TABLE_ROW_ACTION_IDS.walletDelete]: "actions.row.walletDelete",
+  [TABLE_ROW_ACTION_IDS.assignSwapperStation]: "actions.row.assignSwapperStation",
+  [TABLE_ROW_ACTION_IDS.assignRiderFleetOwner]: "actions.row.assignRiderFleetOwner",
+  [TABLE_ROW_ACTION_IDS.issueInventoryBike]: "actions.row.issueInventoryBike",
+  [TABLE_ROW_ACTION_IDS.issueInventoryBatteryStation]: "actions.row.issueInventoryBatteryStation",
+  [TABLE_ROW_ACTION_IDS.issueInventoryBatteryBike]: "actions.row.issueInventoryBatteryBike",
+};
+
+export function localizeRowActions(
+  defs: readonly TableRowActionDef[],
+  t: TranslateFn,
+  section?: Section,
+): TableRowActionDef[] {
+  return defs.map((def) => {
+    let key = ROW_ACTION_MESSAGE_KEYS[def.id];
+    if (def.id === TABLE_ROW_ACTION_IDS.walletTopUp && def.label === "Add float") {
+      key = "actions.row.addFloat";
+    }
+    if (def.id === TABLE_ROW_ACTION_IDS.resourceDelete && section === "users" && def.label === "Deactivate") {
+      key = "actions.row.deactivate";
+    }
+    if (!key) {
+      return def;
+    }
+    return { ...def, label: t(key) };
+  });
 }

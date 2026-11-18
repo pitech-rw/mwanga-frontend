@@ -1,13 +1,16 @@
 "use client";
 
+import { useT } from "../../components/locale";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 import { PasswordInput } from "../../components/password-input";
-import { resetPassword } from "../../lib/auth";
+import { resetPassword, userMessageFromApiCode } from "../../lib/auth";
 
 function ResetPasswordForm() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
@@ -37,7 +40,9 @@ function ResetPasswordForm() {
 
     try {
       const result = await resetPassword(token, password);
-      setSuccess(result.message);
+      setSuccess(
+        userMessageFromApiCode(result.code, result.params, undefined, result.message, "auth.passwordUpdated"),
+      );
       window.setTimeout(() => router.replace("/"), 2000);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Reset failed.");
@@ -128,6 +133,7 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
+  const t = useT();
   return (
     <div className="landing-shell">
       <section className="landing-hero">

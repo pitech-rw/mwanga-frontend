@@ -1,10 +1,13 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { getDefaultCreatePassword } from "../lib/default-password";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
+import { localizeCreateConfig } from "../lib/i18n/localize";
 import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import type { Section } from "../lib/nav";
 import { PlacesLocationPicker } from "./places-location-picker";
@@ -134,16 +137,16 @@ function stationSearchHaystack(station: StationListRow): string {
   return [station.code, station.name, station.status ?? "", String(station.id)].join(" ").toLowerCase();
 }
 
-function swapRiderLabel(user: SwapListUser | null | undefined): string {
+function swapRiderLabel(user: SwapListUser | null | undefined, unknownRider: string): string {
   if (!user) {
-    return "Unknown rider";
+    return unknownRider;
   }
   const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
   return name ? `${name} (@${user.username})` : `@${user.username}`;
 }
 
-function swapOptionLine(swap: SwapListRow): string {
-  const rider = swapRiderLabel(swap.user);
+function swapOptionLine(swap: SwapListRow, unknownRider: string): string {
+  const rider = swapRiderLabel(swap.user, unknownRider);
   const phone = swap.user?.phone?.trim();
   const contact = phone || swap.user?.email?.trim() || "";
   const status = swap.status.replace(/_/g, " ");
@@ -167,7 +170,11 @@ function swapSearchHaystack(swap: SwapListRow): string {
 }
 
 export function CreateResourceModal({ open, section, onClose, onCreated, onError }: CreateResourceModalProps) {
-  const config = getCreateConfig(section);
+  const t = useT();
+  const config = useMemo(() => {
+    const raw = getCreateConfig(section);
+    return raw ? localizeCreateConfig(raw, t) : null;
+  }, [section, t]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -199,41 +206,41 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const drawerTabs = useMemo((): SlideOverDrawerTab[] => {
     if (section === "bikes") {
       return [
-        { id: "details", label: "Bike details" },
-        { id: "assignment", label: "Assignment" },
+        { id: "details", label: t("create.drawer.tab.bikeDetails") },
+        { id: "assignment", label: t("create.drawer.tab.assignment") },
       ];
     }
     if (section === "owners") {
       return [
-        { id: "details", label: "Owner details" },
-        { id: "fleet", label: "Fleet bikes" },
+        { id: "details", label: t("create.drawer.tab.ownerDetails") },
+        { id: "fleet", label: t("create.drawer.tab.fleetBikes") },
       ];
     }
     if (section === "stations") {
       return [
-        { id: "details", label: "Station details" },
-        { id: "location", label: "Location" },
+        { id: "details", label: t("create.drawer.tab.stationDetails") },
+        { id: "location", label: t("create.drawer.tab.location") },
       ];
     }
     if (section === "users") {
-      const tabs: SlideOverDrawerTab[] = [{ id: "details", label: "Account" }];
+      const tabs: SlideOverDrawerTab[] = [{ id: "details", label: t("create.drawer.tab.account") }];
       const accountType = values.type?.trim();
       if (accountType === "rider") {
-        tabs.push({ id: "fleet", label: "Fleet owner" });
+        tabs.push({ id: "fleet", label: t("create.drawer.tab.fleetOwner") });
       }
       if (accountType === "swapper") {
-        tabs.push({ id: "station", label: "Station" });
+        tabs.push({ id: "station", label: t("create.drawer.tab.station") });
       }
       return tabs;
     }
     if (section === "incidents") {
       return [
-        { id: "details", label: "Incident details" },
-        { id: "swap", label: "Related swap" },
+        { id: "details", label: t("create.drawer.tab.incidentDetails") },
+        { id: "swap", label: t("create.drawer.tab.relatedSwap") },
       ];
     }
     return [];
-  }, [section, values.type]);
+  }, [section, t, values.type]);
 
   const useDrawerTabs =
     section === "users" || section === "incidents" ? drawerTabs.length > 1 : drawerTabs.length > 0;
@@ -633,21 +640,21 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     setError(null);
 
     if (needsOwnerPicker && walletOwnerId === null) {
-      setError("Select a fleet owner.");
+      setError(t("create.error.selectFleetOwner"));
       setSaving(false);
       return;
     }
 
     if (config.section === "agents") {
       if (agentUserId === null) {
-        setError("Select an agent user account.");
+        setError(t("create.error.selectAgentUser"));
         setSaving(false);
         return;
       }
     }
 
     if (userCreateIsRider && walletOwnerId === null) {
-      setError("Select a fleet owner on the Fleet owner tab.");
+      setError(t("create.error.selectFleetOwnerTab"));
       setDrawerTab("fleet");
       setSaving(false);
       return;
@@ -657,12 +664,12 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     if (config.section === "owners" && registerOwnerFleet) {
       const bikes = buildOwnerBikesPayload(ownerBikes);
       if (bikes === null) {
-        setError("Each fleet bike needs a plate number, serial number, and model.");
+        setError(t("create.error.fleetBikeFields"));
         setSaving(false);
         return;
       }
       if (bikes.length === 0) {
-        setError("Add at least one fleet bike, or turn off fleet registration.");
+        setError(t("create.error.fleetBikeMin"));
         setSaving(false);
         return;
       }
@@ -695,7 +702,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         body = buildCreatePayload(config, values);
         if (kind === "bike") {
           if (!String(body.plateNumber ?? "").trim() || !String(body.model ?? "").trim()) {
-            setError("Bikes need a plate number and model.");
+            setError(t("create.error.bikePlateModel"));
             setSaving(false);
             return;
           }
@@ -787,10 +794,10 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       footer={
         <>
           <button type="button" className="btn" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="submit" form={formId} className="btn primary" disabled={submitDisabled}>
-            {saving ? "Saving…" : config.submitLabel}
+            {saving ? t("common.saving") : config.submitLabel}
           </button>
         </>
       }
@@ -804,27 +811,24 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
         {config.section === "agents" && showDrawerPanel("details") ? (
           <>
-            <p className="sub">
-              Create the sign-in account under <strong>Users</strong> first (role type <strong>agent</strong>), then
-              link it here to open float.
-            </p>
+            <p className="sub">{t("create.agents.intro")}</p>
             <label className="field">
-              <span>Find account</span>
+              <span>{t("modals.picker.findAccount")}</span>
               <input
                 type="search"
                 value={agentUserSearch}
                 disabled={saving || loadingAgentUsers}
                 onChange={(event) => setAgentUserSearch(event.target.value)}
-                placeholder="Search by name, username, email, or phone…"
+                placeholder={t("modals.picker.searchAgentAccount")}
                 autoComplete="off"
-                aria-label="Search agent user accounts"
+                aria-label={t("modals.picker.searchAgentAccount")}
               />
             </label>
             {loadingAgentUsers ? (
-              <p className="sub">Loading accounts…</p>
+              <p className="sub">{t("modals.picker.loadingAccounts")}</p>
             ) : (
               <label className="field">
-                <span>User account ({filteredAgentUsers.length} without float)</span>
+                <span>{t("modals.picker.userAccountFloat", { count: filteredAgentUsers.length })}</span>
                 <select
                   value={agentUserId != null ? String(agentUserId) : ""}
                   disabled={saving || filteredAgentUsers.length === 0}
@@ -834,10 +838,12 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                   }}
                   size={Math.min(8, Math.max(4, filteredAgentUsers.length || 4))}
                   className="station-picker create-wallet-user-select"
-                  aria-label="Select agent user account"
+                  aria-label={t("modals.picker.findAccount")}
                 >
                   <option value="">
-                    {filteredAgentUsers.length === 0 ? "No eligible accounts" : "Choose an account…"}
+                    {filteredAgentUsers.length === 0
+                      ? t("modals.picker.noEligibleAccounts")
+                      : t("modals.picker.chooseAccount")}
                   </option>
                   {filteredAgentUsers.map((user) => (
                     <option key={user.id} value={String(user.id)}>
@@ -849,54 +855,48 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             )}
             {selectedAgentUser ? (
               <p className="create-wallet-selection sub" role="status">
-                <strong>Selected:</strong> {agentUserOptionLine(selectedAgentUser)}
+                {t("modals.picker.selectedPrefix")} <strong>{agentUserOptionLine(selectedAgentUser)}</strong>
               </p>
             ) : null}
           </>
         ) : null}
 
         {config.section === "users" && showDrawerPanel("fleet") && !userCreateIsRider ? (
-          <p className="sub">
-            Fleet owner association applies to <strong>rider</strong> accounts. Choose role type <strong>rider</strong> on
-            the Account tab first.
-          </p>
+          <p className="sub">{t("create.users.fleetTabHint")}</p>
         ) : null}
 
         {config.section === "users" && showDrawerPanel("station") && !userCreateIsSwapper ? (
-          <p className="sub">
-            Station assignment applies to <strong>swapper</strong> accounts. Choose role type <strong>swapper</strong> on the
-            Account tab first.
-          </p>
+          <p className="sub">{t("create.users.stationTabHint")}</p>
         ) : null}
 
         {config.section === "users" && showDrawerPanel("station") && userCreateIsSwapper ? (
           <>
-            <p className="sub">Optional — assign the swap station this operator works from.</p>
+            <p className="sub">{t("create.users.stationOptional")}</p>
             <label className="field">
               <span>
-                Find station
-                <span className="sub">
-                  {" "}
-                  (showing {RECENT_PICKER_LIMIT} most recent, search for more)
-                </span>
+                {t("modals.picker.findStation")}
+                <span className="sub"> {t("modals.picker.recentSearchHint", { limit: RECENT_PICKER_LIMIT })}</span>
               </span>
               <input
                 type="search"
                 value={userStationSearch}
                 disabled={saving || loadingUserStations}
                 onChange={(event) => setUserStationSearch(event.target.value)}
-                placeholder="Search by code, name, or ID…"
+                placeholder={t("modals.picker.searchStation")}
                 autoComplete="off"
-                aria-label="Search stations"
+                aria-label={t("modals.picker.searchStation")}
               />
             </label>
             {loadingUserStations ? (
-              <p className="sub">Loading stations…</p>
+              <p className="sub">{t("modals.picker.loadingStations")}</p>
             ) : (
               <label className="field">
                 <span>
-                  Station ({filteredUserStations.length} shown
-                  {!userStationSearch.trim() ? ` · ${RECENT_PICKER_LIMIT} most recent` : ""})
+                  {t("modals.picker.station")} ({t("modals.picker.shownCount", { count: filteredUserStations.length })}
+                  {!userStationSearch.trim()
+                    ? t("modals.picker.shownRecentSuffix", { limit: RECENT_PICKER_LIMIT })
+                    : ""}
+                  )
                 </span>
                 <select
                   value={userStationId != null ? String(userStationId) : ""}
@@ -907,9 +907,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                   }}
                   size={Math.min(8, Math.max(4, filteredUserStations.length || 4))}
                   className="station-picker create-wallet-user-select"
-                  aria-label="Select station"
+                  aria-label={t("modals.picker.station")}
                 >
-                  <option value="">{filteredUserStations.length === 0 ? "No matches" : "Unassigned"}</option>
+                  <option value="">
+                    {filteredUserStations.length === 0 ? t("common.noMatches") : t("common.unassigned")}
+                  </option>
                   {filteredUserStations.map((station) => (
                     <option key={station.id} value={String(station.id)}>
                       {stationOptionLine(station)}
@@ -920,7 +922,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             )}
             {selectedUserStation ? (
               <p className="create-wallet-selection sub" role="status">
-                <strong>Selected:</strong> {stationOptionLine(selectedUserStation)}
+                {t("modals.picker.selectedPrefix")} <strong>{stationOptionLine(selectedUserStation)}</strong>
               </p>
             ) : null}
           </>
@@ -932,20 +934,22 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           <>
             <label className="field">
               <span>
-                Find owner
+                {t("modals.picker.findOwner")}
                 {needsOwnerPicker || (config.section === "users" && userCreateIsRider) ? (
                   <>
                     <span className="col-required" aria-hidden="true">
                       {" "}
                       *
                     </span>
-                    <span className="sr-only"> (required)</span>
+                    <span className="sr-only"> {t("common.requiredSr")}</span>
                   </>
                 ) : (
                   <span className="sub">
                     {" "}
-                    (optional — leave unset for warehouse
-                    {bikeOwnerPicker || config.section === "users" ? `; showing ${RECENT_PICKER_LIMIT} most recent, search for more` : ""})
+                    {t("modals.picker.optionalWarehouse")}
+                    {bikeOwnerPicker || config.section === "users"
+                      ? t("modals.picker.optionalWarehouseRecent", { limit: RECENT_PICKER_LIMIT })
+                      : t("modals.picker.optionalWarehouseClose")}
                   </span>
                 )}
               </span>
@@ -954,19 +958,19 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 value={walletOwnerSearch}
                 disabled={saving || loadingWalletUsers}
                 onChange={(event) => setWalletOwnerSearch(event.target.value)}
-                placeholder="Search by name, email, or phone…"
+                placeholder={t("modals.picker.searchOwnerContact")}
                 autoComplete="off"
-                aria-label="Search fleet owners"
+                aria-label={t("modals.picker.searchOwnerContact")}
               />
             </label>
             {loadingWalletUsers ? (
-              <p className="sub">Loading owners…</p>
+              <p className="sub">{t("modals.picker.loadingOwners")}</p>
             ) : (
               <label className="field">
                 <span>
-                  Fleet owner ({filteredWalletOwners.length} shown
+                  {t("modals.picker.fleetOwner")} ({t("modals.picker.shownCount", { count: filteredWalletOwners.length })}
                   {(bikeOwnerPicker || config.section === "users") && !walletOwnerSearch.trim()
-                    ? ` · ${RECENT_PICKER_LIMIT} most recent`
+                    ? t("modals.picker.shownRecentSuffix", { limit: RECENT_PICKER_LIMIT })
                     : ""}
                   )
                   {needsOwnerPicker || (config.section === "users" && userCreateIsRider) ? (
@@ -975,7 +979,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                         {" "}
                         *
                       </span>
-                      <span className="sr-only"> (required)</span>
+                      <span className="sr-only"> {t("common.requiredSr")}</span>
                     </>
                   ) : null}
                 </span>
@@ -989,9 +993,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                   }}
                   size={Math.min(8, Math.max(4, filteredWalletOwners.length || 4))}
                   className="station-picker create-wallet-user-select"
-                  aria-label="Select fleet owner"
+                  aria-label={t("modals.picker.fleetOwner")}
                 >
-                  <option value="">{filteredWalletOwners.length === 0 ? "No matches" : "Choose an owner…"}</option>
+                  <option value="">
+                    {filteredWalletOwners.length === 0 ? t("common.noMatches") : t("modals.picker.chooseOwner")}
+                  </option>
                   {filteredWalletOwners.map((o) => (
                     <option key={o.id} value={String(o.id)}>
                       {ownerOptionLine(o)}
@@ -1002,7 +1008,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             )}
             {selectedWalletOwner ? (
               <p className="create-wallet-selection sub" role="status">
-                <strong>Selected:</strong> {ownerOptionLine(selectedWalletOwner)}
+                {t("modals.picker.selectedPrefix")} <strong>{ownerOptionLine(selectedWalletOwner)}</strong>
               </p>
             ) : null}
           </>
@@ -1010,26 +1016,29 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
         {config.section === "incidents" && showDrawerPanel("swap") ? (
           <>
-            <p className="sub">Optional — link this report to a swap if the damage was noticed during a handover.</p>
+            <p className="sub">{t("create.incidents.swapOptional")}</p>
             <label className="field">
-              <span>Find swap</span>
+              <span>{t("modals.picker.findSwap")}</span>
               <input
                 type="search"
                 value={incidentSwapSearch}
                 disabled={saving || loadingIncidentSwaps}
                 onChange={(event) => setIncidentSwapSearch(event.target.value)}
-                placeholder="Search by rider name or phone…"
+                placeholder={t("modals.picker.searchSwapRider")}
                 autoComplete="off"
-                aria-label="Search swaps by rider"
+                aria-label={t("modals.picker.searchSwapRider")}
               />
             </label>
             {loadingIncidentSwaps ? (
-              <p className="sub">Loading swaps…</p>
+              <p className="sub">{t("modals.picker.loadingSwaps")}</p>
             ) : (
               <label className="field">
                 <span>
-                  Swap ({filteredIncidentSwaps.length} shown
-                  {!incidentSwapSearch.trim() ? ` · ${RECENT_PICKER_LIMIT} most recent` : ""})
+                  {t("modals.picker.swap")} ({t("modals.picker.shownCount", { count: filteredIncidentSwaps.length })}
+                  {!incidentSwapSearch.trim()
+                    ? t("modals.picker.shownRecentSuffix", { limit: RECENT_PICKER_LIMIT })
+                    : ""}
+                  )
                 </span>
                 <select
                   value={incidentSwapId != null ? String(incidentSwapId) : ""}
@@ -1040,14 +1049,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                   }}
                   size={Math.min(8, Math.max(4, filteredIncidentSwaps.length || 4))}
                   className="station-picker create-wallet-user-select"
-                  aria-label="Select related swap"
+                  aria-label={t("modals.picker.swap")}
                 >
                   <option value="">
-                    {filteredIncidentSwaps.length === 0 ? "No matches" : "No swap linked"}
+                    {filteredIncidentSwaps.length === 0 ? t("common.noMatches") : t("modals.picker.noSwapLinked")}
                   </option>
                   {filteredIncidentSwaps.map((swap) => (
                     <option key={swap.id} value={String(swap.id)}>
-                      {swapOptionLine(swap)}
+                      {swapOptionLine(swap, t("create.picker.unknownRider"))}
                     </option>
                   ))}
                 </select>
@@ -1055,7 +1064,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             )}
             {selectedIncidentSwap ? (
               <p className="create-wallet-selection sub" role="status">
-                <strong>Selected:</strong> {swapOptionLine(selectedIncidentSwap)}
+                {t("modals.picker.selectedPrefix")}{" "}
+                <strong>{swapOptionLine(selectedIncidentSwap, t("create.picker.unknownRider"))}</strong>
               </p>
             ) : null}
           </>
@@ -1063,26 +1073,29 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
         {config.section === "bikes" && showDrawerPanel("assignment") ? (
           <>
-            <p className="sub">Optional rider assignment. Leave unset if the bike has no rider yet.</p>
+            <p className="sub">{t("create.bikes.riderOptional")}</p>
             <label className="field">
-              <span>Find rider</span>
+              <span>{t("modals.picker.findRider")}</span>
               <input
                 type="search"
                 value={bikeRiderSearch}
                 disabled={saving || loadingBikeRiders}
                 onChange={(event) => setBikeRiderSearch(event.target.value)}
-                placeholder="Search by name, username, email, or phone…"
+                placeholder={t("modals.picker.searchRiderFull")}
                 autoComplete="off"
-                aria-label="Search riders"
+                aria-label={t("modals.picker.searchRiderFull")}
               />
             </label>
             {loadingBikeRiders ? (
-              <p className="sub">Loading riders…</p>
+              <p className="sub">{t("modals.picker.loadingRiders")}</p>
             ) : (
               <label className="field">
                 <span>
-                  Rider ({filteredBikeRiders.length} shown
-                  {!bikeRiderSearch.trim() ? ` · ${RECENT_PICKER_LIMIT} most recent` : ""})
+                  {t("modals.picker.rider")} ({t("modals.picker.shownCount", { count: filteredBikeRiders.length })}
+                  {!bikeRiderSearch.trim()
+                    ? t("modals.picker.shownRecentSuffix", { limit: RECENT_PICKER_LIMIT })
+                    : ""}
+                  )
                 </span>
                 <select
                   value={bikeRiderId != null ? String(bikeRiderId) : ""}
@@ -1093,9 +1106,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                   }}
                   size={Math.min(8, Math.max(4, filteredBikeRiders.length || 4))}
                   className="station-picker create-wallet-user-select"
-                  aria-label="Select rider"
+                  aria-label={t("modals.picker.rider")}
                 >
-                  <option value="">{filteredBikeRiders.length === 0 ? "No matches" : "No rider assigned"}</option>
+                  <option value="">
+                    {filteredBikeRiders.length === 0 ? t("common.noMatches") : t("modals.picker.noRiderAssigned")}
+                  </option>
                   {filteredBikeRiders.map((user) => (
                     <option key={user.id} value={String(user.id)}>
                       {riderUserOptionLine(user)}
@@ -1106,7 +1121,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             )}
             {selectedBikeRider ? (
               <p className="create-wallet-selection sub" role="status">
-                <strong>Selected:</strong> {riderUserOptionLine(selectedBikeRider)}
+                {t("modals.picker.selectedPrefix")} <strong>{riderUserOptionLine(selectedBikeRider)}</strong>
               </p>
             ) : null}
           </>
@@ -1145,18 +1160,16 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                   }
                 }}
               />
-              <span>Register fleet bikes for this owner</span>
+              <span>{t("create.owners.registerFleet")}</span>
             </label>
-            {registerOwnerFleet ? (
-              <p className="sub">Each bike is linked to the new owner automatically.</p>
-            ) : null}
+            {registerOwnerFleet ? <p className="sub">{t("create.owners.fleetAutoLink")}</p> : null}
             {registerOwnerFleet
               ? ownerBikes.map((draft, index) => (
                   <fieldset key={index} className="owner-fleet-bike" disabled={saving}>
-                    <legend className="sub">Bike {index + 1}</legend>
+                    <legend className="sub">{t("create.owners.bikeLegend", { index: index + 1 })}</legend>
                     <label className="field">
                       <span>
-                        Plate number
+                        {t("fields.keys.plateNumber")}
                         <span className="col-required" aria-hidden="true">
                           {" "}
                           *
@@ -1176,7 +1189,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                     </label>
                     <label className="field">
                       <span>
-                        Serial number
+                        {t("fields.keys.serialNumber")}
                         <span className="col-required" aria-hidden="true">
                           {" "}
                           *
@@ -1196,7 +1209,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                     </label>
                     <label className="field">
                       <span>
-                        Model
+                        {t("fields.keys.model")}
                         <span className="col-required" aria-hidden="true">
                           {" "}
                           *
@@ -1213,7 +1226,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                       />
                     </label>
                     <label className="field">
-                      <span>Chassis number</span>
+                      <span>{t("fields.keys.chassisNumber")}</span>
                       <input
                         type="text"
                         value={draft.chassisNumber}
@@ -1232,7 +1245,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                         className="btn"
                         onClick={() => setOwnerBikes((rows) => rows.filter((_, i) => i !== index))}
                       >
-                        Remove bike
+                        {t("common.removeBike")}
                       </button>
                     ) : null}
                   </fieldset>
@@ -1245,7 +1258,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 disabled={saving}
                 onClick={() => setOwnerBikes((rows) => [...rows, emptyOwnerBike()])}
               >
-                Add another bike
+                {t("common.addAnotherBike")}
               </button>
             ) : null}
           </div>

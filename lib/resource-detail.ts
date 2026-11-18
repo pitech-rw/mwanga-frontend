@@ -1,4 +1,6 @@
 import type { Section } from "./nav";
+import { translateFieldKey, type MessageKey, type TranslateFn } from "./i18n/translate";
+import type { LocaleCode } from "./locale-storage";
 
 /** Payload for the dashboard record detail dialog (structured like a confirmation panel). */
 export type ResourceDetailPayload = {
@@ -17,11 +19,18 @@ export type ResourceDetailPayload = {
   row: Record<string, unknown>;
 };
 
-function formatFieldLabel(key: string): string {
+function formatFieldLabel(key: string, locale?: LocaleCode): string {
+  if (locale) {
+    return translateFieldKey(locale, key);
+  }
   return key
     .replace(/([A-Z])/g, " $1")
     .replace(/^./, (c) => c.toUpperCase())
     .trim();
+}
+
+function dl(t: TranslateFn | undefined, key: MessageKey, fallback: string): string {
+  return t ? t(key) : fallback;
 }
 
 function pickString(row: Record<string, unknown>, ...keys: string[]): string | undefined {
@@ -39,6 +48,8 @@ export function buildResourceDetailPayload(
   resourceTitle: string,
   row: Record<string, unknown>,
   cellText: (value: unknown) => string,
+  translate?: TranslateFn,
+  locale?: LocaleCode,
 ): ResourceDetailPayload {
   const id = row.id;
   const idStr = id != null ? String(id) : "—";
@@ -57,25 +68,25 @@ export function buildResourceDetailPayload(
       description =
         "Pack details. A battery is either at a station or on a bike—not both.";
       usedKeys.add("serialNumber");
-      summary.push(["Serial", serial]);
+      summary.push([dl(translate, "detail.labels.serial" as MessageKey, "Serial"), serial]);
       const status = pickString(row, "status");
       if (status) {
         usedKeys.add("status");
-        summary.push(["Status", status]);
+        summary.push([dl(translate, "detail.labels.status" as MessageKey, "Status"), status]);
       }
       const model = pickString(row, "model");
       if (model) {
         usedKeys.add("model");
-        summary.push(["Model", model]);
+        summary.push([dl(translate, "detail.labels.model" as MessageKey, "Model"), model]);
       }
       const capacityKwh = row.capacity;
       if (capacityKwh != null && capacityKwh !== "") {
         usedKeys.add("capacity");
-        summary.push(["Capacity", `${capacityKwh} kWh`]);
+        summary.push([dl(translate, "detail.labels.capacity" as MessageKey, "Capacity"), `${capacityKwh} kWh`]);
       }
       usedKeys.add("soc");
       usedKeys.add("soh");
-      summary.push(["SOC / SOH", `${cellText(row.soc)} / ${cellText(row.soh)}`]);
+      summary.push([dl(translate, "detail.labels.socSoh" as MessageKey, "SOC / SOH"), `${cellText(row.soc)} / ${cellText(row.soh)}`]);
       const station = row.station;
       const bike = row.bike;
       if (station && typeof station === "object") {
@@ -83,7 +94,7 @@ export function buildResourceDetailPayload(
         const s = station as Record<string, unknown>;
         const code = typeof s.code === "string" ? s.code : "";
         const name = typeof s.name === "string" ? s.name : "";
-        summary.push(["Station", code && name ? `${code} — ${name}` : cellText(station)]);
+        summary.push([dl(translate, "detail.labels.station" as MessageKey, "Station"), code && name ? `${code} — ${name}` : cellText(station)]);
       } else if (row.stationId != null) {
         usedKeys.add("stationId");
         summary.push([formatFieldLabel("stationId"), String(row.stationId)]);
@@ -91,7 +102,7 @@ export function buildResourceDetailPayload(
       if (bike && typeof bike === "object") {
         const b = bike as Record<string, unknown>;
         const plate = typeof b.plateNumber === "string" ? b.plateNumber : "";
-        summary.push(["Bike", plate || cellText(bike)]);
+        summary.push([dl(translate, "detail.labels.bike" as MessageKey, "Bike"), plate || cellText(bike)]);
       }
       break;
     }
@@ -100,16 +111,16 @@ export function buildResourceDetailPayload(
       headingTitle = `Bike · ${plate}`;
       description = "Vehicle record. Rider and current battery show in the summary when linked.";
       usedKeys.add("plateNumber");
-      summary.push(["Plate", plate]);
+      summary.push([dl(translate, "detail.labels.plate" as MessageKey, "Plate"), plate]);
       const model = pickString(row, "model");
       if (model) {
         usedKeys.add("model");
-        summary.push(["Model", model]);
+        summary.push([dl(translate, "detail.labels.model" as MessageKey, "Model"), model]);
       }
       const status = pickString(row, "status");
       if (status) {
         usedKeys.add("status");
-        summary.push(["Status", status]);
+        summary.push([dl(translate, "detail.labels.status" as MessageKey, "Status"), status]);
       }
       const owner = row.owner;
       if (owner && typeof owner === "object") {
@@ -117,10 +128,10 @@ export function buildResourceDetailPayload(
         usedKeys.add("ownerId");
         usedKeys.add("owner");
         const ownerName = typeof o.name === "string" ? o.name.trim() : "";
-        summary.push(["Owner", ownerName || cellText(owner)]);
+        summary.push([dl(translate, "detail.labels.owner" as MessageKey, "Owner"), ownerName || cellText(owner)]);
       } else if (row.ownerId != null) {
         usedKeys.add("ownerId");
-        summary.push(["Owner", `Owner #${row.ownerId}`]);
+        summary.push([dl(translate, "detail.labels.owner" as MessageKey, "Owner"), `Owner #${row.ownerId}`]);
       }
       break;
     }
@@ -129,11 +140,11 @@ export function buildResourceDetailPayload(
       headingTitle = `Owner · ${name}`;
       description = "Fleet buyer account with a shared wallet.";
       usedKeys.add("name");
-      summary.push(["Name", name]);
+      summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), name]);
       const email = pickString(row, "email");
       if (email) {
         usedKeys.add("email");
-        summary.push(["Email", email]);
+        summary.push([dl(translate, "detail.labels.email" as MessageKey, "Email"), email]);
       }
       break;
     }
@@ -142,16 +153,16 @@ export function buildResourceDetailPayload(
       headingTitle = `Agent · ${name}`;
       description = "Float profile linked to an agent user account.";
       usedKeys.add("name");
-      summary.push(["Name", name]);
+      summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), name]);
       const email = pickString(row, "email");
       if (email) {
         usedKeys.add("email");
-        summary.push(["Email", email]);
+        summary.push([dl(translate, "detail.labels.email" as MessageKey, "Email"), email]);
       }
       const phone = pickString(row, "phone");
       if (phone) {
         usedKeys.add("phone");
-        summary.push(["Phone", phone]);
+        summary.push([dl(translate, "detail.labels.phone" as MessageKey, "Phone"), phone]);
       }
       break;
     }
@@ -161,21 +172,21 @@ export function buildResourceDetailPayload(
         headingTitle = `Owner · ${ownerName}`;
         description = "Fleet owner wallet top-up target.";
         usedKeys.add("name");
-        summary.push(["Name", ownerName]);
+        summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), ownerName]);
         const email = pickString(row, "email");
         if (email) {
           usedKeys.add("email");
-          summary.push(["Email", email]);
+          summary.push([dl(translate, "detail.labels.email" as MessageKey, "Email"), email]);
         }
         const phone = pickString(row, "phone");
         if (phone) {
           usedKeys.add("phone");
-          summary.push(["Phone", phone]);
+          summary.push([dl(translate, "detail.labels.phone" as MessageKey, "Phone"), phone]);
         }
         const status = pickString(row, "status");
         if (status) {
           usedKeys.add("status");
-          summary.push(["Status", status]);
+          summary.push([dl(translate, "detail.labels.status" as MessageKey, "Status"), status]);
         }
         break;
       }
@@ -184,16 +195,16 @@ export function buildResourceDetailPayload(
       headingTitle = name ? `Rider · ${name}` : `Rider · @${username}`;
       description = "Rider account.";
       usedKeys.add("username");
-      summary.push(["Username", `@${username}`]);
+      summary.push([dl(translate, "detail.labels.username" as MessageKey, "Username"), `@${username}`]);
       if (name) {
         usedKeys.add("firstName");
         usedKeys.add("lastName");
-        summary.push(["Name", name]);
+        summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), name]);
       }
       const phone = pickString(row, "phone");
       if (phone) {
         usedKeys.add("phone");
-        summary.push(["Phone", phone]);
+        summary.push([dl(translate, "detail.labels.phone" as MessageKey, "Phone"), phone]);
       }
       break;
     }
@@ -203,16 +214,16 @@ export function buildResourceDetailPayload(
       headingTitle = name ? `User · ${name}` : `User · @${username}`;
       description = "Account overview.";
       usedKeys.add("username");
-      summary.push(["Username", `@${username}`]);
+      summary.push([dl(translate, "detail.labels.username" as MessageKey, "Username"), `@${username}`]);
       if (name) {
         usedKeys.add("firstName");
         usedKeys.add("lastName");
-        summary.push(["Name", name]);
+        summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), name]);
       }
       const type = pickString(row, "type");
       if (type) {
         usedKeys.add("type");
-        summary.push(["Role type", type]);
+        summary.push([dl(translate, "detail.labels.roleType" as MessageKey, "Role type"), type]);
       }
       break;
     }
@@ -224,49 +235,49 @@ export function buildResourceDetailPayload(
         "Swap location. Open the station from the row actions menu to see batteries, assigned operators, and transactions.";
       if (code) {
         usedKeys.add("code");
-        summary.push(["Code", code]);
+        summary.push([dl(translate, "detail.labels.code" as MessageKey, "Code"), code]);
       }
       usedKeys.add("name");
-      summary.push(["Name", name]);
+      summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), name]);
       const street = pickString(row, "address");
       if (street) {
         usedKeys.add("address");
-        summary.push(["Address", street]);
+        summary.push([dl(translate, "detail.labels.address" as MessageKey, "Address"), street]);
       }
       const chargingCap = row.chargingCapacity;
       if (chargingCap != null) {
         usedKeys.add("chargingCapacity");
-        summary.push(["Charging capacity", String(chargingCap)]);
+        summary.push([dl(translate, "detail.labels.chargingCapacity" as MessageKey, "Charging capacity"), String(chargingCap)]);
       }
       const stationModel = pickString(row, "model");
       if (stationModel) {
         usedKeys.add("model");
-        summary.push(["Model", stationModel]);
+        summary.push([dl(translate, "detail.labels.model" as MessageKey, "Model"), stationModel]);
       }
       const photo = pickString(row, "photo");
       if (photo) {
         usedKeys.add("photo");
-        summary.push(["Photo", "Uploaded image"]);
+        summary.push([dl(translate, "detail.labels.photo" as MessageKey, "Photo"), "Uploaded image"]);
       }
       const st = pickString(row, "status");
       if (st) {
         usedKeys.add("status");
-        summary.push(["Status", st]);
+        summary.push([dl(translate, "detail.labels.status" as MessageKey, "Status"), st]);
       }
       const operators = row.operators;
       const batteries = row.batteries;
       const transactions = row.transactions;
       if (Array.isArray(operators)) {
         usedKeys.add("operators");
-        summary.push(["Operators", String(operators.length)]);
+        summary.push([dl(translate, "detail.labels.operators" as MessageKey, "Operators"), String(operators.length)]);
       }
       if (Array.isArray(batteries)) {
         usedKeys.add("batteries");
-        summary.push(["Batteries on site", String(batteries.length)]);
+        summary.push([dl(translate, "detail.labels.batteriesOnSite" as MessageKey, "Batteries on site"), String(batteries.length)]);
       }
       if (Array.isArray(transactions)) {
         usedKeys.add("transactions");
-        summary.push(["Swaps", String(transactions.length)]);
+        summary.push([dl(translate, "detail.labels.swaps" as MessageKey, "Swaps"), String(transactions.length)]);
       }
       break;
     }
@@ -276,12 +287,12 @@ export function buildResourceDetailPayload(
       const st = pickString(row, "status");
       if (st) {
         usedKeys.add("status");
-        summary.push(["Status", st]);
+        summary.push([dl(translate, "detail.labels.status" as MessageKey, "Status"), st]);
       }
       const pay = pickString(row, "paymentStatus");
       if (pay) {
         usedKeys.add("paymentStatus");
-        summary.push(["Payment", pay]);
+        summary.push([dl(translate, "detail.labels.payment" as MessageKey, "Payment"), pay]);
       }
       break;
     }
@@ -292,11 +303,11 @@ export function buildResourceDetailPayload(
       description = "NFC card. Token is truncated in the title; full values are in the field list.";
       if (token) {
         usedKeys.add("token");
-        summary.push(["Token preview", `${token.length > 20 ? `${token.slice(0, 16)}…` : token}`]);
+        summary.push([dl(translate, "detail.labels.tokenPreview" as MessageKey, "Token preview"), `${token.length > 20 ? `${token.slice(0, 16)}…` : token}`]);
       }
       if (sn) {
         usedKeys.add("serialNumber");
-        summary.push(["Serial", sn]);
+        summary.push([dl(translate, "detail.labels.serial" as MessageKey, "Serial"), sn]);
       }
       break;
     }
@@ -306,26 +317,26 @@ export function buildResourceDetailPayload(
       description = "Company bank account (asset) for verified float inflows.";
       if (name) {
         usedKeys.add("name");
-        summary.push(["Name", name]);
+        summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), name]);
       }
       const bank = pickString(row, "bankName");
       if (bank) {
         usedKeys.add("bankName");
-        summary.push(["Bank", bank]);
+        summary.push([dl(translate, "detail.labels.bank" as MessageKey, "Bank"), bank]);
       }
       const acct = pickString(row, "accountNumber");
       if (acct) {
         usedKeys.add("accountNumber");
-        summary.push(["Account number", acct]);
+        summary.push([dl(translate, "detail.labels.accountNumber" as MessageKey, "Account number"), acct]);
       }
       if (row.balance != null) {
         usedKeys.add("balance");
-        summary.push(["Balance", cellText(row.balance)]);
+        summary.push([dl(translate, "detail.labels.balance" as MessageKey, "Balance"), cellText(row.balance)]);
       }
       const cur = pickString(row, "currency");
       if (cur) {
         usedKeys.add("currency");
-        summary.push(["Currency", cur]);
+        summary.push([dl(translate, "detail.labels.currency" as MessageKey, "Currency"), cur]);
       }
       break;
     }
@@ -338,23 +349,23 @@ export function buildResourceDetailPayload(
         usedKeys.add("ownerId");
         usedKeys.add("owner");
         const name = typeof o.name === "string" ? o.name : "";
-        summary.push(["Owner", name || cellText(owner)]);
+        summary.push([dl(translate, "detail.labels.owner" as MessageKey, "Owner"), name || cellText(owner)]);
         const email = typeof o.email === "string" ? o.email : "";
         if (email) {
-          summary.push(["Email", email]);
+          summary.push([dl(translate, "detail.labels.email" as MessageKey, "Email"), email]);
         }
       } else if (row.ownerId != null) {
         usedKeys.add("ownerId");
-        summary.push(["Owner ID", String(row.ownerId)]);
+        summary.push([dl(translate, "detail.labels.ownerId" as MessageKey, "Owner ID"), String(row.ownerId)]);
       }
       if (row.balance != null) {
         usedKeys.add("balance");
-        summary.push(["Balance", cellText(row.balance)]);
+        summary.push([dl(translate, "detail.labels.balance" as MessageKey, "Balance"), cellText(row.balance)]);
       }
       const cur = pickString(row, "currency");
       if (cur) {
         usedKeys.add("currency");
-        summary.push(["Currency", cur]);
+        summary.push([dl(translate, "detail.labels.currency" as MessageKey, "Currency"), cur]);
       }
       break;
     }
@@ -363,11 +374,11 @@ export function buildResourceDetailPayload(
       headingTitle = `Incident · ${track}`;
       description = "Damaged or faulty battery pack reported at a station.";
       usedKeys.add("trackId");
-      summary.push(["Track ID", track]);
+      summary.push([dl(translate, "detail.labels.trackId" as MessageKey, "Track ID"), track]);
       const st = pickString(row, "status");
       if (st) {
         usedKeys.add("status");
-        summary.push(["Status", st.replace(/_/g, " ")]);
+        summary.push([dl(translate, "detail.labels.status" as MessageKey, "Status"), st.replace(/_/g, " ")]);
       }
       const battery = row.battery;
       if (battery && typeof battery === "object") {
@@ -380,23 +391,23 @@ export function buildResourceDetailPayload(
       if (station && typeof station === "object") {
         const name = pickString(station as Record<string, unknown>, "name");
         if (name) {
-          summary.push(["Station", name]);
+          summary.push([dl(translate, "detail.labels.station" as MessageKey, "Station"), name]);
         }
       }
       break;
     }
     case "violations": {
-      const t = pickString(row, "title");
-      headingTitle = t ? `Violation · ${t}` : `Violation · #${idStr}`;
+      const violationTitle = pickString(row, "title");
+      headingTitle = violationTitle ? `Violation · ${violationTitle}` : `Violation · #${idStr}`;
       description = "Compliance case with severity and status.";
-      if (t) {
+      if (violationTitle) {
         usedKeys.add("title");
-        summary.push(["Title", t]);
+        summary.push([dl(translate, "detail.labels.title" as MessageKey, "Title"), violationTitle]);
       }
       const st = pickString(row, "status");
       if (st) {
         usedKeys.add("status");
-        summary.push(["Status", st]);
+        summary.push([dl(translate, "detail.labels.status" as MessageKey, "Status"), st]);
       }
       break;
     }
@@ -406,20 +417,20 @@ export function buildResourceDetailPayload(
       description = "Named role used for permission grouping.";
       if (name) {
         usedKeys.add("name");
-        summary.push(["Name", name]);
+        summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), name]);
       }
       break;
     }
     case "inventory": {
       const kind = pickString(row, "kind") ?? "item";
       usedKeys.add("kind");
-      summary.push(["Kind", kind]);
+      summary.push([dl(translate, "detail.labels.kind" as MessageKey, "Kind"), kind]);
       const bike = row.bike;
       const battery = row.battery;
       if (bike && typeof bike === "object") {
         const plate = pickString(bike as Record<string, unknown>, "plateNumber");
         if (plate) {
-          summary.push(["Bike", plate]);
+          summary.push([dl(translate, "detail.labels.bike" as MessageKey, "Bike"), plate]);
         }
       }
       if (battery && typeof battery === "object") {
@@ -429,7 +440,7 @@ export function buildResourceDetailPayload(
         }
       }
       usedKeys.add("receivedAt");
-      summary.push(["Received", cellText(row.receivedAt)]);
+      summary.push([dl(translate, "detail.labels.received" as MessageKey, "Received"), cellText(row.receivedAt)]);
       headingTitle = `Inventory · ${kind} #${idStr}`;
       description = "Warehouse stock waiting to be issued.";
       break;
@@ -441,7 +452,7 @@ export function buildResourceDetailPayload(
 
   const rows = rawFiltered
     .filter(([key]) => !usedKeys.has(key))
-    .map(([key, value]) => [formatFieldLabel(key), cellText(value)] as [string, string])
+    .map(([key, value]) => [formatFieldLabel(key, locale), cellText(value)] as [string, string])
     .slice(0, 24);
 
   return {

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -60,6 +62,7 @@ export function AttachBikeBatteryModal({
   onSaved,
   onError,
 }: AttachBikeBatteryModalProps) {
+  const t = useT();
   const [batteries, setBatteries] = useState<BatteryOption[]>([]);
   const [loadingBatteries, setLoadingBatteries] = useState(false);
   const [query, setQuery] = useState("");

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -14,6 +16,7 @@ type WalletLedgerModalProps = {
 };
 
 export function WalletLedgerModal({ open, account, onClose }: WalletLedgerModalProps) {
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<LedgerTransactionRow[]>([]);
@@ -64,12 +67,12 @@ export function WalletLedgerModal({ open, account, onClose }: WalletLedgerModalP
     <Modal
       open={open}
       variant="panel"
-      title="Wallet ledger"
-      description={`Immutable ledger for ${account.label}`}
+      title={t("modals.walletLedger.title")}
+      description={t("modals.walletLedger.description", { label: account.label })}
       onClose={onClose}
       footer={
         <button type="button" className="btn" onClick={onClose}>
-          Close
+          {t("common.close")}
         </button>
       }
     >

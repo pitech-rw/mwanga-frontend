@@ -1,3 +1,8 @@
+"use client";
+
+import { translateEnum } from "../lib/i18n/translate";
+import { useLocale } from "./locale";
+
 const toneByStatus: Record<string, string> = {
   available: "charge",
   active: "charge",
@@ -16,6 +21,9 @@ const toneByStatus: Record<string, string> = {
 };
 
 export function Badge({ status }: { status: string }) {
-  const tone = toneByStatus[status.toLowerCase()] ?? "";
-  return <span className={`badge ${tone}`}>{status}</span>;
+  const { locale } = useLocale();
+  const slug = status.toLowerCase();
+  const tone = toneByStatus[slug] ?? "";
+  const label = translateEnum(locale, slug);
+  return <span className={`badge ${tone}`}>{label}</span>;
 }
