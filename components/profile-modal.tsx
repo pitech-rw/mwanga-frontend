@@ -6,11 +6,29 @@ import { fetchMyProfile, updateMyProfile, type MyProfile } from "../lib/auth";
 import { Modal } from "./modal";
 import { PasswordInput } from "./password-input";
 
+const PERM_USERS_WRITE = "users:write";
+const PERM_SYSTEM_ADMIN = "system:admin";
+
+function canManageOtherUsers(profile: MyProfile): boolean {
+  return (
+    profile.permissions.includes(PERM_SYSTEM_ADMIN) || profile.permissions.includes(PERM_USERS_WRITE)
+  );
+}
+
+function accountSectionHint(canManageUsers: boolean): string {
+  if (canManageUsers) {
+    return "Your own role and account type stay read-only here—even for administrators. Use User administration to update other staff accounts.";
+  }
+
+  return "Role and account type are assigned by an administrator and cannot be changed here.";
+}
+
 type ProfileModalProps = {
   open: boolean;
   onClose: () => void;
   onSaved?: (profile: MyProfile) => void;
   onError?: (message: string) => void;
+  onOpenUserAdministration?: () => void;
 };
 
 type FormState = {
@@ -53,12 +71,12 @@ function formFromProfile(profile: MyProfile): FormState {
   };
 }
 
-export function ProfileModal({ open, onClose, onSaved, onError }: ProfileModalProps) {
+export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdministration }: ProfileModalProps) {
   const formId = useId();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [meta, setMeta] = useState<{ role: string; type: string } | null>(null);
+  const [meta, setMeta] = useState<{ role: string; type: string; canManageUsers: boolean } | null>(null);
   const [values, setValues] = useState<FormState>(emptyForm);
   const [initial, setInitial] = useState<FormState>(emptyForm);
 
@@ -80,7 +98,11 @@ export function ProfileModal({ open, onClose, onSaved, onError }: ProfileModalPr
         const next = formFromProfile(profile);
         setValues(next);
         setInitial(next);
-        setMeta({ role: profile.role.name, type: profile.type });
+        setMeta({
+          role: profile.role.name,
+          type: profile.type,
+          canManageUsers: canManageOtherUsers(profile),
+        });
       } catch (loadError) {
         if (!active) {
           return;
@@ -177,7 +199,21 @@ export function ProfileModal({ open, onClose, onSaved, onError }: ProfileModalPr
 
         <fieldset className="profile-form-section profile-form-section--readonly" disabled={loading}>
           <legend>Account</legend>
-          <p className="profile-form-section-hint">Managed by an administrator.</p>
+          <p className="profile-form-section-hint">
+            {accountSectionHint(meta?.canManageUsers ?? false)}
+          </p>
+          {meta?.canManageUsers && onOpenUserAdministration ? (
+            <button
+              type="button"
+              className="btn profile-form-admin-link"
+              onClick={() => {
+                onClose();
+                onOpenUserAdministration();
+              }}
+            >
+              User administration
+            </button>
+          ) : null}
           <label className="field">
             <span>Role</span>
             <input

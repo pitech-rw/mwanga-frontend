@@ -180,6 +180,10 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     setProfileOpen(true);
   }, []);
 
+  const openUserAdministration = useCallback(() => {
+    router.push(sectionHref(pathPrefix, "users"));
+  }, [router, pathPrefix]);
+
   const onProfileSaved = useCallback(() => {
     setSessionUser(getStoredUser());
     notify({ title: "Profile updated", message: "Your account details were saved.", tone: "success" });
@@ -327,6 +331,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           onClose={() => setProfileOpen(false)}
           onSaved={onProfileSaved}
           onError={(message) => notify({ title: "Profile", message, tone: "error" })}
+          onOpenUserAdministration={openUserAdministration}
         />
       </div>
     );
@@ -563,6 +568,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         onClose={() => setProfileOpen(false)}
         onSaved={onProfileSaved}
         onError={(message) => notify({ title: "Profile", message, tone: "error" })}
+        onOpenUserAdministration={openUserAdministration}
       />
     </div>
   );

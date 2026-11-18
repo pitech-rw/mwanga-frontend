@@ -1812,6 +1812,11 @@ table.data th.right {
   opacity: 1;
 }
 
+.profile-form-admin-link {
+  justify-self: start;
+  margin-bottom: 4px;
+}
+
 .owner-fleet-block {
   display: grid;
   gap: 12px;
