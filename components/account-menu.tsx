@@ -11,6 +11,7 @@ import {
   IconUsers,
 } from "./icons/icon";
 import { displayName, type AuthUser } from "../lib/auth";
+import { useT } from "./locale";
 
 type AccountMenuProps = {
   user: AuthUser | null;
@@ -33,6 +34,7 @@ function initials(user: AuthUser | null): string {
 }
 
 export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfile, onManageUsers }: AccountMenuProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -64,7 +66,7 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
   }, [open]);
 
   const name = displayName(user);
-  const role = user?.role.name ?? "member";
+  const role = user?.role.name ?? t("account.member");
 
   return (
     <div className="account-menu" ref={rootRef}>
@@ -90,7 +92,7 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
         <div id={menuId} className="account-menu-pop card" role="menu">
           <div className="account-menu-head">
             <strong>{name}</strong>
-            <span>{user?.email ?? "Signed in"}</span>
+            <span>{user?.email ?? t("account.signedIn")}</span>
             <em>{role}</em>
           </div>
           <hr className="menu-divider" />
@@ -105,7 +107,7 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
               }}
             >
               <IconUser size={16} />
-              Profile
+              {t("common.profile")}
             </button>
           ) : null}
           {onManageUsers ? (
@@ -119,7 +121,7 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
               }}
             >
               <IconUsers size={16} />
-              User administration
+              {t("common.userAdministration")}
             </button>
           ) : null}
           <button
@@ -131,7 +133,7 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
             }}
           >
             {theme === "dark" ? <IconSun size={16} /> : <IconMoon size={16} />}
-            {theme === "dark" ? "Light mode" : "Dark mode"}
+            {theme === "dark" ? t("common.lightMode") : t("common.darkMode")}
           </button>
           <hr className="menu-divider" />
           <button
@@ -144,7 +146,7 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
             }}
           >
             <IconLogOut size={16} />
-            Sign out
+            {t("common.signOut")}
           </button>
         </div>
       ) : null}

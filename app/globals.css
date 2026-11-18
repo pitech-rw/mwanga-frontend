@@ -231,8 +231,13 @@ a {
 }
 
 [data-theme="dark"] .brand-logo {
-  filter: brightness(0) invert(1);
-  opacity: 0.94;
+  filter: none;
+  opacity: 1;
+  background: var(--brand-white);
+  padding: 6px 10px;
+  border-radius: 12px;
+  box-sizing: content-box;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .brand-tagline {
@@ -2292,12 +2297,20 @@ table.data th.right {
   max-width: 34rem;
 }
 
-.landing-logo {
+/* Hero stays dark in both themes — logo PNG has a white field; never invert. */
+.landing-hero .landing-logo {
+  display: block;
   width: min(200px, 70vw);
   height: auto;
   margin-bottom: 28px;
-  filter: brightness(0) invert(1);
-  opacity: 0.96;
+  filter: none;
+  opacity: 1;
+  background: var(--brand-white);
+  padding: 8px 14px;
+  border-radius: 14px;
+  box-sizing: content-box;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 55%, transparent);
+  object-fit: contain;
 }
 
 .landing-hero h1 {

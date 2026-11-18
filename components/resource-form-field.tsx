@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import type { FieldSpec } from "../lib/resource-create-config";
 import { PasswordInput } from "./password-input";
 
@@ -22,6 +24,7 @@ export function ResourceFormField({
   onFileChange,
   existingFileUrl,
 }: ResourceFormFieldProps) {
+  const t = useT();
   return (
     <label className="field">
       <span>
@@ -32,7 +35,7 @@ export function ResourceFormField({
               {" "}
               *
             </span>
-            <span className="sr-only"> (required)</span>
+            <span className="sr-only"> {t("common.requiredSr")}</span>
           </>
         ) : null}
       </span>
@@ -43,7 +46,7 @@ export function ResourceFormField({
           disabled={disabled}
           onChange={(event) => onValueChange(event.target.value)}
         >
-          <option value="">Select…</option>
+          <option value="">{t("common.select")}</option>
           {field.options?.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

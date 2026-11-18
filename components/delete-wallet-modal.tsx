@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -22,6 +24,7 @@ export function DeleteWalletModal({
   onDeleted,
   onError,
 }: DeleteWalletModalProps) {
+  const t = useT();
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export function DeleteWalletModal({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!canSubmit) {
-      setError('Type DELETE to confirm.');
+      setError(t("common.confirmDeleteError"));
       return;
     }
 
@@ -77,16 +80,16 @@ export function DeleteWalletModal({
     <Modal
       open={open}
       variant="panel"
-      title="Delete wallet"
-      description={`This removes the wallet for ${ownerLabel}. This cannot be undone if the account relies on it for payments.`}
+      title={t("modals.deleteWallet.title")}
+      description={t("modals.deleteWallet.description", { owner: ownerLabel })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn" onClick={onClose} disabled={deleting}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="submit" form={formId} className="btn primary btn-danger" disabled={deleting || !canSubmit}>
-            {deleting ? "Deleting…" : "Delete wallet"}
+            {deleting ? t("common.deleting") : t("modals.deleteWallet.submit")}
           </button>
         </>
       }
@@ -99,15 +102,15 @@ export function DeleteWalletModal({
         ) : null}
 
         <label className="field">
-          <span>Type DELETE to confirm</span>
+          <span>{t("common.confirmDeleteHint")}</span>
           <input
             type="text"
             autoComplete="off"
             value={confirmText}
             disabled={deleting}
             onChange={(event) => setConfirmText(event.target.value)}
-            placeholder="DELETE"
-            aria-label="Type DELETE to confirm wallet deletion"
+            placeholder={t("common.confirmDeletePlaceholder")}
+            aria-label={t("modals.deleteWallet.confirmAria")}
           />
         </label>
       </form>

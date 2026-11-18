@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -30,6 +32,7 @@ export function IssueInventoryModal({
   onSaved,
   onError,
 }: IssueInventoryModalProps) {
+  const t = useT();
   const [owners, setOwners] = useState<OwnerOption[]>([]);
   const [stations, setStations] = useState<StationOption[]>([]);
   const [bikes, setBikes] = useState<BikeOption[]>([]);

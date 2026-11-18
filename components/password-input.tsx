@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { IconEye, IconEyeOff } from "./icons/icon";
+import { useT } from "./locale";
 
 type PasswordInputProps = {
   value: string;
@@ -24,6 +25,7 @@ export function PasswordInput({
   placeholder,
   id: idProp,
 }: PasswordInputProps) {
+  const t = useT();
   const fallbackId = useId();
   const inputId = idProp ?? fallbackId;
   const [visible, setVisible] = useState(false);
@@ -47,7 +49,7 @@ export function PasswordInput({
         disabled={disabled}
         aria-pressed={visible}
         aria-controls={inputId}
-        aria-label={visible ? "Hide password" : "Show password"}
+        aria-label={visible ? t("aria.hidePassword") : t("aria.showPassword")}
         onClick={() => setVisible((current) => !current)}
       >
         {visible ? <IconEyeOff size={18} aria-hidden /> : <IconEye size={18} aria-hidden />}

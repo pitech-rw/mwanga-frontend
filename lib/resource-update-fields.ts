@@ -1,4 +1,6 @@
 import { BATTERY_STATUS_VALUES } from "./battery-status";
+import { localizeField } from "./i18n/localize";
+import type { TranslateFn } from "./i18n/translate";
 import type { FieldSpec } from "./resource-create-config";
 import type { ResourceSection } from "./resource-create-config";
 
@@ -154,4 +156,12 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
     default:
       return null;
   }
+}
+
+export function getLocalizedResourceUpdateFields(section: ResourceSection, t: TranslateFn) {
+  const fields = getResourceUpdateFields(section);
+  if (!fields) {
+    return null;
+  }
+  return fields.map((field) => localizeField(field, t));
 }

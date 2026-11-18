@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { useCallback, useEffect, useState } from "react";
 import { userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -54,6 +56,7 @@ function kindLabel(kind: string): string {
 const TERMINAL = new Set(["damaged", "dismissed"]);
 
 export function IncidentReviewPanel({ incidentId, listStatus, onChanged }: IncidentReviewPanelProps) {
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [incident, setIncident] = useState<IncidentRecord | null>(null);

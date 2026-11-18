@@ -13,6 +13,8 @@ import { SidebarNav } from "./sidebar-nav";
 import { IconBatteryCharging, IconBell, IconChevronLeft, IconChevronRight } from "./icons/icon";
 import { RecordDetailModal } from "./record-detail-modal";
 import { LocaleSwitch } from "./locale-switch";
+import { useT } from "./locale";
+import { localizedMenuItem } from "../lib/nav-i18n";
 import { useTheme } from "./theme";
 import { useToast } from "./toast";
 import { getApiUrl } from "../lib/api";
@@ -44,6 +46,7 @@ type AccountWorkspaceProps = {
 };
 
 export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
@@ -84,7 +87,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   }, []);
 
   useEffect(() => {
-    const item = getMenuItem(section);
+    const item = localizedMenuItem(section, t);
     if (companyAccountTx) {
       document.title = `Transactions · Company account #${companyAccountTx.accountId} — Mwanga`;
       return;
@@ -93,9 +96,9 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
       document.title = `Station #${stationDetail.stationId} — Mwanga`;
       return;
     }
-    const label = section === "overview" ? "Overview" : item.title;
-    document.title = `${label} — Mwanga`;
-  }, [section, companyAccountTx, stationDetail]);
+    const label = section === "overview" ? t("workspace.breadcrumbOverview") : item.title;
+    document.title = t("meta.titleSignedIn", { section: label });
+  }, [section, companyAccountTx, stationDetail, t]);
 
   useEffect(() => {
     if (!getAccessToken()) {
@@ -129,7 +132,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         const [healthResponse] = await Promise.all([fetch(`${apiUrl}/health`)]);
 
         if (!healthResponse.ok) {
-          throw new Error("The operations API did not respond.");
+          throw new Error(t("workspace.apiNoResponse"));
         }
 
         if (!active) {
@@ -159,9 +162,9 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           return;
         }
 
-        const message = error instanceof Error ? error.message : "Unable to reach the API.";
+        const message = error instanceof Error ? error.message : t("workspace.apiUnreachable");
         setApiError(message);
-        notify({ title: "API offline", message, tone: "warning" });
+        notify({ title: t("toast.apiOffline"), message, tone: "warning" });
       }
     };
 
@@ -169,7 +172,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     return () => {
       active = false;
     };
-  }, [notify, sessionReady, sessionUser?.type]);
+  }, [notify, sessionReady, sessionUser?.type, t]);
 
   const signOut = () => {
     clearSession();
@@ -186,8 +189,8 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
   const onProfileSaved = useCallback(() => {
     setSessionUser(getStoredUser());
-    notify({ title: "Profile updated", message: "Your account details were saved.", tone: "success" });
-  }, [notify]);
+    notify({ title: t("toast.profileUpdated"), message: t("toast.profileUpdatedMessage"), tone: "success" });
+  }, [notify, t]);
 
   const handleForbidden = () => {
     clearSession();
@@ -198,22 +201,16 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     setResourceReloadKey((k) => k + 1);
   }, []);
 
-  const activeMenu = getMenuItem(section);
+  const activeMenu = localizedMenuItem(section, t);
   const accountHome = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
   const pageTitle = companyAccountTx
-    ? "Transactions"
+    ? t("workspace.breadcrumbTransactions")
     : stationDetail
-      ? "Station detail"
+      ? t("workspace.breadcrumbStationDetail")
       : section === "overview"
-        ? "Overview"
+        ? t("workspace.breadcrumbOverview")
         : activeMenu.title;
-  const breadcrumbLeaf = companyAccountTx
-    ? "Transactions"
-    : stationDetail
-      ? "Station detail"
-      : section === "overview"
-        ? "Overview"
-        : activeMenu.label;
+  const breadcrumbLeaf = pageTitle;
   const isAgent = sessionReady && sessionUser?.type === "agent";
   type AgentSection = "topUp" | "agentTransactions" | "riders";
   const agentSection: AgentSection =
@@ -250,13 +247,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
                 className="brand-logo"
                 priority
               />
-              <span className="brand-tagline">Agent</span>
+              <span className="brand-tagline">{t("workspace.brandTaglineAgent")}</span>
             </div>
           </div>
           <AgentSidebarNav section={agentSection} pathPrefix={pathPrefix} />
           <div className="sidebar-foot">
-            <span className="sidebar-foot-full">{health ? "API online" : "Waiting on the API."}</span>
-            <span className="sidebar-foot-compact" title={health ? "API online" : "API offline"} aria-hidden="true">
+            <span className="sidebar-foot-full">{health ? t("workspace.apiOnline") : t("workspace.apiWaiting")}</span>
+            <span className="sidebar-foot-compact" title={health ? t("workspace.apiOnline") : t("toast.apiOffline")} aria-hidden="true">
               <span className={`status-dot ${health ? "online" : ""}`} />
             </span>
           </div>
@@ -313,14 +310,14 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
               onForbidden={handleForbidden}
               onDetail={setDetail}
               onRecordsChange={(count) => setCounts((current) => ({ ...current, riders: count }))}
-              onCreateError={(message) => notify({ title: "Create failed", message, tone: "error" })}
+              onCreateError={(message) => notify({ title: t("toast.createFailed"), message, tone: "error" })}
               onWalletTopUpSuccess={() => {
                 bumpResourceReload();
-                notify({ title: "Wallet updated", message: "Top-up applied from your float.", tone: "success" });
+                notify({ title: t("toast.walletUpdated"), message: t("toast.walletFloatMessage"), tone: "success" });
               }}
-              onWalletTopUpError={(message) => notify({ title: "Top-up failed", message, tone: "error" })}
-              onResourceEditError={(message) => notify({ title: "Update failed", message, tone: "error" })}
-              onResourceDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}
+              onWalletTopUpError={(message) => notify({ title: t("toast.topUpFailed"), message, tone: "error" })}
+              onResourceEditError={(message) => notify({ title: t("toast.updateFailed"), message, tone: "error" })}
+              onResourceDeleteError={(message) => notify({ title: t("toast.deleteFailed"), message, tone: "error" })}
             />
           )}
         </main>
@@ -330,7 +327,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           open={profileOpen}
           onClose={() => setProfileOpen(false)}
           onSaved={onProfileSaved}
-          onError={(message) => notify({ title: "Profile", message, tone: "error" })}
+          onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
           onOpenUserAdministration={openUserAdministration}
         />
       </div>
@@ -353,13 +350,13 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             <span className="brand-compact" aria-hidden="true">
               <IconBatteryCharging size={20} />
             </span>
-            <span className="brand-tagline">Station ops</span>
+            <span className="brand-tagline">{t("workspace.brandTagline")}</span>
           </div>
           <button
             type="button"
             className="sidebar-toggle"
             onClick={() => setSidebarCollapsed((value) => !value)}
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={sidebarCollapsed ? t("aria.expandSidebar") : t("aria.collapseSidebar")}
             aria-expanded={!sidebarCollapsed}
           >
             {sidebarCollapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
@@ -373,7 +370,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         />
         <div className="sidebar-foot">
           <span className="sidebar-foot-full">
-            {health ? `API online · ${health.userCount} users` : "Waiting on the operations API."}
+            {health ? t("workspace.apiOnlineUsers", { count: health.userCount }) : t("workspace.apiWaitingOps")}
           </span>
           <span className="sidebar-foot-compact" title={health ? "API online" : "API offline"} aria-hidden="true">
             <span className={`status-dot ${health ? "online" : ""}`} />
@@ -424,7 +421,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           <div className="topbar-actions">
             <LocaleSwitch />
             <div className="notice-panel">
-              <button type="button" className="icon-button" onClick={() => setNoticesOpen((open) => !open)} aria-label="Open notifications">
+              <button type="button" className="icon-button" onClick={() => setNoticesOpen((open) => !open)} aria-label={t("aria.openNotifications")}>
                 <IconBell size={18} />
                 <span className="dot" />
               </button>
@@ -451,7 +448,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
               <strong>Live data is unavailable.</strong>
               <p>{apiError}</p>
             </div>
-            <button type="button" className="btn" onClick={() => notify({ title: "Still offline", message: apiError, tone: "warning" })}>
+            <button type="button" className="btn" onClick={() => notify({ title: t("toast.stillOffline"), message: apiError, tone: "warning" })}>
               Notify
             </button>
           </div>
@@ -504,47 +501,47 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             onForbidden={handleForbidden}
             onDetail={setDetail}
             onRecordsChange={(count) => setCounts((current) => ({ ...current, [section]: count }))}
-            onCreateError={(message) => notify({ title: "Create failed", message, tone: "error" })}
-            onCreateSuccess={() => notify({ title: "Created", message: `${activeMenu.title} saved.`, tone: "success" })}
+            onCreateError={(message) => notify({ title: t("toast.createFailed"), message, tone: "error" })}
+            onCreateSuccess={() => notify({ title: t("toast.created"), message: t("toast.createdMessage", { title: activeMenu.title }), tone: "success" })}
             onAssignSuccess={() =>
-              notify({ title: "Assignment saved", message: "Assignment updated.", tone: "success" })
+              notify({ title: t("toast.assignmentSaved"), message: t("toast.assignmentSavedMessage"), tone: "success" })
             }
-            onAssignError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
+            onAssignError={(message) => notify({ title: t("toast.assignmentFailed"), message, tone: "error" })}
             onBatteryStationSuccess={() => {
               bumpResourceReload();
-              notify({ title: "Station updated", message: "Battery attached to the selected station.", tone: "success" });
+              notify({ title: t("toast.stationUpdated"), message: t("toast.stationUpdatedMessage"), tone: "success" });
             }}
-            onBatteryStationError={(message) => notify({ title: "Attach failed", message, tone: "error" })}
+            onBatteryStationError={(message) => notify({ title: t("toast.attachFailed"), message, tone: "error" })}
             onBatteryBikeSuccess={() => {
               bumpResourceReload();
-              notify({ title: "Bike updated", message: "Battery attached to the selected bike.", tone: "success" });
+              notify({ title: t("toast.bikeUpdated"), message: t("toast.bikeBatteryMessage"), tone: "success" });
             }}
-            onBatteryBikeError={(message) => notify({ title: "Attach failed", message, tone: "error" })}
+            onBatteryBikeError={(message) => notify({ title: t("toast.attachFailed"), message, tone: "error" })}
             onBikeRiderSuccess={() => {
               bumpResourceReload();
-              notify({ title: "Bike updated", message: "Rider assignment saved.", tone: "success" });
+              notify({ title: t("toast.bikeUpdated"), message: t("toast.bikeRiderMessage"), tone: "success" });
             }}
-            onBikeRiderError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
+            onBikeRiderError={(message) => notify({ title: t("toast.assignmentFailed"), message, tone: "error" })}
             onCardRiderSuccess={() => {
               bumpResourceReload();
-              notify({ title: "Card updated", message: "Rider assignment saved.", tone: "success" });
+              notify({ title: t("toast.cardUpdated"), message: t("toast.cardRiderMessage"), tone: "success" });
             }}
-            onCardRiderError={(message) => notify({ title: "Assignment failed", message, tone: "error" })}
+            onCardRiderError={(message) => notify({ title: t("toast.assignmentFailed"), message, tone: "error" })}
             onWalletTopUpSuccess={() => {
               bumpResourceReload();
-              notify({ title: "Wallet updated", message: "Balance topped up.", tone: "success" });
+              notify({ title: t("toast.walletUpdated"), message: t("toast.walletTopUpMessage"), tone: "success" });
             }}
-            onWalletTopUpError={(message) => notify({ title: "Top-up failed", message, tone: "error" })}
+            onWalletTopUpError={(message) => notify({ title: t("toast.topUpFailed"), message, tone: "error" })}
             onWalletDeleteSuccess={() => {
               bumpResourceReload();
-              notify({ title: "Wallet deleted", message: "Wallet removed.", tone: "success" });
+              notify({ title: t("toast.walletDeleted"), message: t("toast.walletDeletedMessage"), tone: "success" });
             }}
-            onWalletDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}
+            onWalletDeleteError={(message) => notify({ title: t("toast.deleteFailed"), message, tone: "error" })}
             onResourceEditSuccess={() => {
               bumpResourceReload();
-              notify({ title: "Record updated", message: "Changes saved.", tone: "success" });
+              notify({ title: t("toast.recordUpdated"), message: t("toast.recordUpdatedMessage"), tone: "success" });
             }}
-            onResourceEditError={(message) => notify({ title: "Update failed", message, tone: "error" })}
+            onResourceEditError={(message) => notify({ title: t("toast.updateFailed"), message, tone: "error" })}
             onResourceDeleteSuccess={() => {
               bumpResourceReload();
               if (section === "users") {
@@ -554,10 +551,10 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
                   tone: "success",
                 });
               } else {
-                notify({ title: "Record deleted", message: "Removed from the list.", tone: "success" });
+                notify({ title: t("toast.recordDeleted"), message: t("toast.recordDeletedMessage"), tone: "success" });
               }
             }}
-            onResourceDeleteError={(message) => notify({ title: "Delete failed", message, tone: "error" })}
+            onResourceDeleteError={(message) => notify({ title: t("toast.deleteFailed"), message, tone: "error" })}
           />
         ) : null}
       </main>
@@ -567,7 +564,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
         onSaved={onProfileSaved}
-        onError={(message) => notify({ title: "Profile", message, tone: "error" })}
+        onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
         onOpenUserAdministration={openUserAdministration}
       />
     </div>

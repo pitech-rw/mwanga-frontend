@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useId, useState } from "react";
 import { userMessageForNetwork } from "../lib/api-errors";
 import { fetchMyProfile, updateMyProfile, type MyProfile } from "../lib/auth";
@@ -15,13 +17,6 @@ function canManageOtherUsers(profile: MyProfile): boolean {
   );
 }
 
-function accountSectionHint(canManageUsers: boolean): string {
-  if (canManageUsers) {
-    return "Your own role and account type stay read-only here—even for administrators. Use User administration to update other staff accounts.";
-  }
-
-  return "Role and account type are assigned by an administrator and cannot be changed here.";
-}
 
 type ProfileModalProps = {
   open: boolean;
@@ -72,6 +67,7 @@ function formFromProfile(profile: MyProfile): FormState {
 }
 
 export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdministration }: ProfileModalProps) {
+  const t = useT();
   const formId = useId();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -107,7 +103,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
         if (!active) {
           return;
         }
-        const message = loadError instanceof Error ? loadError.message : "Unable to load profile.";
+        const message = loadError instanceof Error ? loadError.message : t("validation.loadProfile");
         setError(message);
         onError?.(message);
       } finally {
@@ -140,7 +136,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
 
     if (values.password.trim()) {
       if (!values.currentPassword.trim()) {
-        setError("Enter your current password to set a new one.");
+        setError(t("validation.currentPasswordRequired"));
         setSaving(false);
         return;
       }
@@ -149,7 +145,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
     }
 
     if (Object.keys(patch).length === 0) {
-      setError("Change at least one field, or cancel.");
+      setError(t("validation.noChanges"));
       setSaving(false);
       return;
     }
@@ -176,16 +172,16 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
     <Modal
       open={open}
       variant="panel"
-      title="Your profile"
-      description="Review account assignment below, then update your personal details or password."
+      title={t("modals.profile.title")}
+      description={t("modals.profile.description")}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn" onClick={onClose} disabled={saving}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="submit" form={formId} className="btn primary" disabled={disabled}>
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("common.saving") : t("common.saveChanges")}
           </button>
         </>
       }
@@ -198,9 +194,9 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
         ) : null}
 
         <fieldset className="profile-form-section profile-form-section--readonly" disabled={loading}>
-          <legend>Account</legend>
+          <legend>{t("modals.profile.sectionAccount")}</legend>
           <p className="profile-form-section-hint">
-            {accountSectionHint(meta?.canManageUsers ?? false)}
+            {meta?.canManageUsers ? t("modals.profile.hintAdmin") : t("modals.profile.hintDefault")}
           </p>
           {meta?.canManageUsers && onOpenUserAdministration ? (
             <button
@@ -211,11 +207,11 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
                 onOpenUserAdministration();
               }}
             >
-              User administration
+              {t("common.userAdministration")}
             </button>
           ) : null}
           <label className="field">
-            <span>Role</span>
+            <span>{t("modals.profile.fields.role")}</span>
             <input
               type="text"
               value={meta ? meta.role.replace(/_/g, " ") : "—"}
@@ -225,7 +221,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
             />
           </label>
           <label className="field">
-            <span>Account type</span>
+            <span>{t("modals.profile.fields.accountType")}</span>
             <input
               type="text"
               value={meta ? meta.type.replace(/_/g, " ") : "—"}
@@ -237,9 +233,9 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
         </fieldset>
 
         <fieldset className="profile-form-section">
-          <legend>Personal information</legend>
+          <legend>{t("modals.profile.sectionPersonal")}</legend>
           <label className="field">
-            <span>Username</span>
+            <span>{t("modals.profile.fields.username")}</span>
             <input
               type="text"
               autoComplete="username"
@@ -251,7 +247,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
             />
           </label>
           <label className="field">
-            <span>First name</span>
+            <span>{t("modals.profile.fields.firstName")}</span>
             <input
               type="text"
               autoComplete="given-name"
@@ -263,7 +259,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
             />
           </label>
           <label className="field">
-            <span>Last name</span>
+            <span>{t("modals.profile.fields.lastName")}</span>
             <input
               type="text"
               autoComplete="family-name"
@@ -275,7 +271,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
             />
           </label>
           <label className="field">
-            <span>Email</span>
+            <span>{t("modals.profile.fields.email")}</span>
             <input
               type="email"
               autoComplete="email"
@@ -285,7 +281,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
             />
           </label>
           <label className="field">
-            <span>Phone</span>
+            <span>{t("modals.profile.fields.phone")}</span>
             <input
               type="tel"
               autoComplete="tel"
@@ -296,7 +292,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
             />
           </label>
           <label className="field">
-            <span>Address</span>
+            <span>{t("modals.profile.fields.address")}</span>
             <textarea
               maxLength={200}
               rows={3}
@@ -306,10 +302,10 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
             />
           </label>
           <label className="field">
-            <span>Profile image URL</span>
+            <span>{t("modals.profile.fields.imageUrl")}</span>
             <input
               type="url"
-              placeholder="https://…"
+              placeholder={t("modals.profile.placeholderImage")}
               maxLength={500}
               value={values.image}
               disabled={disabled}
@@ -319,25 +315,25 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
         </fieldset>
 
         <fieldset className="profile-form-section">
-          <legend>Security</legend>
-          <p className="profile-form-section-hint">Leave new password blank unless you want to change it.</p>
+          <legend>{t("modals.profile.sectionSecurity")}</legend>
+          <p className="profile-form-section-hint">{t("modals.profile.hintPasswordBlank")}</p>
           <label className="field">
-            <span>Current password</span>
+            <span>{t("modals.profile.fields.currentPassword")}</span>
             <PasswordInput
               value={values.currentPassword}
               autoComplete="current-password"
-              placeholder="Required when changing password"
+              placeholder={t("modals.profile.placeholderCurrentPassword")}
               disabled={disabled}
               onChange={(currentPassword) => setValues({ ...values, currentPassword })}
             />
           </label>
           <label className="field">
-            <span>New password</span>
+            <span>{t("modals.profile.fields.newPassword")}</span>
             <PasswordInput
               value={values.password}
               autoComplete="new-password"
               minLength={8}
-              placeholder="Leave blank to keep current"
+              placeholder={t("modals.profile.placeholderNewPassword")}
               disabled={disabled}
               onChange={(password) => setValues({ ...values, password })}
             />

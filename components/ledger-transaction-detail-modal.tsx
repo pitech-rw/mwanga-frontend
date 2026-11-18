@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { Modal } from "./modal";
 import type { LedgerTransactionRow } from "./ledger-transaction-list";
 
@@ -36,6 +38,7 @@ export function LedgerTransactionDetailModal({
   transaction,
   onClose,
 }: LedgerTransactionDetailModalProps) {
+  const t = useT();
   if (!transaction) {
     return null;
   }

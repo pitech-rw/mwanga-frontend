@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -33,6 +35,7 @@ function parseAmount(raw: string): number | null {
 }
 
 export function WalletTopUpModal({ open, wallet, onClose, onSaved, onError }: WalletTopUpModalProps) {
+  const t = useT();
   const [amount, setAmount] = useState("");
   const [companyAccountId, setCompanyAccountId] = useState("");
   const [externalReference, setExternalReference] = useState("");

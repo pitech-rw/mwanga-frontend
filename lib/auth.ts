@@ -1,5 +1,5 @@
 import { getApiUrl } from "./api";
-import { userMessageFromResponse } from "./api-errors";
+import { userMessageFromApiCode, userMessageFromResponse, type ApiSuccessBody } from "./api-errors";
 
 const TOKEN_KEY = "mwanga-access-token";
 const USER_KEY = "mwanga-user";
@@ -159,7 +159,7 @@ export async function authFetch(path: string, init?: RequestInit): Promise<Respo
   });
 }
 
-export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+export async function requestPasswordReset(email: string): Promise<ApiSuccessBody> {
   const response = await fetch(`${getApiUrl()}/auth/forgot-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -170,10 +170,10 @@ export async function requestPasswordReset(email: string): Promise<{ message: st
     throw new Error(await userMessageFromResponse("forgotPassword", response));
   }
 
-  return (await response.json()) as { message: string };
+  return (await response.json()) as ApiSuccessBody;
 }
 
-export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+export async function resetPassword(token: string, password: string): Promise<ApiSuccessBody> {
   const response = await fetch(`${getApiUrl()}/auth/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -184,8 +184,10 @@ export async function resetPassword(token: string, password: string): Promise<{ 
     throw new Error(await userMessageFromResponse("resetPassword", response));
   }
 
-  return (await response.json()) as { message: string };
+  return (await response.json()) as ApiSuccessBody;
 }
+
+export { userMessageFromApiCode };
 
 export async function login(identifier: string, password: string): Promise<LoginResponse> {
   const response = await fetch(`${getApiUrl()}/auth/login`, {

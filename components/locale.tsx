@@ -1,38 +1,23 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-
-export type LocaleCode = "en" | "fr";
-
-const STORAGE_KEY = "mwanga-locale";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { getTranslator, type TranslateFn } from "../lib/i18n/translate";
+import { applyLocale, readLocale, type LocaleCode } from "../lib/locale-storage";
 
 type LocaleContextValue = {
   locale: LocaleCode;
   setLocale: (locale: LocaleCode) => void;
+  t: TranslateFn;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-function readLocale(): LocaleCode {
-  if (typeof document === "undefined") {
-    return "en";
-  }
-
-  const fromDom = document.documentElement.lang;
-  if (fromDom === "fr") {
-    return "fr";
-  }
-  return "en";
-}
-
-function applyLocale(locale: LocaleCode) {
-  document.documentElement.lang = locale;
-  document.documentElement.dataset.locale = locale;
-  localStorage.setItem(STORAGE_KEY, locale);
-}
+export type { LocaleCode };
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<LocaleCode>(readLocale);
+
+  const t = useMemo(() => getTranslator(locale), [locale]);
 
   useEffect(() => {
     applyLocale(locale);
@@ -42,7 +27,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     setLocaleState(next);
   };
 
-  return <LocaleContext.Provider value={{ locale, setLocale }}>{children}</LocaleContext.Provider>;
+  return <LocaleContext.Provider value={{ locale, setLocale, t }}>{children}</LocaleContext.Provider>;
 }
 
 export function useLocale() {
@@ -53,4 +38,8 @@ export function useLocale() {
   }
 
   return value;
+}
+
+export function useT(): TranslateFn {
+  return useLocale().t;
 }

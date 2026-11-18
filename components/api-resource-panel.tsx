@@ -7,7 +7,7 @@ import { authFetch, type AuthUser } from "../lib/auth";
 import type { Section } from "../lib/nav";
 import { buildResourceDetailPayload, type ResourceDetailPayload } from "../lib/resource-detail";
 import type { ResourceSection } from "../lib/resource-create-config";
-import { getResourceUpdateFields } from "../lib/resource-update-fields";
+import { getLocalizedResourceUpdateFields, getResourceUpdateFields } from "../lib/resource-update-fields";
 import {
   walletBalanceNumber,
   walletCurrency,
@@ -70,6 +70,9 @@ import {
   resourceTableDefaultSortKey,
 } from "../lib/resource-table-filters";
 import { stationDetailHref } from "../lib/nav-path";
+import { translateFieldKey, type TranslateFn } from "../lib/i18n/translate";
+import { localizeRowActions } from "../lib/table-row-actions";
+import { useLocale, useT } from "./locale";
 
 type Row = Record<string, unknown>;
 
@@ -148,7 +151,7 @@ function addressCellDisplay(value: unknown): string {
   return text === "—" ? "" : text;
 }
 
-function buildColumns(rows: Row[]): Column<Row>[] {
+function buildColumns(rows: Row[], locale: import("../lib/locale-storage").LocaleCode): Column<Row>[] {
   if (rows.length === 0) {
     return [
       {
@@ -168,7 +171,7 @@ function buildColumns(rows: Row[]): Column<Row>[] {
 
   return ordered.map((key) => ({
     key,
-    header: key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()),
+    header: translateFieldKey(locale, key),
     cellClassName: key === "address" ? "data-table-cell-ellipsis" : undefined,
     sortValue: (row) => {
       const value = row[key];
@@ -225,11 +228,11 @@ function userDisplayName(row: Row): string {
   return combined || cellValue(row.username);
 }
 
-function buildWalletDataColumns(): Column<Row>[] {
+function buildWalletDataColumns(t: TranslateFn): Column<Row>[] {
   return [
     {
       key: "owner",
-      header: "Owner",
+      header: t("tables.headers.owner"),
       sortValue: (row) => walletOwnerCell(row).label,
       searchValue: (row) => {
         const { label, type } = walletOwnerCell(row);
@@ -699,15 +702,17 @@ function buildRowActionMenuItems(
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
   openInventoryIssue?: (target: InventoryIssueTarget) => void,
+  translate?: TranslateFn,
+  detailLocale?: import("../lib/locale-storage").LocaleCode,
 ): TableRowMenuItem[] {
   const items: TableRowMenuItem[] = [];
 
   if (onDetail) {
     items.push({
       id: "view",
-      label: "View",
+      label: translate ? translate("actions.row.view") : "View",
       onSelect: () =>
-        onDetail(buildResourceDetailPayload(section, title, row, cellValue)),
+        onDetail(buildResourceDetailPayload(section, title, row, cellValue, translate, detailLocale)),
     });
   }
 
@@ -982,7 +987,9 @@ function buildRowActionMenuItems(
       if (typeof id !== "number") {
         continue;
       }
-      const fields = getResourceUpdateFields(section);
+      const fields = translate
+        ? getLocalizedResourceUpdateFields(section, translate)
+        : getResourceUpdateFields(section);
       if (!fields?.length) {
         continue;
       }
@@ -1037,12 +1044,14 @@ function appendActionsColumn(
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
   openInventoryIssue?: (target: InventoryIssueTarget) => void,
+  translate?: TranslateFn,
+  detailLocale?: import("../lib/locale-storage").LocaleCode,
 ): Column<Row>[] {
   return [
     ...baseColumns,
     {
       key: "actions",
-      header: "Actions",
+      header: translate ? translate("tables.headers.actions") : "Actions",
       align: "right",
       sortable: false,
       searchValue: (row) => {
@@ -1069,6 +1078,8 @@ function appendActionsColumn(
           openResourceEdit,
           openResourceDelete,
           openInventoryIssue,
+          translate,
+          detailLocale,
         );
         return menuItems.map((item) => item.label).join(" ");
       },
@@ -1096,6 +1107,8 @@ function appendActionsColumn(
           openResourceEdit,
           openResourceDelete,
           openInventoryIssue,
+          translate,
+          detailLocale,
         );
 
         if (menuItems.length === 0) {
@@ -1175,6 +1188,8 @@ export function ApiResourcePanel({
   onResourceDeleteError,
   reloadKey = 0,
 }: ApiResourcePanelProps) {
+  const t = useT();
+  const { locale } = useLocale();
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1374,7 +1389,7 @@ export function ApiResourcePanel({
         router.push(stationDetailHref(pathPrefix, id));
         return;
       }
-      onDetail?.(buildResourceDetailPayload(section, title, row, cellValue));
+      onDetail?.(buildResourceDetailPayload(section, title, row, cellValue, t, locale));
     },
     [onDetail, pathPrefix, router, section, title],
   );
@@ -1391,7 +1406,10 @@ export function ApiResourcePanel({
     setResourceDelete(payload);
   }, []);
 
-  const allRowActionsForSection = useMemo(() => getAvailableRowActions(section, sessionPermissions), [section, sessionPermissions]);
+  const allRowActionsForSection = useMemo(
+    () => localizeRowActions(getAvailableRowActions(section, sessionPermissions), t, section),
+    [section, sessionPermissions, t],
+  );
 
   const columns = useMemo(() => {
     let base: Column<Row>[];
@@ -1405,11 +1423,11 @@ export function ApiResourcePanel({
     } else if (section === "inventory") {
       base = buildInventoryDataColumns();
     } else if (section === "wallets") {
-      base = buildWalletDataColumns();
+      base = buildWalletDataColumns(t);
     } else if (section === "agents") {
       base = buildAgentColumns();
     } else {
-      base = buildColumns(rows);
+      base = buildColumns(rows, locale);
     }
 
     return appendActionsColumn(
@@ -1435,6 +1453,8 @@ export function ApiResourcePanel({
       openResourceEditModal,
       openResourceDeleteModal,
       setInventoryIssue,
+      t,
+      locale,
     );
   }, [
     allRowActionsForSection,
@@ -1458,6 +1478,8 @@ export function ApiResourcePanel({
     rows,
     section,
     title,
+    t,
+    locale,
   ]);
 
   const tableSelectFilters = useMemo(() => buildResourceTableFilters(section, rows), [rows, section]);
@@ -1524,7 +1546,7 @@ export function ApiResourcePanel({
         rows={rows}
         loading={loading}
         rowKey={(row) => String(row.id ?? JSON.stringify(row))}
-        empty={error ? "Unable to load records." : "No records yet."}
+        empty={error ? t("table.emptyLoadError") : t("table.noRecordsYet")}
         searchPlaceholder={searchPlaceholderFromSection}
         selectFilters={tableSelectFilters}
         sortOptions={tableSortOptions}
@@ -1534,7 +1556,7 @@ export function ApiResourcePanel({
           section === "stations"
             ? openStationFromRow
             : onDetail
-              ? (row) => onDetail(buildResourceDetailPayload(section, title, row, cellValue))
+              ? (row) => onDetail(buildResourceDetailPayload(section, title, row, cellValue, t, locale))
               : undefined
         }
       />

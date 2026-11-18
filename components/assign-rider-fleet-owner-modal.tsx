@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -37,6 +39,7 @@ export function AssignRiderFleetOwnerModal({
   onSaved,
   onError,
 }: AssignRiderFleetOwnerModalProps) {
+  const t = useT();
   const [owners, setOwners] = useState<OwnerListRow[]>([]);
   const [ownerSearch, setOwnerSearch] = useState("");
   const [loadingOwners, setLoadingOwners] = useState(false);

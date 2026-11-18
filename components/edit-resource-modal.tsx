@@ -1,11 +1,15 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
 import type { ResourceSection } from "../lib/resource-create-config";
 import type { FieldSpec } from "../lib/resource-create-config";
 import { getMenuItem } from "../lib/nav";
+import { localizedMenuItem } from "../lib/nav-i18n";
+import { localizeField } from "../lib/i18n/localize";
 import { buildUpdatePatchPayload, initialValuesForUpdate } from "../lib/resource-edit-payload";
 import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import { recordLabelForRow } from "../lib/resource-record-label";
@@ -29,6 +33,7 @@ type EditResourceModalProps = {
 };
 
 export function EditResourceModal({ open, target, onClose, onSaved, onError }: EditResourceModalProps) {
+  const t = useT();
   const [values, setValues] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [saving, setSaving] = useState(false);
@@ -59,7 +64,7 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
   }
 
   const { section, id, fields } = target;
-  const menu = getMenuItem(section);
+  const menu = localizedMenuItem(section, t);
   const recordLabel = recordLabelForRow(section, target.row);
   const formId = `edit-resource-${section}-${id}`;
 
@@ -75,7 +80,7 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
 
       const body = buildUpdatePatchPayload(section, target.row, fields, valuesForPatch);
       if (body === null) {
-        setError("Change at least one field, or cancel.");
+        setError(t("validation.noChanges"));
         setSaving(false);
         return;
       }
@@ -106,16 +111,16 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
     <Modal
       open={open}
       variant="panel"
-      title={`Edit ${menu.label}`}
-      description={`Update fields for ${recordLabel}. Only filled fields are sent.`}
+      title={t("modals.edit.title", { label: menu.label })}
+      description={t("modals.edit.description", { record: recordLabel })}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn" onClick={onClose} disabled={saving}>
-            Cancel
+            {t("common.cancel")}
           </button>
           <button type="submit" form={formId} className="btn primary" disabled={saving}>
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("common.saving") : t("common.saveChanges")}
           </button>
         </>
       }
@@ -134,7 +139,7 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
         {fields.map((field) => (
           <ResourceFormField
             key={field.name}
-            field={field}
+            field={localizeField(field, t)}
             value={values[field.name] ?? ""}
             disabled={saving}
             onValueChange={(next) => setValues({ ...values, [field.name]: next })}

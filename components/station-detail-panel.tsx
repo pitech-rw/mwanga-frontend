@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
@@ -172,6 +174,7 @@ const SWAP_COLUMNS: Column<TableRow>[] = [
 ];
 
 export function StationDetailPanel({ stationId, pathPrefix, onForbidden }: StationDetailPanelProps) {
+  const t = useT();
   const [station, setStation] = useState<StationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

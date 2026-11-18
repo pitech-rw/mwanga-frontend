@@ -1,11 +1,13 @@
 "use client";
 
+import { useT } from "../../components/locale";
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { requestPasswordReset } from "../../lib/auth";
+import { requestPasswordReset, userMessageFromApiCode } from "../../lib/auth";
 
 export default function ForgotPasswordPage() {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -19,9 +21,17 @@ export default function ForgotPasswordPage() {
 
     try {
       const result = await requestPasswordReset(email);
-      setSuccess(result.message);
+      setSuccess(
+        userMessageFromApiCode(
+          result.code,
+          result.params,
+          undefined,
+          result.message,
+          "auth.passwordResetEmailSent",
+        ),
+      );
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Request failed.");
+      setError(submitError instanceof Error ? submitError.message : t("auth.requestFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -39,19 +49,17 @@ export default function ForgotPasswordPage() {
             className="landing-logo"
             priority
           />
-          <p className="eyebrow">Renewable energy</p>
-          <h1>Battery swap operations for electric mobility</h1>
-          <p className="landing-lead">
-            Monitor stations, dispatch packs, and keep riders moving with a single operations workspace.
-          </p>
+          <p className="eyebrow">{t("auth.eyebrow")}</p>
+          <h1>{t("auth.heroTitle")}</h1>
+          <p className="landing-lead">{t("auth.heroLead")}</p>
         </div>
       </section>
 
       <section className="landing-panel">
         <div className="login-card card">
           <div className="login-card-head">
-            <h2>Reset password</h2>
-            <p>Enter the email on your account and we will send reset instructions.</p>
+            <h2>{t("auth.forgotPageTitle")}</h2>
+            <p>{t("auth.forgotPageLead")}</p>
           </div>
 
           <form className="form" onSubmit={submit}>
@@ -67,7 +75,7 @@ export default function ForgotPasswordPage() {
             ) : null}
 
             <label className="field">
-              <span>Email</span>
+              <span>{t("auth.emailLabel")}</span>
               <input
                 type="email"
                 required
@@ -84,18 +92,18 @@ export default function ForgotPasswordPage() {
               className="btn primary login-submit"
               disabled={submitting || Boolean(success)}
             >
-              {submitting ? "Sending…" : "Send reset link"}
+              {submitting ? t("auth.sendingReset") : t("auth.sendResetLink")}
             </button>
 
             <p className="login-form-footer">
               <Link href="/" className="login-inline-link">
-                Back to sign in
+                {t("auth.backToSignIn")}
               </Link>
             </p>
           </form>
         </div>
 
-        <p className="landing-note">Reset links expire after one hour for security.</p>
+        <p className="landing-note">{t("auth.resetExpiryNote")}</p>
       </section>
     </div>
   );

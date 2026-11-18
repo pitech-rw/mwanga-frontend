@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -25,6 +27,7 @@ function money(value: string | number): string {
 }
 
 export function AgentTopUpPanel() {
+  const t = useT();
   const [wallet, setWallet] = useState<FloatWallet | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [lookup, setLookup] = useState("");

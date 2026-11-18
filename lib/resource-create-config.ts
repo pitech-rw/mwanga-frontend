@@ -21,6 +21,7 @@ export type FieldSpec = {
   type: FieldType;
   required?: boolean;
   placeholder?: string;
+  placeholderKey?: string;
   accept?: string;
   options?: { value: string; label: string }[];
 };
@@ -280,6 +281,17 @@ export function getCreateConfig(section: Section): CreateResourceConfig | null {
     return null;
   }
   return CONFIGS[section];
+}
+
+export function getLocalizedCreateConfig(
+  section: Section,
+  localize: (config: CreateResourceConfig) => CreateResourceConfig,
+): CreateResourceConfig | null {
+  const config = getCreateConfig(section);
+  if (!config) {
+    return null;
+  }
+  return localize(config);
 }
 
 export function buildCreatePayload(config: CreateResourceConfig, values: Record<string, string>): Record<string, unknown> {

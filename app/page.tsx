@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { PasswordInput } from "../components/password-input";
+import { useT } from "../components/locale";
 import { getAccessToken, getStoredUser, login, setSession } from "../lib/auth";
 
 export default function HomePage() {
+  const t = useT();
   const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -39,6 +41,10 @@ export default function HomePage() {
     };
   }, [router]);
 
+  useEffect(() => {
+    document.title = t("meta.title");
+  }, [t]);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -49,7 +55,7 @@ export default function HomePage() {
       setSession(response);
       router.replace(response.user.type === "agent" ? "/account/top-up" : "/account");
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "Sign in failed.");
+      setError(loginError instanceof Error ? loginError.message : t("auth.signInFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -58,7 +64,7 @@ export default function HomePage() {
   if (checkingSession) {
     return (
       <div className="landing-shell landing-loading">
-        <p className="brand-tagline">Loading…</p>
+        <p className="brand-tagline">{t("common.loading")}</p>
       </div>
     );
   }
@@ -75,19 +81,17 @@ export default function HomePage() {
             className="landing-logo"
             priority
           />
-          <p className="eyebrow">Renewable energy</p>
-          <h1>Battery swap operations for electric mobility</h1>
-          <p className="landing-lead">
-            Monitor stations, dispatch packs, and keep riders moving with a single operations workspace.
-          </p>
+          <p className="eyebrow">{t("auth.eyebrow")}</p>
+          <h1>{t("auth.heroTitle")}</h1>
+          <p className="landing-lead">{t("auth.heroLead")}</p>
         </div>
       </section>
 
       <section className="landing-panel">
         <div className="login-card card">
           <div className="login-card-head">
-            <h2>Sign in</h2>
-            <p>Use your username or email and password.</p>
+            <h2>{t("auth.signIn")}</h2>
+            <p>{t("auth.signInHint")}</p>
           </div>
 
           <form className="form" onSubmit={submit}>
@@ -98,7 +102,7 @@ export default function HomePage() {
             ) : null}
 
             <label className="field">
-              <span>Username or email</span>
+              <span>{t("auth.identifier")}</span>
               <input
                 required
                 autoComplete="username"
@@ -109,7 +113,7 @@ export default function HomePage() {
             </label>
 
             <label className="field">
-              <span>Password</span>
+              <span>{t("auth.password")}</span>
               <PasswordInput
                 required
                 autoComplete="current-password"
@@ -121,20 +125,18 @@ export default function HomePage() {
             </label>
 
             <button type="submit" className="btn primary login-submit" disabled={submitting}>
-              {submitting ? "Signing in…" : "Sign in "}
+              {submitting ? t("auth.signingIn") : t("auth.signIn")}
             </button>
 
             <p className="login-form-footer">
               <Link href="/forgot-password" className="login-inline-link">
-                Forgot password?
+                {t("auth.forgotPassword")}
               </Link>
             </p>
           </form>
         </div>
 
-        <p className="landing-note">
-          Need access? Contact your administrator — staff accounts are created in the operations console.
-        </p>
+        <p className="landing-note">{t("auth.needAccess")}</p>
       </section>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale, type LocaleCode } from "./locale";
+import { useLocale, useT, type LocaleCode } from "./locale";
 
 const OPTIONS: { code: LocaleCode; label: string }[] = [
   { code: "en", label: "EN" },
@@ -9,9 +9,10 @@ const OPTIONS: { code: LocaleCode; label: string }[] = [
 
 export function LocaleSwitch() {
   const { locale, setLocale } = useLocale();
+  const t = useT();
 
   return (
-    <div className="locale-switch" role="group" aria-label="Language">
+    <div className="locale-switch" role="group" aria-label={t("aria.language")}>
       {OPTIONS.map((option) => {
         const active = locale === option.code;
         return (

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "./locale";
+
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
@@ -63,6 +65,7 @@ export function AttachBikeRiderModal({
   onSaved,
   onError,
 }: AttachBikeRiderModalProps) {
+  const t = useT();
   const [users, setUsers] = useState<UserListRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [query, setQuery] = useState("");
