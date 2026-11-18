@@ -54,6 +54,7 @@ export const createEn = {
   "create.drawer.tab.fleetBikes": "Fleet bikes",
   "create.drawer.tab.stationDetails": "Station details",
   "create.drawer.tab.location": "Location",
+  "create.drawer.tab.assignSwapper": "Assign swapper",
   "create.drawer.tab.incidentDetails": "Incident details",
   "create.drawer.tab.relatedSwap": "Related swap",
 
@@ -71,6 +72,9 @@ export const createEn = {
   "create.users.stationTabHint":
     "Station assignment applies to swapper accounts. Choose role type swapper on the Account tab first.",
   "create.users.stationOptional": "Optional — assign the swap station this operator works from.",
+  "create.stations.swapperOptional": "Optional — assign a swap operator to work at this station.",
+  "create.error.stationCreatedSwapperAssign":
+    "Station was created, but assigning the swapper failed. Assign them from Users.",
   "create.bikes.riderOptional": "Optional rider assignment. Leave unset if the bike has no rider yet.",
   "create.incidents.swapOptional":
     "Optional — link this report to a swap if the damage was noticed during a handover.",

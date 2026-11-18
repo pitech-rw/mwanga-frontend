@@ -118,6 +118,11 @@ export const modalsFr = {
   "modals.assignStation.stationField": "Station",
   "modals.assignStation.errorSelect": "Choisissez une station valide.",
 
+  "modals.assignSwapper.title": "Affecter échangeur",
+  "modals.assignSwapper.description": "Choisissez l'opérateur d'échange pour {station}.",
+  "modals.assignSwapper.swapperField": "Échangeur",
+  "modals.assignSwapper.save": "Enregistrer l'affectation",
+
   "modals.attachBatteryBike.title": "Attacher à la moto",
   "modals.attachBatteryBike.description":
     "Choisissez une moto pour {battery}. Toute affectation station sera effacée.",
@@ -178,6 +183,11 @@ export const modalsFr = {
   "modals.picker.rider": "Conducteur",
   "modals.picker.searchRiderFull": "Rechercher par nom, identifiant, e-mail ou téléphone…",
   "modals.picker.noRiderAssigned": "Aucun conducteur",
+  "modals.picker.findSwapper": "Rechercher un échangeur",
+  "modals.picker.swapper": "Échangeur",
+  "modals.picker.searchSwapperFull": "Rechercher par nom, identifiant, e-mail ou téléphone…",
+  "modals.picker.loadingSwappers": "Chargement des échangeurs…",
+  "modals.picker.noSwapperAssigned": "Aucun échangeur",
   "modals.picker.findSwap": "Rechercher un échange",
   "modals.picker.swap": "Échange",
   "modals.picker.searchSwapRider": "Rechercher par nom ou téléphone du conducteur…",

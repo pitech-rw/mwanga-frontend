@@ -130,6 +130,7 @@ export const miscEn = {
   "actions.row.companyAccountLedger": "Transactions",
   "actions.row.stationOpen": "Open station",
   "actions.row.assignSwapperStation": "Assign station",
+  "actions.row.assignStationSwapper": "Assign swapper",
   "actions.row.assignRiderFleetOwner": "Assign fleet owner",
   "actions.row.issueInventoryBike": "Issue to owner",
   "actions.row.issueInventoryBatteryStation": "Issue to station",
