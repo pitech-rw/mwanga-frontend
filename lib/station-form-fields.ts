@@ -1,0 +1,1 @@
+export const STATION_LOCATION_FIELD_NAMES = new Set(["address", "latitude", "longitude"]);

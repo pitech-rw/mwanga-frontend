@@ -1,6 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type {
+  AutocompleteSessionToken,
+  GoogleMapsGlobal,
+  PlacePrediction,
+  PlaceWithAddress,
+  PlaceWithLocation,
+  PlacesLibrary,
+} from "../lib/google-maps-types";
 
 const MAPS_SCRIPT_ID = "google-maps-js-loader";
 
@@ -69,19 +77,27 @@ function loadMapsJsOnce(apiKey: string): Promise<void> {
   return mapsLoader;
 }
 
+/** Google often returns a leading Plus Code in regions with weak street addressing. */
+function formattedAddressLooksLikePlusCode(address: string): boolean {
+  return /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}(,|\s|$)/i.test(address.trim());
+}
+
+function placeDisplayName(place: PlaceWithAddress): string {
+  const name = place.displayName;
+  return typeof name === "string" ? name.trim() : "";
+}
+
 /** Read lat/lng from the Places `Place` object (new API uses LatLng; some builds expose plain numbers). */
-function readLatLng(place: {
-  location?: google.maps.LatLng | google.maps.LatLngLiteral | null;
-}): { lat: number; lng: number } | null {
+function readLatLng(place: PlaceWithLocation): { lat: number; lng: number } | null {
   const loc = place.location;
   if (!loc) {
     return null;
   }
-  if (typeof (loc as google.maps.LatLng).lat === "function") {
-    const l = loc as google.maps.LatLng;
+  if (typeof (loc as { lat: unknown }).lat === "function") {
+    const l = loc as { lat: () => number; lng: () => number };
     return { lat: l.lat(), lng: l.lng() };
   }
-  const literal = loc as google.maps.LatLngLiteral;
+  const literal = loc as { lat: number; lng: number };
   if (typeof literal.lat === "number" && typeof literal.lng === "number") {
     return { lat: literal.lat, lng: literal.lng };
   }
@@ -95,9 +111,9 @@ export function PlacesLocationPicker({ disabled, onPlaceSelected }: PlacesLocati
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<google.maps.places.PlacePrediction[]>([]);
+  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
   const [highlight, setHighlight] = useState(-1);
-  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+  const sessionTokenRef = useRef<AutocompleteSessionToken | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -109,9 +125,9 @@ export function PlacesLocationPicker({ disabled, onPlaceSelected }: PlacesLocati
   }, []);
 
   const ensureSession = useCallback(async () => {
-    const g = window as Window & { google: typeof google };
+    const g = window as Window & { google: GoogleMapsGlobal };
     await loadMapsJsOnce(apiKey!);
-    const { AutocompleteSessionToken } = (await g.google.maps.importLibrary("places")) as google.maps.PlacesLibrary;
+    const { AutocompleteSessionToken } = (await g.google.maps.importLibrary("places")) as PlacesLibrary;
     if (!sessionTokenRef.current) {
       sessionTokenRef.current = new AutocompleteSessionToken();
     }
@@ -148,14 +164,14 @@ export function PlacesLocationPicker({ disabled, onPlaceSelected }: PlacesLocati
       setLoading(true);
       try {
         await ensureSession();
-        const g = window as Window & { google: typeof google };
-        const { AutocompleteSuggestion } = (await g.google.maps.importLibrary("places")) as google.maps.PlacesLibrary;
+        const g = window as Window & { google: GoogleMapsGlobal };
+        const { AutocompleteSuggestion } = (await g.google.maps.importLibrary("places")) as PlacesLibrary;
         const token = sessionTokenRef.current;
         const { suggestions: raw } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
           input: input.trim(),
           sessionToken: token ?? undefined,
         });
-        const preds: google.maps.places.PlacePrediction[] = [];
+        const preds: PlacePrediction[] = [];
         for (const s of raw) {
           if (s.placePrediction) {
             preds.push(s.placePrediction);
@@ -183,7 +199,7 @@ export function PlacesLocationPicker({ disabled, onPlaceSelected }: PlacesLocati
     }, 280);
   };
 
-  const predictionLabel = (p: google.maps.places.PlacePrediction): string => {
+  const predictionLabel = (p: PlacePrediction): string => {
     const main = p.mainText?.text ?? "";
     const sec = p.secondaryText?.text ?? "";
     const full = p.text?.text;
@@ -193,7 +209,31 @@ export function PlacesLocationPicker({ disabled, onPlaceSelected }: PlacesLocati
     return sec ? `${main}, ${sec}` : main || p.placeId;
   };
 
-  const selectPrediction = async (p: google.maps.places.PlacePrediction) => {
+  const addressForStorage = (place: PlaceWithAddress, p: PlacePrediction): string => {
+    const formatted = place.formattedAddress?.trim() ?? "";
+    const pickedLabel = predictionLabel(p);
+    const displayName = placeDisplayName(place);
+
+    if (formatted && !formattedAddressLooksLikePlusCode(formatted)) {
+      return formatted;
+    }
+
+    if (pickedLabel) {
+      return pickedLabel;
+    }
+
+    if (displayName) {
+      const cityTail = formatted.replace(
+        /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3},\s*/i,
+        "",
+      ).trim();
+      return cityTail ? `${displayName}, ${cityTail}` : displayName;
+    }
+
+    return formatted || displayName || p.placeId;
+  };
+
+  const selectPrediction = async (p: PlacePrediction) => {
     if (!apiKey || disabled) {
       return;
     }
@@ -203,7 +243,7 @@ export function PlacesLocationPicker({ disabled, onPlaceSelected }: PlacesLocati
       await ensureSession();
       const place = p.toPlace();
       await place.fetchFields({ fields: ["formattedAddress", "location", "displayName"] });
-      const addr = place.formattedAddress ?? place.displayName ?? predictionLabel(p);
+      const addr = addressForStorage(place, p);
       const ll = readLatLng(place);
       if (!ll) {
         setLoadError("This place has no coordinates. Pick another result or enter lat/lng manually.");

@@ -1317,6 +1317,16 @@ table.data td.data-table-cell-ellipsis .data-table-ellipsis-inner {
   white-space: nowrap;
 }
 
+a.data-table-maps-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+a.data-table-maps-link:hover {
+  text-decoration-color: currentColor;
+}
+
 table.data th {
   color: var(--text-faint);
   font-size: 0.72rem;
@@ -1820,6 +1830,21 @@ table.data th.right {
 .profile-form-admin-link {
   justify-self: start;
   margin-bottom: 4px;
+}
+
+.edit-station-location {
+  display: grid;
+  gap: 12px;
+  border: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.edit-station-location legend {
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-faint);
 }
 
 .owner-fleet-block {

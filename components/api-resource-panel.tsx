@@ -26,6 +26,7 @@ import {
   userMayUsePermission,
   type TableRowActionDef,
 } from "../lib/table-row-actions";
+import { googleMapsSearchUrl } from "../lib/google-maps-url";
 import { PERMISSIONS } from "../lib/permission-strings";
 import {
   AttachBatteryBikeModal,
@@ -194,10 +195,25 @@ function buildColumns(rows: Row[], locale: import("../lib/locale-storage").Local
         if (!full) {
           return "—";
         }
+        const mapsHref = googleMapsSearchUrl(row);
+        if (!mapsHref) {
+          return (
+            <span className="data-table-ellipsis-inner" title={full}>
+              {full}
+            </span>
+          );
+        }
         return (
-          <span className="data-table-ellipsis-inner" title={full}>
+          <a
+            href={mapsHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="data-table-ellipsis-inner data-table-maps-link"
+            title={full}
+            onClick={(event) => event.stopPropagation()}
+          >
             {full}
-          </span>
+          </a>
         );
       }
 
