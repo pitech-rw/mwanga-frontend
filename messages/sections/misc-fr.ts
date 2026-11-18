@@ -132,6 +132,7 @@ export const miscFr = {
   "actions.row.companyAccountLedger": "Transactions",
   "actions.row.stationOpen": "Ouvrir la station",
   "actions.row.assignSwapperStation": "Affecter la station",
+  "actions.row.assignStationSwapper": "Affecter échangeur",
   "actions.row.assignRiderFleetOwner": "Affecter le propriétaire",
   "actions.row.issueInventoryBike": "Sortir pour propriétaire",
   "actions.row.issueInventoryBatteryStation": "Sortir vers station",

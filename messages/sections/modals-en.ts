@@ -119,6 +119,11 @@ export const modalsEn = {
   "modals.assignStation.stationField": "Station",
   "modals.assignStation.errorSelect": "Choose a valid station.",
 
+  "modals.assignSwapper.title": "Assign swapper",
+  "modals.assignSwapper.description": "Choose which swap operator works at {station}.",
+  "modals.assignSwapper.swapperField": "Swapper",
+  "modals.assignSwapper.save": "Save assignment",
+
   "modals.attachBatteryBike.title": "Attach to bike",
   "modals.attachBatteryBike.description":
     "Choose a bike for {battery}. Search by bike ID, plate, serial, or model. Attaching to a bike clears any station assignment.",
@@ -182,6 +187,11 @@ export const modalsEn = {
   "modals.picker.rider": "Rider",
   "modals.picker.searchRiderFull": "Search by name, username, email, or phone…",
   "modals.picker.noRiderAssigned": "No rider assigned",
+  "modals.picker.findSwapper": "Find swapper",
+  "modals.picker.swapper": "Swapper",
+  "modals.picker.searchSwapperFull": "Search by name, username, email, or phone…",
+  "modals.picker.loadingSwappers": "Loading swappers…",
+  "modals.picker.noSwapperAssigned": "No swapper assigned",
   "modals.picker.findSwap": "Find swap",
   "modals.picker.swap": "Swap",
   "modals.picker.searchSwapRider": "Search by rider name or phone…",

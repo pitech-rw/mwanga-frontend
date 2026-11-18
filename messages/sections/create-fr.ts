@@ -54,6 +54,7 @@ export const createFr = {
   "create.drawer.tab.fleetBikes": "Motos de flotte",
   "create.drawer.tab.stationDetails": "Détails station",
   "create.drawer.tab.location": "Emplacement",
+  "create.drawer.tab.assignSwapper": "Affecter échangeur",
   "create.drawer.tab.incidentDetails": "Détails incident",
   "create.drawer.tab.relatedSwap": "Échange lié",
 
@@ -71,6 +72,9 @@ export const createFr = {
   "create.users.stationTabHint":
     "L'affectation station concerne les comptes échangeur. Choisissez le type échangeur sur l'onglet Compte.",
   "create.users.stationOptional": "Facultatif — affectez la station d'échange de cet opérateur.",
+  "create.stations.swapperOptional": "Facultatif — affectez un opérateur d'échange à cette station.",
+  "create.error.stationCreatedSwapperAssign":
+    "La station a été créée, mais l'affectation de l'échangeur a échoué. Affectez-le depuis Utilisateurs.",
   "create.bikes.riderOptional": "Affectation conducteur facultative. Laissez vide si la moto n'a pas encore de conducteur.",
   "create.incidents.swapOptional":
     "Facultatif — liez ce signalement à un échange si le dommage a été constaté lors d'une remise.",

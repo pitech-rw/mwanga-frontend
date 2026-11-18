@@ -34,6 +34,18 @@ type RiderUserRow = {
   createdAt?: string | null;
 };
 
+type SwapperUserRow = {
+  id: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  createdAt?: string | null;
+  stationId?: number | null;
+  assignedStation?: { id: number; name: string; code: string } | null;
+};
+
 type AgentUserRow = {
   id: number;
   username: string;
@@ -128,6 +140,12 @@ function riderUserOptionLine(user: RiderUserRow): string {
   return agentUserOptionLine(user);
 }
 
+function swapperUserOptionLine(user: SwapperUserRow): string {
+  const base = agentUserOptionLine(user);
+  const station = user.assignedStation;
+  return station ? `${base} · ${station.code}` : base;
+}
+
 function stationOptionLine(station: StationListRow): string {
   const base = `${station.code} — ${station.name}`;
   return station.status && station.status !== "active" ? `${base} (${station.status})` : base;
@@ -197,6 +215,10 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [userStationSearch, setUserStationSearch] = useState("");
   const [userStations, setUserStations] = useState<StationListRow[]>([]);
   const [loadingUserStations, setLoadingUserStations] = useState(false);
+  const [stationSwapperId, setStationSwapperId] = useState<number | null>(null);
+  const [stationSwapperSearch, setStationSwapperSearch] = useState("");
+  const [stationSwappers, setStationSwappers] = useState<SwapperUserRow[]>([]);
+  const [loadingStationSwappers, setLoadingStationSwappers] = useState(false);
   const [incidentSwapId, setIncidentSwapId] = useState<number | null>(null);
   const [incidentSwapSearch, setIncidentSwapSearch] = useState("");
   const [incidentSwaps, setIncidentSwaps] = useState<SwapListRow[]>([]);
@@ -220,6 +242,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       return [
         { id: "details", label: t("create.drawer.tab.stationDetails") },
         { id: "location", label: t("create.drawer.tab.location") },
+        { id: "swapper", label: t("create.drawer.tab.assignSwapper") },
       ];
     }
     if (section === "users") {
@@ -261,6 +284,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       setBikeRiderSearch("");
       setUserStationId(null);
       setUserStationSearch("");
+      setStationSwapperId(null);
+      setStationSwapperSearch("");
       setIncidentSwapId(null);
       setIncidentSwapSearch("");
       setDrawerTab("details");
@@ -354,6 +379,48 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       } finally {
         if (active) {
           setLoadingUserStations(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "stations") {
+      return;
+    }
+
+    let active = true;
+    setLoadingStationSwappers(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch("/users?type=swapper");
+        if (!response.ok) {
+          if (active) {
+            setStationSwappers([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        if (!active) {
+          return;
+        }
+        setStationSwappers(Array.isArray(data) ? (data as SwapperUserRow[]) : []);
+        setError(null);
+      } catch {
+        if (active) {
+          setStationSwappers([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingStationSwappers(false);
         }
       }
     };
@@ -565,6 +632,38 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     [userStationId, userStations],
   );
 
+  const filteredStationSwappers = useMemo(
+    () =>
+      recentPickerOptions(
+        stationSwappers,
+        stationSwapperSearch,
+        stationSwapperId,
+        (user, needle) => {
+          const haystack = [
+            user.username,
+            user.firstName,
+            user.lastName,
+            user.email,
+            user.phone ?? "",
+            user.assignedStation?.code ?? "",
+            user.assignedStation?.name ?? "",
+            String(user.id),
+          ]
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(needle);
+        },
+        true,
+      ),
+    [stationSwapperId, stationSwapperSearch, stationSwappers],
+  );
+
+  const selectedStationSwapper = useMemo(
+    () =>
+      stationSwapperId != null ? stationSwappers.find((user) => user.id === stationSwapperId) : undefined,
+    [stationSwapperId, stationSwappers],
+  );
+
   const filteredIncidentSwaps = useMemo(
     () =>
       recentPickerOptions(
@@ -764,6 +863,24 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         }
       } catch {
         created = undefined;
+      }
+
+      if (config.section === "stations" && stationSwapperId !== null && created?.id != null) {
+        const newStationId = Number(created.id);
+        if (!Number.isNaN(newStationId)) {
+          const assignResponse = await authFetch(`/users/${stationSwapperId}`, {
+            method: "PATCH",
+            body: JSON.stringify({ stationId: newStationId }),
+          });
+          if (!assignResponse.ok) {
+            const message = await userMessageFromResponse("create", assignResponse);
+            const detail = t("create.error.stationCreatedSwapperAssign");
+            setError(message ? `${detail} ${message}` : detail);
+            onCreated?.(created);
+            onError?.(detail);
+            return;
+          }
+        }
       }
 
       onCreated?.(created);
@@ -1129,6 +1246,65 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
         {config.section === "stations" && (!useDrawerTabs || showDrawerPanel("location")) ? (
           <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
+        ) : null}
+
+        {config.section === "stations" && showDrawerPanel("swapper") ? (
+          <>
+            <p className="sub">{t("create.stations.swapperOptional")}</p>
+            <label className="field">
+              <span>
+                {t("modals.picker.findSwapper")}
+                <span className="sub"> {t("modals.picker.recentSearchHint", { limit: RECENT_PICKER_LIMIT })}</span>
+              </span>
+              <input
+                type="search"
+                value={stationSwapperSearch}
+                disabled={saving || loadingStationSwappers}
+                onChange={(event) => setStationSwapperSearch(event.target.value)}
+                placeholder={t("modals.picker.searchSwapperFull")}
+                autoComplete="off"
+                aria-label={t("modals.picker.searchSwapperFull")}
+              />
+            </label>
+            {loadingStationSwappers ? (
+              <p className="sub">{t("modals.picker.loadingSwappers")}</p>
+            ) : (
+              <label className="field">
+                <span>
+                  {t("modals.picker.swapper")} ({t("modals.picker.shownCount", { count: filteredStationSwappers.length })}
+                  {!stationSwapperSearch.trim()
+                    ? t("modals.picker.shownRecentSuffix", { limit: RECENT_PICKER_LIMIT })
+                    : ""}
+                  )
+                </span>
+                <select
+                  value={stationSwapperId != null ? String(stationSwapperId) : ""}
+                  disabled={saving || filteredStationSwappers.length === 0}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setStationSwapperId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredStationSwappers.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label={t("modals.picker.swapper")}
+                >
+                  <option value="">
+                    {filteredStationSwappers.length === 0 ? t("common.noMatches") : t("modals.picker.noSwapperAssigned")}
+                  </option>
+                  {filteredStationSwappers.map((user) => (
+                    <option key={user.id} value={String(user.id)}>
+                      {swapperUserOptionLine(user)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedStationSwapper ? (
+              <p className="create-wallet-selection sub" role="status">
+                {t("modals.picker.selectedPrefix")} <strong>{swapperUserOptionLine(selectedStationSwapper)}</strong>
+              </p>
+            ) : null}
+          </>
         ) : null}
 
         {(!useDrawerTabs || showDrawerPanel("details"))

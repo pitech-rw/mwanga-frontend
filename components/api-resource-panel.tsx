@@ -53,6 +53,10 @@ import {
   AssignRiderFleetOwnerModal,
   type RiderFleetOwnerAssignTarget,
 } from "./assign-rider-fleet-owner-modal";
+import {
+  AssignStationSwapperModal,
+  type StationSwapperAssignTarget,
+} from "./assign-station-swapper-modal";
 import { AssignSwapperStationModal, type SwapperAssignTarget } from "./assign-swapper-station-modal";
 import { Badge } from "./badge";
 import { CreateResourceButton } from "./create-resource-button";
@@ -686,6 +690,7 @@ function buildRowActionMenuItems(
   section: Section,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
+  openAssignStationSwapper: (station: StationSwapperAssignTarget) => void,
   openAssignRiderFleetOwner: (user: RiderFleetOwnerAssignTarget) => void,
   openAssociateOwnerRider: (owner: OwnerRiderAssociateTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
@@ -797,6 +802,21 @@ function buildRowActionMenuItems(
         id: def.id,
         label: def.label,
         onSelect: () => openAssign(row as unknown as SwapperAssignTarget),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.assignStationSwapper) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      const code = typeof row.code === "string" ? row.code : `#${id}`;
+      const name = typeof row.name === "string" ? row.name : `Station #${id}`;
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openAssignStationSwapper({ id, code, name }),
       });
       continue;
     }
@@ -1028,6 +1048,7 @@ function appendActionsColumn(
   section: Section,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
+  openAssignStationSwapper: (station: StationSwapperAssignTarget) => void,
   openAssignRiderFleetOwner: (user: RiderFleetOwnerAssignTarget) => void,
   openAssociateOwnerRider: (owner: OwnerRiderAssociateTarget) => void,
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
@@ -1062,6 +1083,7 @@ function appendActionsColumn(
           section,
           title,
           openAssign,
+          openAssignStationSwapper,
           openAssignRiderFleetOwner,
           openAssociateOwnerRider,
           openBatteryStationAttach,
@@ -1091,6 +1113,7 @@ function appendActionsColumn(
           section,
           title,
           openAssign,
+          openAssignStationSwapper,
           openAssignRiderFleetOwner,
           openAssociateOwnerRider,
           openBatteryStationAttach,
@@ -1197,6 +1220,7 @@ export function ApiResourcePanel({
   const [reloadToken, setReloadToken] = useState(0);
   const [sessionPermissions, setSessionPermissions] = useState<string[]>([]);
   const [assignUser, setAssignUser] = useState<SwapperAssignTarget | null>(null);
+  const [assignStationSwapper, setAssignStationSwapper] = useState<StationSwapperAssignTarget | null>(null);
   const [assignRiderFleetOwner, setAssignRiderFleetOwner] = useState<RiderFleetOwnerAssignTarget | null>(null);
   const [associateOwnerRider, setAssociateOwnerRider] = useState<OwnerRiderAssociateTarget | null>(null);
   const [attachBatteryStation, setAttachBatteryStation] = useState<BatteryAttachTarget | null>(null);
@@ -1332,6 +1356,10 @@ export function ApiResourcePanel({
     setAssignUser(user);
   }, []);
 
+  const openAssignStationSwapper = useCallback((station: StationSwapperAssignTarget) => {
+    setAssignStationSwapper(station);
+  }, []);
+
   const openAssignRiderFleetOwner = useCallback((user: RiderFleetOwnerAssignTarget) => {
     setAssignRiderFleetOwner(user);
   }, []);
@@ -1437,6 +1465,7 @@ export function ApiResourcePanel({
       section,
       title,
       openAssign,
+      openAssignStationSwapper,
       openAssignRiderFleetOwner,
       openAssociateOwnerRider,
       openBatteryStationAttach,
@@ -1460,6 +1489,7 @@ export function ApiResourcePanel({
     allRowActionsForSection,
     onDetail,
     openAssign,
+    openAssignStationSwapper,
     openAssignRiderFleetOwner,
     openAssociateOwnerRider,
     openBikeRiderAttach,
@@ -1566,6 +1596,17 @@ export function ApiResourcePanel({
         open={assignUser !== null}
         user={assignUser}
         onClose={() => setAssignUser(null)}
+        onSaved={() => {
+          reload();
+          onAssignSuccess?.();
+        }}
+        onError={onAssignError}
+      />
+
+      <AssignStationSwapperModal
+        open={assignStationSwapper !== null}
+        station={assignStationSwapper}
+        onClose={() => setAssignStationSwapper(null)}
         onSaved={() => {
           reload();
           onAssignSuccess?.();
