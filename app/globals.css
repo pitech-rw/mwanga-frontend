@@ -1832,6 +1832,21 @@ table.data th.right {
   margin-bottom: 4px;
 }
 
+.edit-station-location {
+  display: grid;
+  gap: 12px;
+  border: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.edit-station-location legend {
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
 .owner-fleet-block {
   display: grid;
   gap: 12px;

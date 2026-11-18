@@ -13,6 +13,7 @@ import { localizeField } from "../lib/i18n/localize";
 import { buildUpdatePatchPayload, initialValuesForUpdate } from "../lib/resource-edit-payload";
 import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import { recordLabelForRow } from "../lib/resource-record-label";
+import { STATION_LOCATION_FIELD_NAMES } from "../lib/station-form-fields";
 import { PlacesLocationPicker } from "./places-location-picker";
 import { ResourceFormField } from "./resource-form-field";
 import { Modal } from "./modal";
@@ -67,6 +68,32 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
   const menu = localizedMenuItem(section, t);
   const recordLabel = recordLabelForRow(section, target.row);
   const formId = `edit-resource-${section}-${id}`;
+  const localizedFields = fields.map((field) => localizeField(field, t));
+  const stationLocationFields =
+    section === "stations"
+      ? localizedFields.filter((field) => STATION_LOCATION_FIELD_NAMES.has(field.name))
+      : [];
+  const stationDetailFields =
+    section === "stations"
+      ? localizedFields.filter((field) => !STATION_LOCATION_FIELD_NAMES.has(field.name))
+      : localizedFields;
+
+  const renderField = (field: FieldSpec) => (
+    <ResourceFormField
+      key={field.name}
+      field={field}
+      value={values[field.name] ?? ""}
+      disabled={saving}
+      onValueChange={(next) => setValues({ ...values, [field.name]: next })}
+      file={files[field.name] ?? null}
+      onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
+      existingFileUrl={
+        field.type === "file" && typeof target.row[field.name] === "string"
+          ? (target.row[field.name] as string)
+          : null
+      }
+    />
+  );
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -133,25 +160,14 @@ export function EditResourceModal({ open, target, onClose, onSaved, onError }: E
         ) : null}
 
         {section === "stations" ? (
-          <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
+          <fieldset className="edit-station-location">
+            <legend className="sub">{t("create.drawer.tab.location")}</legend>
+            <PlacesLocationPicker disabled={saving} onPlaceSelected={onStationPlaceSelected} />
+            {stationLocationFields.map((field) => renderField(field))}
+          </fieldset>
         ) : null}
 
-        {fields.map((field) => (
-          <ResourceFormField
-            key={field.name}
-            field={localizeField(field, t)}
-            value={values[field.name] ?? ""}
-            disabled={saving}
-            onValueChange={(next) => setValues({ ...values, [field.name]: next })}
-            file={files[field.name] ?? null}
-            onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
-            existingFileUrl={
-              field.type === "file" && typeof target.row[field.name] === "string"
-                ? (target.row[field.name] as string)
-                : null
-            }
-          />
-        ))}
+        {stationDetailFields.map((field) => renderField(field))}
       </form>
     </Modal>
   );

@@ -1,8 +1,11 @@
 import { BATTERY_STATUS_VALUES } from "./battery-status";
+import { ENTITY_STATUS_VALUES } from "./entity-status";
 import { localizeField } from "./i18n/localize";
 import type { TranslateFn } from "./i18n/translate";
+import { KYC_STATUS_VALUES } from "./kyc-status";
 import type { FieldSpec } from "./resource-create-config";
 import type { ResourceSection } from "./resource-create-config";
+import { SWAP_PAYMENT_STATUS_VALUES, SWAP_STATUS_VALUES } from "./swap-status";
 
 const USER_TYPES = ["admin", "office", "office_manager", "swapper", "agent", "owner", "rider", "viewer"] as const;
 const VIOLATION_STATUSES = ["open", "under_review", "resolved", "dismissed"] as const;
@@ -48,7 +51,12 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "serialNumber", label: "Serial number", type: "text" },
         { name: "model", label: "Model", type: "text" },
         { name: "image", label: "Image URL", type: "text" },
-        { name: "status", label: "Status", type: "text" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: selectOptions(ENTITY_STATUS_VALUES),
+        },
         { name: "ownerId", label: "Owner ID", type: "number" },
         { name: "userId", label: "Rider user ID", type: "number" },
         { name: "currentBatteryId", label: "Current battery ID", type: "number" },
@@ -58,7 +66,12 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "name", label: "Display name", type: "text" },
         { name: "email", label: "Email", type: "email" },
         { name: "phone", label: "Phone", type: "text" },
-        { name: "status", label: "Status", type: "text" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: selectOptions(ENTITY_STATUS_VALUES),
+        },
         { name: "userId", label: "Portal user ID", type: "number" },
       ];
     case "agents":
@@ -66,15 +79,25 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "name", label: "Display name", type: "text" },
         { name: "email", label: "Email", type: "email" },
         { name: "phone", label: "Phone", type: "text" },
-        { name: "status", label: "Status", type: "text" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: selectOptions(ENTITY_STATUS_VALUES),
+        },
         { name: "userId", label: "Portal user ID", type: "number" },
       ];
     case "cards":
       return [
         { name: "token", label: "Token", type: "text" },
         { name: "serialNumber", label: "Serial number", type: "text" },
-        { name: "type", label: "Type", type: "text" },
-        { name: "status", label: "Status", type: "text" },
+        { name: "type", label: "Type", type: "text", placeholder: "nfc" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: selectOptions(ENTITY_STATUS_VALUES),
+        },
         { name: "userId", label: "User ID", type: "number" },
       ];
     case "roles":
@@ -85,7 +108,12 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "address", label: "Address", type: "text" },
         { name: "latitude", label: "Latitude", type: "number" },
         { name: "longitude", label: "Longitude", type: "number" },
-        { name: "status", label: "Status", type: "text" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: selectOptions(ENTITY_STATUS_VALUES),
+        },
         { name: "chargingCapacity", label: "Charging capacity", type: "number" },
         { name: "model", label: "Model", type: "text" },
         { name: "photo", label: "Station photo", type: "file", accept: "image/*" },
@@ -99,8 +127,18 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "swapperId", label: "Swapper ID", type: "number" },
         { name: "oldBatteryId", label: "Old battery ID", type: "number" },
         { name: "newBatteryId", label: "New battery ID", type: "number" },
-        { name: "status", label: "Status", type: "text" },
-        { name: "paymentStatus", label: "Payment status", type: "text" },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: selectOptions(SWAP_STATUS_VALUES),
+        },
+        {
+          name: "paymentStatus",
+          label: "Payment status",
+          type: "select",
+          options: selectOptions(SWAP_PAYMENT_STATUS_VALUES),
+        },
         { name: "fee", label: "Fee", type: "number" },
         { name: "walletBalanceAfter", label: "Wallet balance after", type: "number" },
         { name: "paymentReference", label: "Payment reference", type: "text" },
@@ -124,7 +162,12 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         },
         { name: "isActive", label: "Active account", type: "checkbox" },
         { name: "password", label: "New password", type: "password", placeholder: "Leave blank to keep current" },
-        { name: "kycStatus", label: "KYC status", type: "text" },
+        {
+          name: "kycStatus",
+          label: "KYC status",
+          type: "select",
+          options: selectOptions(KYC_STATUS_VALUES),
+        },
         { name: "stationId", label: "Assigned station ID (swappers)", type: "number", placeholder: "Empty = omit; use swapper assign flow when possible" },
         { name: "ownerId", label: "Fleet owner ID (riders)", type: "number" },
       ];

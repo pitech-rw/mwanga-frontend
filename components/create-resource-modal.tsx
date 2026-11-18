@@ -14,6 +14,7 @@ import { PlacesLocationPicker } from "./places-location-picker";
 import { ResourceFormField } from "./resource-form-field";
 import { ownerListSearchHaystack, ownerOptionLine, type OwnerListRow } from "../lib/owner-list-format";
 import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
+import { STATION_LOCATION_FIELD_NAMES } from "../lib/station-form-fields";
 import { SlideOverDrawer, type SlideOverDrawerTab } from "./slide-over-drawer";
 
 type CreateResourceModalProps = {
@@ -171,8 +172,6 @@ function swapOptionLine(swap: SwapListRow, unknownRider: string): string {
   const riderPart = contact ? `${rider} · ${contact}` : rider;
   return `#${swap.id} · ${riderPart} · ${status}`;
 }
-
-const STATION_LOCATION_FIELD_NAMES = new Set(["address", "latitude", "longitude"]);
 
 function swapSearchHaystack(swap: SwapListRow): string {
   const user = swap.user;
