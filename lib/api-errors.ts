@@ -5,6 +5,8 @@ export const API_USER_MESSAGES = {
   signInInvalid: "Invalid credentials.",
   forgotPassword: "Unable to send reset instructions. Please try again.",
   resetPassword: "Unable to reset your password. Please try again.",
+  profileLoad: "Unable to load your profile. Please try again.",
+  profileUpdate: "Unable to update your profile. Please try again.",
   offline: "Unable to reach the server. Please try again.",
 } as const;
 

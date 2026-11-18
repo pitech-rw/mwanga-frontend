@@ -7,6 +7,7 @@ import {
   IconLogOut,
   IconMoon,
   IconSun,
+  IconUser,
   IconUsers,
 } from "./icons/icon";
 import { displayName, type AuthUser } from "../lib/auth";
@@ -16,6 +17,7 @@ type AccountMenuProps = {
   theme: ThemeName;
   onToggleTheme: () => void;
   onSignOut: () => void;
+  onOpenProfile?: () => void;
   onManageUsers?: () => void;
 };
 
@@ -30,7 +32,7 @@ function initials(user: AuthUser | null): string {
     .join("") || "?";
 }
 
-export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onManageUsers }: AccountMenuProps) {
+export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfile, onManageUsers }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -92,6 +94,20 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onManageUse
             <em>{role}</em>
           </div>
           <hr className="menu-divider" />
+          {onOpenProfile ? (
+            <button
+              type="button"
+              className="account-menu-item"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onOpenProfile();
+              }}
+            >
+              <IconUser size={16} />
+              Profile
+            </button>
+          ) : null}
           {onManageUsers ? (
             <button
               type="button"

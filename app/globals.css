@@ -1774,6 +1774,44 @@ table.data th.right {
   margin-top: 0;
 }
 
+.profile-form-section {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+  min-inline-size: 0;
+}
+
+.profile-form-section + .profile-form-section {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.profile-form-section legend {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 0;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+.profile-form-section-hint {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+.profile-form-section--readonly .field input:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
 .owner-fleet-block {
   display: grid;
   gap: 12px;
