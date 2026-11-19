@@ -5,6 +5,7 @@ import { useT } from "./locale";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
+import { DEFAULT_CURRENCY } from "../lib/default-currency";
 
 type FloatWallet = {
   id: number;
@@ -182,7 +183,7 @@ export function AgentTopUpPanel() {
         ) : null}
 
         <label className="field">
-          <span>Amount ({wallet?.currency ?? "CDF"})</span>
+          <span>Amount ({wallet?.currency ?? DEFAULT_CURRENCY})</span>
           <input
             type="number"
             min={0}
