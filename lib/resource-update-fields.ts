@@ -2,7 +2,6 @@ import { BATTERY_STATUS_VALUES } from "./battery-status";
 import { ENTITY_STATUS_VALUES } from "./entity-status";
 import { localizeField } from "./i18n/localize";
 import type { TranslateFn } from "./i18n/translate";
-import { KYC_STATUS_VALUES } from "./kyc-status";
 import type { FieldSpec } from "./resource-create-config";
 import type { ResourceSection } from "./resource-create-config";
 import { SWAP_PAYMENT_STATUS_VALUES, SWAP_STATUS_VALUES } from "./swap-status";
@@ -162,12 +161,6 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         },
         { name: "isActive", label: "Active account", type: "checkbox" },
         { name: "password", label: "New password", type: "password", placeholder: "Leave blank to keep current" },
-        {
-          name: "kycStatus",
-          label: "KYC status",
-          type: "select",
-          options: selectOptions(KYC_STATUS_VALUES),
-        },
         { name: "stationId", label: "Assigned station ID (swappers)", type: "number", placeholder: "Empty = omit; use swapper assign flow when possible" },
         { name: "ownerId", label: "Fleet owner ID (riders)", type: "number" },
       ];

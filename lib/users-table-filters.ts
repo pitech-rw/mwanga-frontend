@@ -17,20 +17,7 @@ function userActiveLabel(row: UserRow): string {
   return row.isActive === false ? "inactive" : "active";
 }
 
-function distinctKycStatuses(rows: UserRow[]): string[] {
-  const values = new Set<string>(["pending"]);
-  for (const row of rows) {
-    const raw = row.kycStatus;
-    if (typeof raw === "string" && raw.trim()) {
-      values.add(raw.trim().toLowerCase());
-    }
-  }
-  return [...values].sort((a, b) => a.localeCompare(b));
-}
-
-export function buildUsersTableFilters(rows: UserRow[]): DataTableSelectFilter<UserRow>[] {
-  const kycOptions = distinctKycStatuses(rows);
-
+export function buildUsersTableFilters(_rows: UserRow[]): DataTableSelectFilter<UserRow>[] {
   return [
     {
       id: "type",
@@ -63,24 +50,6 @@ export function buildUsersTableFilters(rows: UserRow[]): DataTableSelectFilter<U
         return userActiveLabel(row) === value;
       },
     },
-    {
-      id: "kyc",
-      label: "KYC",
-      defaultValue: "",
-      options: [
-        { value: "", label: "All KYC" },
-        ...kycOptions.map((status) => ({ value: status, label: status })),
-      ],
-      match: (row, value) => {
-        if (!value) {
-          return true;
-        }
-        const raw = row.kycStatus;
-        const normalized =
-          typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : "pending";
-        return normalized === value;
-      },
-    },
   ];
 }
 
@@ -90,6 +59,5 @@ export const USERS_TABLE_SORT_OPTIONS = [
   { key: "email", label: "Email" },
   { key: "type", label: "Type" },
   { key: "active", label: "Status" },
-  { key: "kyc", label: "KYC" },
   { key: "station", label: "Station" },
 ] as const;

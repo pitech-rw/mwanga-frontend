@@ -674,23 +674,6 @@ function buildUserColumns(): Column<Row>[] {
       render: (row) => <Badge status={row.isActive === false ? "inactive" : "active"} />,
     },
     {
-      key: "kyc",
-      header: "KYC",
-      sortValue: (row) => {
-        const raw = row.kycStatus;
-        return typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : "pending";
-      },
-      searchValue: (row) => {
-        const raw = row.kycStatus;
-        return typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : "pending";
-      },
-      render: (row) => {
-        const raw = row.kycStatus;
-        const label = typeof raw === "string" && raw.trim() ? raw.trim().toLowerCase() : "pending";
-        return <Badge status={label} />;
-      },
-    },
-    {
       key: "station",
       header: "Station",
       sortValue: (row) => stationLabel(row),

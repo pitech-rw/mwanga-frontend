@@ -202,7 +202,6 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         options: selectOptions(USER_TYPES),
       },
       { name: "phone", label: "Phone", type: "text" },
-      { name: "kycStatus", label: "KYC status", type: "text", placeholder: "pending" },
     ],
   },
   incidents: {
