@@ -1,3 +1,5 @@
+import { DEFAULT_CURRENCY } from "./default-currency";
+
 export type WalletTopUpTargetRow = {
   id: number;
   ownerLabel: string;
@@ -74,7 +76,7 @@ export function walletBalanceNumber(row: Record<string, unknown>): number {
 
 export function walletCurrency(row: Record<string, unknown>): string {
   const c = row.currency;
-  return typeof c === "string" && c.trim() ? c : "CDF";
+  return typeof c === "string" && c.trim() ? c : DEFAULT_CURRENCY;
 }
 
 export function walletTopUpTargetFromRow(row: Record<string, unknown>): WalletTopUpTargetRow | null {

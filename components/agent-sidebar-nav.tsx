@@ -4,6 +4,7 @@ import { useT } from "./locale";
 
 import Link from "next/link";
 import { AGENT_NAV_ITEMS } from "../lib/nav";
+import { filterMenuItems } from "../lib/nav-permissions";
 import { localizedMenuItem } from "../lib/nav-i18n";
 import { sectionHref } from "../lib/nav-path";
 import { NavIcon } from "./icons/icon";
@@ -11,16 +12,18 @@ import { NavIcon } from "./icons/icon";
 type AgentSidebarNavProps = {
   section: "topUp" | "agentTransactions" | "riders";
   pathPrefix: string;
+  permissions: readonly string[];
 };
 
-export function AgentSidebarNav({ section, pathPrefix }: AgentSidebarNavProps) {
+export function AgentSidebarNav({ section, pathPrefix, permissions }: AgentSidebarNavProps) {
   const t = useT();
   const active = section;
+  const navItems = filterMenuItems(AGENT_NAV_ITEMS, permissions);
 
   return (
     <nav className="nav nav-agent" aria-label="Agent">
       <div className="nav-block">
-        {AGENT_NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const navItem = localizedMenuItem(item.id, t);
           return (
           <Link

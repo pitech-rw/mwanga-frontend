@@ -15,6 +15,7 @@ import { ResourceFormField } from "./resource-form-field";
 import { ownerListSearchHaystack, ownerOptionLine, type OwnerListRow } from "../lib/owner-list-format";
 import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
 import { STATION_LOCATION_FIELD_NAMES } from "../lib/station-form-fields";
+import { usersListPath } from "../lib/users-list-query";
 import { SlideOverDrawer, type SlideOverDrawerTab } from "./slide-over-drawer";
 
 type CreateResourceModalProps = {
@@ -126,7 +127,10 @@ function buildOwnerBikesPayload(drafts: OwnerBikeDraft[]): Record<string, string
 function emptyValues(config: CreateResourceConfig): Record<string, string> {
   const defaultPassword = getDefaultCreatePassword();
   return Object.fromEntries(
-    config.fields.map((field) => [field.name, field.type === "password" ? defaultPassword : ""]),
+    config.fields.map((field) => [
+      field.name,
+      field.type === "password" ? defaultPassword : (field.defaultValue ?? ""),
+    ]),
   );
 }
 
@@ -400,7 +404,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
     const load = async () => {
       try {
-        const response = await authFetch("/users?type=swapper");
+        const response = await authFetch(usersListPath("swapper"));
         if (!response.ok) {
           if (active) {
             setStationSwappers([]);
@@ -485,7 +489,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
     const load = async () => {
       try {
-        const response = await authFetch("/users?type=rider");
+        const response = await authFetch(usersListPath("rider"));
         if (!response.ok) {
           if (active) {
             setBikeRiders([]);
@@ -528,7 +532,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     const load = async () => {
       try {
         const [usersRes, agentsRes] = await Promise.all([
-          authFetch("/users?type=agent"),
+          authFetch(usersListPath("agent")),
           authFetch("/agents"),
         ]);
         if (!usersRes.ok) {

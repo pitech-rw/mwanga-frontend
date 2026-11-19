@@ -22,6 +22,14 @@ import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser }
 import { ProfileModal } from "./profile-modal";
 import { AGENT_API_MENU_ITEMS, API_MENU_ITEMS, getMenuItem, type Section } from "../lib/nav";
 import {
+  canManageOtherUsers,
+  filterMenuItems,
+  firstAccessibleSection,
+  userCanAccessCompanyAccountTransactions,
+  userCanAccessSection,
+  userCanAccessStationDetail,
+} from "../lib/nav-permissions";
+import {
   companyAccountTransactionsSubRoute,
   sectionFromPathname,
   sectionHref,
@@ -66,6 +74,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const section = sectionFromPathname(pathname, pathPrefix);
   const companyAccountTx = companyAccountTransactionsSubRoute(pathname, pathPrefix);
   const stationDetail = stationDetailSubRoute(pathname, pathPrefix);
+  const sessionPermissions = sessionUser?.permissions ?? [];
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -121,7 +130,9 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
     let active = true;
     const isAgentUser = sessionUser?.type === "agent";
-    const countMenuItems = isAgentUser ? AGENT_API_MENU_ITEMS : API_MENU_ITEMS;
+    const permissions = sessionUser?.permissions ?? [];
+    const baseCountItems = isAgentUser ? AGENT_API_MENU_ITEMS : API_MENU_ITEMS;
+    const countMenuItems = filterMenuItems(baseCountItems, permissions);
 
     const load = async () => {
       if (!getAccessToken()) {
@@ -172,7 +183,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     return () => {
       active = false;
     };
-  }, [notify, sessionReady, sessionUser?.type, t]);
+  }, [notify, sessionReady, sessionUser?.permissions, sessionUser?.type, t]);
 
   const signOut = () => {
     clearSession();
@@ -217,13 +228,41 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     section === "riders" ? "riders" : section === "agentTransactions" ? "agentTransactions" : "topUp";
 
   useEffect(() => {
-    if (!isAgent) {
+    if (!sessionReady) {
       return;
     }
-    if (section !== "topUp" && section !== "riders" && section !== "agentTransactions") {
-      router.replace(sectionHref(pathPrefix, "topUp"));
+
+    const permissions = sessionUser?.permissions ?? [];
+    const agent = sessionUser?.type === "agent";
+
+    if (agent) {
+      const blocked =
+        !userCanAccessSection(section, permissions) ||
+        (companyAccountTx !== null && !userCanAccessCompanyAccountTransactions(permissions)) ||
+        (stationDetail !== null && !userCanAccessStationDetail(permissions));
+      if (blocked) {
+        router.replace(sectionHref(pathPrefix, firstAccessibleSection(permissions, { agent: true })));
+      }
+      return;
     }
-  }, [isAgent, section, router, pathPrefix]);
+
+    const blockedSection = !userCanAccessSection(section, permissions);
+    const blockedSubRoute =
+      (companyAccountTx !== null && !userCanAccessCompanyAccountTransactions(permissions)) ||
+      (stationDetail !== null && !userCanAccessStationDetail(permissions));
+    if (blockedSection || blockedSubRoute) {
+      router.replace(sectionHref(pathPrefix, firstAccessibleSection(permissions, { agent: false })));
+    }
+  }, [
+    sessionReady,
+    sessionUser?.permissions,
+    sessionUser?.type,
+    section,
+    companyAccountTx,
+    stationDetail,
+    router,
+    pathPrefix,
+  ]);
 
   if (!sessionReady) {
     return <div className="app-shell" />;
@@ -250,7 +289,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
               <span className="brand-tagline">{t("workspace.brandTaglineAgent")}</span>
             </div>
           </div>
-          <AgentSidebarNav section={agentSection} pathPrefix={pathPrefix} />
+          <AgentSidebarNav section={agentSection} pathPrefix={pathPrefix} permissions={sessionPermissions} />
           <div className="sidebar-foot">
             <span className="sidebar-foot-full">{health ? t("workspace.apiOnline") : t("workspace.apiWaiting")}</span>
             <span className="sidebar-foot-compact" title={health ? t("workspace.apiOnline") : t("toast.apiOffline")} aria-hidden="true">
@@ -367,6 +406,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           counts={counts}
           collapsed={sidebarCollapsed}
           pathPrefix={pathPrefix}
+          permissions={sessionPermissions}
         />
         <div className="sidebar-foot">
           <span className="sidebar-foot-full">
@@ -437,7 +477,11 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
               onToggleTheme={toggleTheme}
               onSignOut={signOut}
               onOpenProfile={openProfile}
-              onManageUsers={() => router.push(sectionHref(pathPrefix, "users"))}
+              onManageUsers={
+                canManageOtherUsers(sessionPermissions)
+                  ? () => router.push(sectionHref(pathPrefix, "users"))
+                  : undefined
+              }
             />
           </div>
         </header>
@@ -456,22 +500,30 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
         {section === "overview" ? (
           <section className="stats">
-            <article className="card stat">
-              <span>Batteries</span>
-              <strong>{counts.batteries != null ? counts.batteries.toLocaleString() : "—"}</strong>
-            </article>
-            <article className="card stat">
-              <span>Bikes</span>
-              <strong>{counts.bikes != null ? counts.bikes.toLocaleString() : "—"}</strong>
-            </article>
-            <article className="card stat">
-              <span>Swaps</span>
-              <strong>{counts.swaps != null ? counts.swaps.toLocaleString() : "—"}</strong>
-            </article>
-            <article className="card stat">
-              <span>Stations</span>
-              <strong>{counts.stations != null ? counts.stations.toLocaleString() : "—"}</strong>
-            </article>
+            {userCanAccessSection("batteries", sessionPermissions) ? (
+              <article className="card stat">
+                <span>Batteries</span>
+                <strong>{counts.batteries != null ? counts.batteries.toLocaleString() : "—"}</strong>
+              </article>
+            ) : null}
+            {userCanAccessSection("bikes", sessionPermissions) ? (
+              <article className="card stat">
+                <span>Bikes</span>
+                <strong>{counts.bikes != null ? counts.bikes.toLocaleString() : "—"}</strong>
+              </article>
+            ) : null}
+            {userCanAccessSection("swaps", sessionPermissions) ? (
+              <article className="card stat">
+                <span>Swaps</span>
+                <strong>{counts.swaps != null ? counts.swaps.toLocaleString() : "—"}</strong>
+              </article>
+            ) : null}
+            {userCanAccessSection("stations", sessionPermissions) ? (
+              <article className="card stat">
+                <span>Stations</span>
+                <strong>{counts.stations != null ? counts.stations.toLocaleString() : "—"}</strong>
+              </article>
+            ) : null}
           </section>
         ) : null}
 

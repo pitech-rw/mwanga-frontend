@@ -30,6 +30,21 @@ export const modalsFr = {
 
   "modals.edit.title": "Modifier {label}",
   "modals.edit.description": "Mettre à jour {record}. Seuls les champs renseignés sont envoyés.",
+  "modals.edit.user.addressLegend": "Adresse personnelle ou professionnelle",
+  "modals.edit.user.signInStatus": "Connexion",
+  "modals.edit.user.statusActive": "Actif — peut se connecter",
+  "modals.edit.user.statusInactive": "Désactivé — connexion impossible",
+  "modals.edit.user.reactivateHint":
+    "Pour rétablir l'accès, définissez un nouveau mot de passe et activez la connexion ci-dessous.",
+  "modals.edit.user.reactivateEnable": "Autoriser la connexion (réactiver le compte)",
+  "modals.edit.user.fieldsLockedHint":
+    "Les autres champs restent verrouillés tant que la connexion n'est pas réactivée ci-dessous.",
+  "modals.edit.user.reactivatePasswordRequired":
+    "Un nouveau mot de passe est requis pour réactiver ce compte.",
+  "modals.edit.user.stationField": "Station affectée",
+  "modals.edit.user.fleetOwnerField": "Propriétaire de flotte",
+  "modals.edit.user.noStation": "Aucune station affectée",
+  "modals.edit.user.noFleetOwner": "Aucun propriétaire de flotte",
 
   "modals.delete.titleDeactivate": "Désactiver {label}",
   "modals.delete.titleDelete": "Supprimer {label}",

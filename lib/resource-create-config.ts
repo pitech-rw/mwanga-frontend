@@ -1,4 +1,5 @@
 import { BATTERY_STATUS_VALUES } from "./battery-status";
+import { DEFAULT_CURRENCY } from "./default-currency";
 import type { Section } from "./nav";
 
 /** Every dashboard section that lists API resources (excludes overview). */
@@ -22,6 +23,7 @@ export type FieldSpec = {
   required?: boolean;
   placeholder?: string;
   placeholderKey?: string;
+  defaultValue?: string;
   accept?: string;
   options?: { value: string; label: string }[];
 };
@@ -117,7 +119,13 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
       { name: "name", label: "Display name", type: "text", required: true },
       { name: "email", label: "Email", type: "email" },
       { name: "phone", label: "Phone", type: "text" },
-      { name: "currency", label: "Wallet currency", type: "text", placeholder: "CDF" },
+      {
+        name: "currency",
+        label: "Wallet currency",
+        type: "text",
+        placeholder: DEFAULT_CURRENCY,
+        defaultValue: DEFAULT_CURRENCY,
+      },
     ],
   },
   agents: {
@@ -126,7 +134,15 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     title: "Register agent",
     description: "Links an existing user account (type agent) and opens a float wallet.",
     submitLabel: "Create agent",
-    fields: [{ name: "currency", label: "Float currency", type: "text", placeholder: "CDF" }],
+    fields: [
+      {
+        name: "currency",
+        label: "Float currency",
+        type: "text",
+        placeholder: DEFAULT_CURRENCY,
+        defaultValue: DEFAULT_CURRENCY,
+      },
+    ],
   },
   cards: {
     section: "cards",
@@ -202,7 +218,6 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         options: selectOptions(USER_TYPES),
       },
       { name: "phone", label: "Phone", type: "text" },
-      { name: "kycStatus", label: "KYC status", type: "text", placeholder: "pending" },
     ],
   },
   incidents: {
@@ -251,7 +266,15 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     title: "Create wallet",
     description: "Pick a fleet owner (search). Each owner has one shared wallet.",
     submitLabel: "Create wallet",
-    fields: [{ name: "currency", label: "Currency", type: "text", placeholder: "CDF" }],
+    fields: [
+      {
+        name: "currency",
+        label: "Currency",
+        type: "text",
+        placeholder: DEFAULT_CURRENCY,
+        defaultValue: DEFAULT_CURRENCY,
+      },
+    ],
   },
   riders: {
     section: "riders",
@@ -271,7 +294,13 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
       { name: "name", label: "Display name", type: "text", required: true },
       { name: "bankName", label: "Bank name", type: "text" },
       { name: "accountNumber", label: "Account number", type: "text" },
-      { name: "currency", label: "Currency", type: "text", placeholder: "CDF" },
+      {
+        name: "currency",
+        label: "Currency",
+        type: "text",
+        placeholder: DEFAULT_CURRENCY,
+        defaultValue: DEFAULT_CURRENCY,
+      },
     ],
   },
 };

@@ -2,6 +2,9 @@
  * Mirrored from `server/src/auth/permission-catalog.ts` for client-side action gating.
  */
 export const PERMISSIONS = {
+  system: {
+    admin: "system:admin",
+  },
   users: {
     read: "users:read",
     write: "users:write",
@@ -11,6 +14,11 @@ export const PERMISSIONS = {
     read: "roles:read",
     write: "roles:write",
     delete: "roles:delete",
+  },
+  riders: {
+    read: "riders:read",
+    write: "riders:write",
+    delete: "riders:delete",
   },
   owners: {
     read: "owners:read",

@@ -31,7 +31,6 @@ export const fieldsFr = {
   "fields.keys.firstName": "Prénom",
   "fields.keys.lastName": "Nom",
   "fields.keys.password": "New password",
-  "fields.keys.kycStatus": "Statut KYC",
   "fields.keys.batteryId": "ID batterie",
   "fields.keys.description": "Quel est le problème avec le pack ?",
   "fields.keys.image": "Image URL",

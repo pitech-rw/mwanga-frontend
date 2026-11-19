@@ -1,1 +1,0 @@
-export const KYC_STATUS_VALUES = ["pending", "verified", "rejected"] as const;

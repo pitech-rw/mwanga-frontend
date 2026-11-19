@@ -2,12 +2,11 @@ import { BATTERY_STATUS_VALUES } from "./battery-status";
 import { ENTITY_STATUS_VALUES } from "./entity-status";
 import { localizeField } from "./i18n/localize";
 import type { TranslateFn } from "./i18n/translate";
-import { KYC_STATUS_VALUES } from "./kyc-status";
 import type { FieldSpec } from "./resource-create-config";
 import type { ResourceSection } from "./resource-create-config";
+import { getUserUpdateFieldsForRow } from "./user-update-fields";
 import { SWAP_PAYMENT_STATUS_VALUES, SWAP_STATUS_VALUES } from "./swap-status";
 
-const USER_TYPES = ["admin", "office", "office_manager", "swapper", "agent", "owner", "rider", "viewer"] as const;
 const VIOLATION_STATUSES = ["open", "under_review", "resolved", "dismissed"] as const;
 const VIOLATION_SEVERITIES = ["low", "medium", "high", "critical"] as const;
 
@@ -145,32 +144,7 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "notes", label: "Notes", type: "textarea" },
       ];
     case "users":
-      return [
-        { name: "username", label: "Username", type: "text" },
-        { name: "firstName", label: "First name", type: "text" },
-        { name: "lastName", label: "Last name", type: "text" },
-        { name: "email", label: "Email", type: "email" },
-        { name: "phone", label: "Phone", type: "text" },
-        { name: "address", label: "Address", type: "textarea" },
-        { name: "image", label: "Image URL", type: "text" },
-        { name: "nationalId", label: "National ID", type: "text" },
-        {
-          name: "type",
-          label: "Account type",
-          type: "select",
-          options: selectOptions(USER_TYPES),
-        },
-        { name: "isActive", label: "Active account", type: "checkbox" },
-        { name: "password", label: "New password", type: "password", placeholder: "Leave blank to keep current" },
-        {
-          name: "kycStatus",
-          label: "KYC status",
-          type: "select",
-          options: selectOptions(KYC_STATUS_VALUES),
-        },
-        { name: "stationId", label: "Assigned station ID (swappers)", type: "number", placeholder: "Empty = omit; use swapper assign flow when possible" },
-        { name: "ownerId", label: "Fleet owner ID (riders)", type: "number" },
-      ];
+      return null;
     case "violations":
       return [
         { name: "trackId", label: "Track ID", type: "text" },
@@ -201,8 +175,13 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
   }
 }
 
-export function getLocalizedResourceUpdateFields(section: ResourceSection, t: TranslateFn) {
-  const fields = getResourceUpdateFields(section);
+export function getLocalizedResourceUpdateFields(
+  section: ResourceSection,
+  t: TranslateFn,
+  row?: Record<string, unknown>,
+) {
+  const fields =
+    section === "users" && row ? getUserUpdateFieldsForRow(row) : getResourceUpdateFields(section);
   if (!fields) {
     return null;
   }

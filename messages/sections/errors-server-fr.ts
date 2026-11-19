@@ -23,6 +23,14 @@ export const errorsServerFr = {
   "users.userNotFound": "Utilisateur introuvable (id {userId})",
   "users.swapperStationOnly": "Seuls les comptes échangeur peuvent être affectés à une station",
   "users.stationNotFound": "Station introuvable (id {stationId})",
+  "users.inactiveAccount":
+    "Le compte utilisateur est désactivé et ne peut pas être affecté (id {userId})",
+  "users.reactivationRequiresPassword":
+    "Définissez un nouveau mot de passe pour réactiver un compte désactivé",
+  "users.inactiveCannotAssignOnCreate":
+    "Impossible de créer un compte inactif avec une affectation station ou propriétaire de flotte",
+  "users.inactiveMustReactivateFirst":
+    "Réactivez le compte (autoriser la connexion) avant de modifier le profil ou les affectations",
 
   "owners.userNotFound": "Utilisateur introuvable (id {userId})",
   "owners.portalUserMustBeOwner": "Le compte portail doit être de type propriétaire",

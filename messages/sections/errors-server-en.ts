@@ -18,6 +18,12 @@ export const errorsServerEn = {
   "users.userNotFound": "User with id {userId} not found",
   "users.swapperStationOnly": "Only swapper users can be assigned to a station",
   "users.stationNotFound": "Station with id {stationId} not found",
+  "users.inactiveAccount": "User account is deactivated and cannot be assigned (id {userId})",
+  "users.reactivationRequiresPassword": "Set a new password when reactivating a deactivated account",
+  "users.inactiveCannotAssignOnCreate":
+    "Inactive accounts cannot be created with station or fleet owner assignment",
+  "users.inactiveMustReactivateFirst":
+    "Enable sign-in (reactivate) before changing this account or its assignments",
 
   "owners.userNotFound": "User with id {userId} not found",
   "owners.portalUserMustBeOwner": "Portal user must have type owner",

@@ -31,7 +31,6 @@ export const fieldsEn = {
   "fields.keys.firstName": "First name",
   "fields.keys.lastName": "Last name",
   "fields.keys.password": "New password",
-  "fields.keys.kycStatus": "KYC status",
   "fields.keys.batteryId": "Battery ID",
   "fields.keys.description": "What is wrong with the pack?",
   "fields.keys.image": "Image URL",
