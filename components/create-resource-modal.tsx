@@ -127,7 +127,10 @@ function buildOwnerBikesPayload(drafts: OwnerBikeDraft[]): Record<string, string
 function emptyValues(config: CreateResourceConfig): Record<string, string> {
   const defaultPassword = getDefaultCreatePassword();
   return Object.fromEntries(
-    config.fields.map((field) => [field.name, field.type === "password" ? defaultPassword : ""]),
+    config.fields.map((field) => [
+      field.name,
+      field.type === "password" ? defaultPassword : (field.defaultValue ?? ""),
+    ]),
   );
 }
 
