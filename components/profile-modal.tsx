@@ -5,18 +5,9 @@ import { useT } from "./locale";
 import { FormEvent, useEffect, useId, useState } from "react";
 import { userMessageForNetwork } from "../lib/api-errors";
 import { fetchMyProfile, updateMyProfile, type MyProfile } from "../lib/auth";
+import { canManageOtherUsers } from "../lib/nav-permissions";
 import { Modal } from "./modal";
 import { PasswordInput } from "./password-input";
-
-const PERM_USERS_WRITE = "users:write";
-const PERM_SYSTEM_ADMIN = "system:admin";
-
-function canManageOtherUsers(profile: MyProfile): boolean {
-  return (
-    profile.permissions.includes(PERM_SYSTEM_ADMIN) || profile.permissions.includes(PERM_USERS_WRITE)
-  );
-}
-
 
 type ProfileModalProps = {
   open: boolean;
@@ -97,7 +88,7 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
         setMeta({
           role: profile.role.name,
           type: profile.type,
-          canManageUsers: canManageOtherUsers(profile),
+          canManageUsers: canManageOtherUsers(profile.permissions),
         });
       } catch (loadError) {
         if (!active) {

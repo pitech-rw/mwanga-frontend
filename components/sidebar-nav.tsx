@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { IconChevronRight, NavIcon } from "./icons/icon";
 import { NAV_MENU_GROUPS, NAV_PRIMARY_ITEMS, NAV_SECONDARY_ITEMS, type MenuItem, type Section } from "../lib/nav";
+import { filterMenuItems, filterNavGroups } from "../lib/nav-permissions";
 import { localizedMenuItem } from "../lib/nav-i18n";
 import { sectionHref } from "../lib/nav-path";
 import { useT } from "./locale";
@@ -36,6 +37,7 @@ type SidebarNavProps = {
   collapsed: boolean;
   /** Base path for account routes, e.g. `/account`. */
   pathPrefix: string;
+  permissions: readonly string[];
 };
 
 function NavLink({
@@ -78,11 +80,15 @@ function itemBadge(item: MenuItem, counts: Partial<Record<Section, number>>): st
   return item.id === "overview" || count === undefined ? "" : String(count);
 }
 
-export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNavProps) {
+export function SidebarNav({ section, counts, collapsed, pathPrefix, permissions }: SidebarNavProps) {
   const t = useT();
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() =>
     typeof window === "undefined" ? new Set() : readCollapsedGroups(),
   );
+
+  const primaryItems = filterMenuItems(NAV_PRIMARY_ITEMS, permissions);
+  const menuGroups = filterNavGroups(NAV_MENU_GROUPS, permissions);
+  const secondaryItems = filterMenuItems(NAV_SECONDARY_ITEMS, permissions);
 
   const toggleGroup = useCallback((slug: string) => {
     setCollapsedGroups((prev) => {
@@ -100,7 +106,7 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
   return (
     <nav className="nav" aria-label="Main">
       <div className="nav-block">
-        {NAV_PRIMARY_ITEMS.map((item) => (
+        {primaryItems.map((item) => (
           <NavLink
             key={item.id}
             item={localizedMenuItem(item.id, t)}
@@ -112,7 +118,7 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
         ))}
       </div>
 
-      {NAV_MENU_GROUPS.map((group) => {
+      {menuGroups.map((group) => {
         const slug = group.groupKey;
         const panelId = `nav-group-panel-${slug}`;
         const groupLabel = t(`nav.groups.${group.groupKey}` as import("../lib/i18n/translate").MessageKey);
@@ -162,20 +168,23 @@ export function SidebarNav({ section, counts, collapsed, pathPrefix }: SidebarNa
         );
       })}
 
-      <div className="nav-divider" role="presentation" aria-hidden />
-
-      <div className="nav-block nav-block-secondary">
-        {NAV_SECONDARY_ITEMS.map((item) => (
-          <NavLink
-            key={item.id}
-            item={localizedMenuItem(item.id, t)}
-            active={section === item.id}
-            badge={itemBadge(item, counts)}
-            collapsed={collapsed}
-            pathPrefix={pathPrefix}
-          />
-        ))}
-      </div>
+      {secondaryItems.length > 0 ? (
+        <>
+          <div className="nav-divider" role="presentation" aria-hidden />
+          <div className="nav-block nav-block-secondary">
+            {secondaryItems.map((item) => (
+              <NavLink
+                key={item.id}
+                item={localizedMenuItem(item.id, t)}
+                active={section === item.id}
+                badge={itemBadge(item, counts)}
+                collapsed={collapsed}
+                pathPrefix={pathPrefix}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
     </nav>
   );
 }
