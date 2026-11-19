@@ -5,6 +5,7 @@ import { useT } from "./locale";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
+import { usersListPath } from "../lib/users-list-query";
 import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
 import { Modal } from "./modal";
 
@@ -74,7 +75,7 @@ export function AssignStationSwapperModal({
 
     const load = async () => {
       try {
-        const response = await authFetch("/users?type=swapper");
+        const response = await authFetch(usersListPath("swapper"));
         if (!response.ok) {
           if (active) {
             setSwappers([]);

@@ -5,6 +5,7 @@ import { useT } from "./locale";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
+import { usersListPath } from "../lib/users-list-query";
 import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
 import { riderListOptionLine, riderListSearchHaystack, type RiderListRow } from "../lib/rider-list-format";
 import { Modal } from "./modal";
@@ -51,7 +52,7 @@ export function AssociateOwnerRiderModal({
 
     const load = async () => {
       try {
-        const response = await authFetch("/users?type=rider");
+        const response = await authFetch(usersListPath("rider"));
         if (!response.ok) {
           if (active) {
             setRiders([]);

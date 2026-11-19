@@ -5,6 +5,7 @@ import { useT } from "./locale";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
+import { usersListPath } from "../lib/users-list-query";
 import { Modal } from "./modal";
 
 export type CardRiderAssignTarget = {
@@ -85,7 +86,7 @@ export function AssignCardRiderModal({
         setLoadingUsers(true);
       }
       try {
-        const response = await authFetch("/users?type=rider");
+        const response = await authFetch(usersListPath("rider"));
 
         if (!response.ok) {
           if (active) {

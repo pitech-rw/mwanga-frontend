@@ -168,13 +168,13 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       id: TABLE_ROW_ACTION_IDS.assignSwapperStation,
       label: "Assign station",
       permission: PERMISSIONS.users.write,
-      visibleForRow: (row) => row.type === "swapper",
+      visibleForRow: (row) => row.type === "swapper" && row.isActive !== false,
     },
     {
       id: TABLE_ROW_ACTION_IDS.assignRiderFleetOwner,
       label: "Assign fleet owner",
       permission: PERMISSIONS.users.write,
-      visibleForRow: (row) => row.type === "rider",
+      visibleForRow: (row) => row.type === "rider" && row.isActive !== false,
     },
     genericEdit(PERMISSIONS.users.write),
   {
