@@ -1550,6 +1550,7 @@ export function ApiResourcePanel({
           </span>
           <CreateResourceButton
             section={section}
+            permissions={sessionPermissions}
             onCreated={(created) => {
               reload();
               onCreateSuccess?.();

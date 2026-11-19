@@ -2,21 +2,29 @@
 
 import { useState } from "react";
 import type { Section } from "../lib/nav";
+import { sectionWritePermission } from "../lib/nav-permissions";
 import { getCreateConfig } from "../lib/resource-create-config";
+import { userMayUsePermission } from "../lib/table-row-actions";
 import { CreateResourceModal } from "./create-resource-modal";
 import { IconPlus } from "./icons/icon";
 
 type CreateResourceButtonProps = {
   section: Section;
+  permissions?: readonly string[];
   onCreated?: (created?: Record<string, unknown>) => void;
   onError?: (message: string) => void;
 };
 
-export function CreateResourceButton({ section, onCreated, onError }: CreateResourceButtonProps) {
+export function CreateResourceButton({ section, permissions = [], onCreated, onError }: CreateResourceButtonProps) {
   const [open, setOpen] = useState(false);
   const config = getCreateConfig(section);
+  const writePerm = sectionWritePermission(section);
 
   if (!config) {
+    return null;
+  }
+
+  if (writePerm && !userMayUsePermission(permissions, writePerm)) {
     return null;
   }
 
