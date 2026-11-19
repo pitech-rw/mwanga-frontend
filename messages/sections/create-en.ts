@@ -3,7 +3,8 @@ export const createEn = {
   "create.batteries.description": "Adds a pack to the fleet inventory.",
   "create.batteries.submitLabel": "Create battery",
   "create.inventory.title": "Receive into warehouse",
-  "create.inventory.description": "New assets are registered here first, then issued to fleet owners, stations, or bikes.",
+  "create.inventory.description":
+    "New assets are registered here first, then issued to fleet owners, stations, or bikes. Received batteries are stored as status warehouse.",
   "create.inventory.submitLabel": "Receive",
   "create.bikes.title": "Register bike",
   "create.bikes.description": "Links a plate and serial. Leave fleet owner empty to register in warehouse inventory instead.",

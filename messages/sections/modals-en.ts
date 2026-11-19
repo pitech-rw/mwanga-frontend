@@ -169,6 +169,8 @@ export const modalsEn = {
   "modals.assignRiderBike.findRider": "Find rider",
   "modals.assignRiderBike.riderField": "Rider",
   "modals.assignRiderBike.errorAssigned": "This rider is already assigned to another bike.",
+  "modals.assignRiderBike.errorNoBattery":
+    "Install a battery on this bike (via swap) before assigning a rider.",
   "modals.assignRiderBike.errorNothingToClear": "This bike has no rider to clear.",
 
   "modals.assignRiderCard.title": "Assign rider",

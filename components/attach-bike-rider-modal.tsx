@@ -13,6 +13,7 @@ export type BikeRiderAttachTarget = {
   plateNumber?: string;
   serialNumber?: string;
   currentUserId?: number | null;
+  hasBatteryInstalled?: boolean;
 };
 
 type UserListRow = {
@@ -166,9 +167,13 @@ export function AttachBikeRiderModal({
     event.preventDefault();
 
     if (userId !== null) {
+      if (!bike.hasBatteryInstalled) {
+        setError(t("modals.assignRiderBike.errorNoBattery"));
+        return;
+      }
       const sameAsCurrent = bike.currentUserId != null && bike.currentUserId === userId;
       if (sameAsCurrent) {
-        setError("This rider is already assigned to this bike.");
+        setError(t("modals.assignRiderBike.errorAssigned"));
         return;
       }
     } else if (bike.currentUserId == null) {
@@ -229,7 +234,9 @@ export function AttachBikeRiderModal({
             type="submit"
             form={formId}
             className="btn primary"
-            disabled={saving || loadingUsers || selectedId == null}
+            disabled={
+              saving || loadingUsers || selectedId == null || !bike.hasBatteryInstalled
+            }
           >
             {saving ? "Saving…" : "Assign rider"}
           </button>

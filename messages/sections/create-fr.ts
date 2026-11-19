@@ -3,7 +3,8 @@ export const createFr = {
   "create.batteries.description": "Ajoute un pack à l'inventaire de la flotte.",
   "create.batteries.submitLabel": "Créer la batterie",
   "create.inventory.title": "Réception entrepôt",
-  "create.inventory.description": "Les actifs sont enregistrés ici avant d'être affectés.",
+  "create.inventory.description":
+    "Les actifs sont enregistrés ici avant affectation. Les batteries reçues passent au statut entrepôt.",
   "create.inventory.submitLabel": "Réceptionner",
   "create.bikes.title": "Enregistrer une moto",
   "create.bikes.description": "Associe immatriculation et série. Laissez le propriétaire vide pour l'entrepôt.",

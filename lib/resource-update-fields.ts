@@ -40,8 +40,6 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         { name: "soh", label: "State of health (%)", type: "number", placeholder: "0–100" },
         { name: "cycleCount", label: "Cycle count", type: "number" },
         { name: "voltage", label: "Voltage", type: "number" },
-        { name: "stationId", label: "Station ID", type: "number", placeholder: "Omit to leave unchanged" },
-        { name: "bikeId", label: "Bike ID", type: "number", placeholder: "Omit to leave unchanged" },
       ];
     case "bikes":
       return [
@@ -58,7 +56,6 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
         },
         { name: "ownerId", label: "Owner ID", type: "number" },
         { name: "userId", label: "Rider user ID", type: "number" },
-        { name: "currentBatteryId", label: "Current battery ID", type: "number" },
       ];
     case "owners":
       return [

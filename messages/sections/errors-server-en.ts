@@ -39,6 +39,8 @@ export const errorsServerEn = {
   "bikes.warehouseNoBatteryOnCreate": "Warehouse bikes cannot be created with a battery installed",
   "bikes.warehouseNoBattery": "Warehouse bikes cannot have a battery installed",
   "bikes.duplicateIdentity": "A bike with this plate or serial already exists",
+  "bikes.riderRequiresBattery": "A bike must have a battery installed before assigning a rider",
+  "bikes.batteryViaSwapOnly": "Install or remove batteries on bikes only through a swap transaction",
 
   "batteries.serialQueryRequired": "serialNumber query is required",
   "batteries.duplicateSerial": "A battery with this serial number already exists",
@@ -47,6 +49,9 @@ export const errorsServerEn = {
     "That bike already has a different battery installed. Remove it before assigning this pack.",
   "batteries.warehouseBikeInstall":
     "Cannot install a battery on a bike that is still in warehouse stock. Issue the bike to a fleet owner first.",
+  "batteries.stationRequiresInventory":
+    "Assign a battery to a station only while it is in warehouse inventory",
+  "batteries.bikeViaSwapOnly": "Move batteries between stations and bikes only through a swap transaction",
 
   "stations.uniqueCodeFailed": "Could not assign a unique station code; try again",
   "stations.duplicateCode": "A station with this code already exists",
@@ -102,6 +107,8 @@ export const errorsServerEn = {
     "Battery is mounted on a bike; complete the swap before marking damaged",
 
   "inventory.warehouseBikeNoBattery": "Warehouse bikes cannot have a battery installed",
+  "inventory.bikeReturnRequiresStation":
+    "Return a bike to warehouse only after it has been checked in at a station (no rider, no battery onboard)",
   "inventory.duplicateBike": "A bike with this plate number, chassis number, or serial already exists",
   "inventory.duplicateBattery": "A battery with this serial number already exists",
   "inventory.notBike": "This inventory record is not a bike",
