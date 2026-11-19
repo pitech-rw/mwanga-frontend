@@ -167,6 +167,8 @@ export const modalsFr = {
   "modals.assignRiderBike.findRider": "Rechercher un conducteur",
   "modals.assignRiderBike.riderField": "Conducteur",
   "modals.assignRiderBike.errorAssigned": "Ce conducteur est déjà affecté à une autre moto.",
+  "modals.assignRiderBike.errorNoBattery":
+    "Installez une batterie sur cette moto (via échange) avant d'affecter un conducteur.",
   "modals.assignRiderBike.errorNothingToClear": "Cette moto n'a pas de conducteur à retirer.",
 
   "modals.assignRiderCard.title": "Affecter un conducteur",

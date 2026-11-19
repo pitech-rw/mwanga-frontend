@@ -1,5 +1,6 @@
 /** Keep in sync with `server/src/batteries/battery-status.ts`. */
 export const BATTERY_STATUS_VALUES = [
+  "warehouse",
   "offline",
   "available",
   "charging",

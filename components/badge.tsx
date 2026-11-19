@@ -17,6 +17,7 @@ const toneByStatus: Record<string, string> = {
   faulty: "danger",
   failed: "danger",
   offline: "danger",
+  warehouse: "info",
   cancelled: "danger",
 };
 

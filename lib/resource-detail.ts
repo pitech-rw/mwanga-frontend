@@ -133,6 +133,26 @@ export function buildResourceDetailPayload(
         usedKeys.add("ownerId");
         summary.push([dl(translate, "detail.labels.owner" as MessageKey, "Owner"), `Owner #${row.ownerId}`]);
       }
+      const pack = row.currentBattery;
+      usedKeys.add("currentBatteryId");
+      usedKeys.add("currentBattery");
+      if (pack && typeof pack === "object") {
+        const serial = pickString(pack as Record<string, unknown>, "serialNumber");
+        summary.push([
+          dl(translate, "detail.labels.batteryInstalled" as MessageKey, "Battery installed"),
+          serial ?? cellText(pack),
+        ]);
+      } else if (row.currentBatteryId != null) {
+        summary.push([
+          dl(translate, "detail.labels.batteryInstalled" as MessageKey, "Battery installed"),
+          `Battery #${row.currentBatteryId}`,
+        ]);
+      } else {
+        summary.push([
+          dl(translate, "detail.labels.batteryInstalled" as MessageKey, "Battery installed"),
+          dl(translate, "common.no" as MessageKey, "No"),
+        ]);
+      }
       break;
     }
     case "owners": {

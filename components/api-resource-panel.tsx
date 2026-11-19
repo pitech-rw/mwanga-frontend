@@ -76,6 +76,7 @@ import {
   resourceTableDefaultSortKey,
 } from "../lib/resource-table-filters";
 import { stationDetailHref } from "../lib/nav-path";
+import { formatTableDateTime, isTableDateFieldKey } from "../lib/format-datetime";
 import { translateFieldKey, type TranslateFn } from "../lib/i18n/translate";
 import { localizeRowActions } from "../lib/table-row-actions";
 import { useLocale, useT } from "./locale";
@@ -218,6 +219,23 @@ function buildColumns(rows: Row[], locale: import("../lib/locale-storage").Local
         );
       }
 
+      if (isTableDateFieldKey(key)) {
+        const formatted = formatTableDateTime(value);
+        if (formatted) {
+          const title =
+            value instanceof Date
+              ? value.toLocaleString()
+              : typeof value === "string"
+                ? new Date(value).toLocaleString()
+                : formatted;
+          return (
+            <span className="data-table-ellipsis-inner" title={title}>
+              {formatted}
+            </span>
+          );
+        }
+      }
+
       return cellValue(value);
     },
   }));
@@ -332,8 +350,24 @@ function buildInventoryDataColumns(): Column<Row>[] {
         const v = row.receivedAt;
         return v instanceof Date ? v.getTime() : typeof v === "string" ? Date.parse(v) : 0;
       },
-      searchValue: (row) => cellValue(row.receivedAt),
-      render: (row) => cellValue(row.receivedAt),
+      searchValue: (row) => {
+        const v = row.receivedAt;
+        const formatted = formatTableDateTime(v);
+        return formatted ?? cellValue(v);
+      },
+      render: (row) => {
+        const v = row.receivedAt;
+        const formatted = formatTableDateTime(v);
+        if (!formatted) {
+          return cellValue(v);
+        }
+        const title = v instanceof Date ? v.toLocaleString() : typeof v === "string" ? new Date(v).toLocaleString() : formatted;
+        return (
+          <span className="data-table-ellipsis-inner" title={title}>
+            {formatted}
+          </span>
+        );
+      },
     },
     {
       key: "notes",
@@ -343,6 +377,64 @@ function buildInventoryDataColumns(): Column<Row>[] {
       render: (row) => {
         const text = typeof row.notes === "string" ? row.notes : "";
         return text ? text.slice(0, 80) : "—";
+      },
+    },
+  ];
+}
+
+function bikeHasBattery(row: Row): boolean {
+  if (row.currentBatteryId != null) {
+    return true;
+  }
+  const pack = row.currentBattery;
+  return pack != null && typeof pack === "object";
+}
+
+function buildBikeDataColumns(
+  t: TranslateFn,
+  locale: import("../lib/locale-storage").LocaleCode,
+): Column<Row>[] {
+  return [
+    {
+      key: "plateNumber",
+      header: translateFieldKey(locale, "plateNumber"),
+      sortValue: (row) => String(row.plateNumber ?? ""),
+      searchValue: (row) => String(row.plateNumber ?? ""),
+      render: (row) => cellValue(row.plateNumber),
+    },
+    {
+      key: "model",
+      header: translateFieldKey(locale, "model"),
+      sortValue: (row) => String(row.model ?? ""),
+      searchValue: (row) => String(row.model ?? ""),
+      render: (row) => cellValue(row.model),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortValue: (row) => String(row.status ?? ""),
+      searchValue: (row) => String(row.status ?? ""),
+      render: (row) => <Badge status={String(row.status ?? "—")} />,
+    },
+    {
+      key: "batteryInstalled",
+      header: t("tables.headers.batteryInstalled"),
+      sortValue: (row) => (bikeHasBattery(row) ? 1 : 0),
+      searchValue: (row) => (bikeHasBattery(row) ? t("common.yes") : t("common.no")),
+      render: (row) => {
+        const installed = bikeHasBattery(row);
+        const pack = row.currentBattery;
+        const serial =
+          pack && typeof pack === "object"
+            ? typeof (pack as Record<string, unknown>).serialNumber === "string"
+              ? (pack as Record<string, unknown>).serialNumber
+              : null
+            : null;
+        return installed ? (
+          <span title={serial ? String(serial) : undefined}>{t("common.yes")}</span>
+        ) : (
+          t("common.no")
+        );
       },
     },
   ];
@@ -773,7 +865,13 @@ function buildRowActionMenuItems(
         id: def.id,
         label: def.label,
         onSelect: () =>
-          openBikeRiderAttach({ id, plateNumber, serialNumber, currentUserId }),
+          openBikeRiderAttach({
+            id,
+            plateNumber,
+            serialNumber,
+            currentUserId,
+            hasBatteryInstalled: bikeHasBattery(row),
+          }),
       });
       continue;
     }
@@ -1450,6 +1548,8 @@ export function ApiResourcePanel({
       base = buildUserColumns();
     } else if (section === "batteries") {
       base = buildBatteryDataColumns();
+    } else if (section === "bikes") {
+      base = buildBikeDataColumns(t, locale);
     } else if (section === "inventory") {
       base = buildInventoryDataColumns();
     } else if (section === "wallets") {
@@ -1554,18 +1654,6 @@ export function ApiResourcePanel({
             onCreated={(created) => {
               reload();
               onCreateSuccess?.();
-              if (
-                section === "bikes" &&
-                created &&
-                typeof created.id === "number" &&
-                userMayUsePermission(sessionPermissions, PERMISSIONS.batteries.write)
-              ) {
-                setAttachBikeBattery({
-                  id: created.id,
-                  plateNumber: typeof created.plateNumber === "string" ? created.plateNumber : undefined,
-                  serialNumber: typeof created.serialNumber === "string" ? created.serialNumber : undefined,
-                });
-              }
             }}
             onError={onCreateError}
           />

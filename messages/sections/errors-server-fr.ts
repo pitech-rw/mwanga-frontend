@@ -47,6 +47,10 @@ export const errorsServerFr = {
     "Les motos en entrepôt ne peuvent pas être créées avec une batterie installée",
   "bikes.warehouseNoBattery": "Les motos en entrepôt ne peuvent pas avoir de batterie installée",
   "bikes.duplicateIdentity": "Une moto avec cette immatriculation ou ce numéro de série existe déjà",
+  "bikes.riderRequiresBattery":
+    "Une batterie doit être installée sur la moto avant d'y affecter un conducteur",
+  "bikes.batteryViaSwapOnly":
+    "Installez ou retirez les batteries sur les motos uniquement via une opération d'échange",
 
   "batteries.serialQueryRequired": "Le paramètre serialNumber est requis",
   "batteries.duplicateSerial": "Une batterie avec ce numéro de série existe déjà",
@@ -56,6 +60,10 @@ export const errorsServerFr = {
     "Cette moto a déjà une autre batterie. Retirez-la avant d'assigner ce pack.",
   "batteries.warehouseBikeInstall":
     "Impossible d'installer une batterie sur une moto encore en stock entrepôt. Sortez-la d'abord vers une flotte.",
+  "batteries.stationRequiresInventory":
+    "Affectez une batterie à une station uniquement lorsqu'elle est en stock entrepôt",
+  "batteries.bikeViaSwapOnly":
+    "Déplacez les batteries entre stations et motos uniquement via une opération d'échange",
 
   "stations.uniqueCodeFailed": "Impossible d'attribuer un code station unique ; réessayez",
   "stations.duplicateCode": "Une station avec ce code existe déjà",
@@ -111,6 +119,8 @@ export const errorsServerFr = {
     "La batterie est sur une moto ; terminez l'échange avant de marquer endommagée",
 
   "inventory.warehouseBikeNoBattery": "Les motos en entrepôt ne peuvent pas avoir de batterie installée",
+  "inventory.bikeReturnRequiresStation":
+    "Retournez une moto à l'entrepôt seulement après enregistrement en station (sans conducteur ni batterie)",
   "inventory.duplicateBike": "Une moto avec cette immatriculation, ce châssis ou ce numéro de série existe déjà",
   "inventory.duplicateBattery": "Une batterie avec ce numéro de série existe déjà",
   "inventory.notBike": "Cet enregistrement d'inventaire n'est pas une moto",
