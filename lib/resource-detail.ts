@@ -211,8 +211,9 @@ export function buildResourceDetailPayload(
     case "users": {
       const username = pickString(row, "username") ?? idStr;
       const name = [pickString(row, "firstName"), pickString(row, "lastName")].filter(Boolean).join(" ").trim();
+      const accountType = pickString(row, "type");
       headingTitle = name ? `User · ${name}` : `User · @${username}`;
-      description = "Account overview.";
+      description = "Account overview for this role type.";
       usedKeys.add("username");
       summary.push([dl(translate, "detail.labels.username" as MessageKey, "Username"), `@${username}`]);
       if (name) {
@@ -220,10 +221,102 @@ export function buildResourceDetailPayload(
         usedKeys.add("lastName");
         summary.push([dl(translate, "detail.labels.name" as MessageKey, "Name"), name]);
       }
-      const type = pickString(row, "type");
-      if (type) {
+      if (accountType) {
         usedKeys.add("type");
-        summary.push([dl(translate, "detail.labels.roleType" as MessageKey, "Role type"), type]);
+        summary.push([dl(translate, "detail.labels.roleType" as MessageKey, "Role type"), accountType]);
+      }
+      const signIn =
+        row.isActive === false
+          ? dl(translate, "detail.labels.signInInactive" as MessageKey, "Deactivated")
+          : dl(translate, "detail.labels.signInActive" as MessageKey, "Active");
+      usedKeys.add("isActive");
+      summary.push([dl(translate, "detail.labels.signInStatus" as MessageKey, "Sign-in"), signIn]);
+
+      const role = row.role;
+      if (role && typeof role === "object" && pickString(role as Record<string, unknown>, "name")) {
+        usedKeys.add("role");
+        usedKeys.add("roleId");
+        summary.push([
+          dl(translate, "detail.labels.role" as MessageKey, "Role"),
+          pickString(role as Record<string, unknown>, "name") ?? cellText(role),
+        ]);
+      }
+
+      const email = pickString(row, "email");
+      if (email) {
+        usedKeys.add("email");
+        summary.push([dl(translate, "detail.labels.email" as MessageKey, "Email"), email]);
+      }
+      const phone = pickString(row, "phone");
+      if (phone) {
+        usedKeys.add("phone");
+        summary.push([dl(translate, "detail.labels.phone" as MessageKey, "Phone"), phone]);
+      }
+      const address = pickString(row, "address");
+      if (address) {
+        usedKeys.add("address");
+        summary.push([dl(translate, "detail.labels.address" as MessageKey, "Address"), address]);
+      }
+      const nationalId = pickString(row, "nationalId");
+      if (nationalId) {
+        usedKeys.add("nationalId");
+        summary.push([dl(translate, "detail.labels.nationalId" as MessageKey, "National ID"), nationalId]);
+      }
+
+      if (accountType === "swapper") {
+        const assignedStation = row.assignedStation;
+        if (assignedStation && typeof assignedStation === "object") {
+          usedKeys.add("stationId");
+          usedKeys.add("assignedStation");
+          const s = assignedStation as Record<string, unknown>;
+          const code = typeof s.code === "string" ? s.code : "";
+          const stationName = typeof s.name === "string" ? s.name : "";
+          summary.push([
+            dl(translate, "detail.labels.station" as MessageKey, "Station"),
+            code && stationName ? `${code} — ${stationName}` : cellText(assignedStation),
+          ]);
+        } else if (row.stationId != null) {
+          usedKeys.add("stationId");
+          summary.push([dl(translate, "detail.labels.station" as MessageKey, "Station"), String(row.stationId)]);
+        }
+      }
+
+      if (accountType === "rider") {
+        const fleetOwner = row.fleetOwner;
+        if (fleetOwner && typeof fleetOwner === "object") {
+          usedKeys.add("ownerId");
+          usedKeys.add("fleetOwner");
+          const o = fleetOwner as Record<string, unknown>;
+          const ownerName = typeof o.name === "string" ? o.name : cellText(fleetOwner);
+          summary.push([dl(translate, "detail.labels.fleetOwner" as MessageKey, "Fleet owner"), ownerName]);
+        } else if (row.ownerId != null) {
+          usedKeys.add("ownerId");
+          summary.push([
+            dl(translate, "detail.labels.fleetOwner" as MessageKey, "Fleet owner"),
+            `#${String(row.ownerId)}`,
+          ]);
+        }
+      }
+
+      const lastLogin = row.lastLoginAt;
+      if (lastLogin != null && lastLogin !== "") {
+        usedKeys.add("lastLoginAt");
+        summary.push([
+          dl(translate, "detail.labels.lastLogin" as MessageKey, "Last login"),
+          cellText(lastLogin),
+        ]);
+      }
+
+      for (const key of ["kycStatus", "image", "passwordHash", "id"] as const) {
+        usedKeys.add(key);
+      }
+      if (accountType !== "swapper") {
+        usedKeys.add("stationId");
+        usedKeys.add("assignedStation");
+      }
+      if (accountType !== "rider") {
+        usedKeys.add("ownerId");
+        usedKeys.add("fleetOwner");
       }
       break;
     }
@@ -490,6 +583,7 @@ function isRelationOrMetaKey(key: string): boolean {
     "bike",
     "swapTransaction",
     "assignedStation",
+    "fleetOwner",
     "operators",
     "batteries",
     "movements",

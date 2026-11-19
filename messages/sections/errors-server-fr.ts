@@ -29,6 +29,8 @@ export const errorsServerFr = {
     "Définissez un nouveau mot de passe pour réactiver un compte désactivé",
   "users.inactiveCannotAssignOnCreate":
     "Impossible de créer un compte inactif avec une affectation station ou propriétaire de flotte",
+  "users.inactiveMustReactivateFirst":
+    "Réactivez le compte (autoriser la connexion) avant de modifier le profil ou les affectations",
 
   "owners.userNotFound": "Utilisateur introuvable (id {userId})",
   "owners.portalUserMustBeOwner": "Le compte portail doit être de type propriétaire",

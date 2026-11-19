@@ -271,7 +271,6 @@ export function PlacesLocationPicker({ disabled, onPlaceSelected }: PlacesLocati
 
   return (
     <div className="places-picker field">
-      <span>Search place (Google)</span>
       <div className="places-picker-input-wrap">
         <input
           ref={inputRef}

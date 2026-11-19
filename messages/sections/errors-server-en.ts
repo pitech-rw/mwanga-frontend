@@ -22,6 +22,8 @@ export const errorsServerEn = {
   "users.reactivationRequiresPassword": "Set a new password when reactivating a deactivated account",
   "users.inactiveCannotAssignOnCreate":
     "Inactive accounts cannot be created with station or fleet owner assignment",
+  "users.inactiveMustReactivateFirst":
+    "Enable sign-in (reactivate) before changing this account or its assignments",
 
   "owners.userNotFound": "User with id {userId} not found",
   "owners.portalUserMustBeOwner": "Portal user must have type owner",

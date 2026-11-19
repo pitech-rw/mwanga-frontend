@@ -1847,6 +1847,46 @@ table.data th.right {
   color: var(--text-faint);
 }
 
+.edit-user-address {
+  display: grid;
+  gap: 12px;
+  border: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.edit-user-address legend {
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+.edit-user-sign-in {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+  border-radius: calc(var(--radius) - 6px);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.edit-user-sign-in-value {
+  margin: 0;
+  font-weight: 600;
+}
+
+.edit-user-reactivate {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: calc(var(--radius) - 6px);
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border));
+  background: color-mix(in srgb, var(--warning) 8%, var(--surface));
+}
+
 .owner-fleet-block {
   display: grid;
   gap: 12px;

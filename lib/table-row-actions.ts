@@ -177,10 +177,11 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       visibleForRow: (row) => row.type === "rider" && row.isActive !== false,
     },
     genericEdit(PERMISSIONS.users.write),
-  {
-    ...genericDelete(PERMISSIONS.users.delete),
-    label: "Deactivate",
-  },
+    {
+      ...genericDelete(PERMISSIONS.users.delete),
+      label: "Deactivate",
+      visibleForRow: (row) => row.isActive !== false,
+    },
   ],
   violations: [genericEdit(PERMISSIONS.violations.write), genericDelete(PERMISSIONS.violations.delete)],
   incidents: [],

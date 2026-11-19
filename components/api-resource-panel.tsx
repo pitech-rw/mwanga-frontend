@@ -8,6 +8,7 @@ import type { Section } from "../lib/nav";
 import { buildResourceDetailPayload, type ResourceDetailPayload } from "../lib/resource-detail";
 import type { ResourceSection } from "../lib/resource-create-config";
 import { getLocalizedResourceUpdateFields, getResourceUpdateFields } from "../lib/resource-update-fields";
+import { getUserUpdateFieldsForRow } from "../lib/user-update-fields";
 import {
   walletBalanceNumber,
   walletCurrency,
@@ -1007,8 +1008,10 @@ function buildRowActionMenuItems(
         continue;
       }
       const fields = translate
-        ? getLocalizedResourceUpdateFields(section, translate)
-        : getResourceUpdateFields(section);
+        ? getLocalizedResourceUpdateFields(section, translate, row)
+        : section === "users"
+          ? getUserUpdateFieldsForRow(row)
+          : getResourceUpdateFields(section);
       if (!fields?.length) {
         continue;
       }

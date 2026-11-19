@@ -30,6 +30,20 @@ export const modalsEn = {
 
   "modals.edit.title": "Edit {label}",
   "modals.edit.description": "Update fields for {record}. Only filled fields are sent.",
+  "modals.edit.user.addressLegend": "Home or business address",
+  "modals.edit.user.signInStatus": "Sign-in",
+  "modals.edit.user.statusActive": "Active — can sign in",
+  "modals.edit.user.statusInactive": "Deactivated — sign-in disabled",
+  "modals.edit.user.reactivateHint":
+    "To restore access, set a new password and enable sign-in below.",
+  "modals.edit.user.reactivateEnable": "Enable sign-in (reactivate account)",
+  "modals.edit.user.fieldsLockedHint":
+    "Other fields stay locked until you enable sign-in below.",
+  "modals.edit.user.reactivatePasswordRequired": "A new password is required to reactivate this account.",
+  "modals.edit.user.stationField": "Assigned station",
+  "modals.edit.user.fleetOwnerField": "Fleet owner",
+  "modals.edit.user.noStation": "No station assigned",
+  "modals.edit.user.noFleetOwner": "No fleet owner assigned",
 
   "modals.delete.titleDeactivate": "Deactivate {label}",
   "modals.delete.titleDelete": "Delete {label}",
