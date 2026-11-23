@@ -1,6 +1,5 @@
 export const createFr = {
   "create.batteries.title": "Enregistrer une batterie",
-  "create.batteries.description": "Ajoute un pack à l'inventaire de la flotte.",
   "create.batteries.submitLabel": "Créer la batterie",
   "create.inventory.title": "Réception entrepôt",
   "create.inventory.description":
@@ -58,6 +57,20 @@ export const createFr = {
   "create.drawer.tab.assignSwapper": "Affecter échangeur",
   "create.drawer.tab.incidentDetails": "Détails incident",
   "create.drawer.tab.relatedSwap": "Échange lié",
+  "create.drawer.tab.batteryDetails": "Détails pack",
+  "create.drawer.tab.attachTarget": "Rattacher à",
+
+  "create.batteries.attachIntro": "Choisissez où va le pack après l'enregistrement.",
+  "create.batteries.attach.inventory": "Entrepôt",
+  "create.batteries.attach.station": "Station",
+  "create.batteries.attach.bike": "Moto de flotte",
+  "create.batteries.attach.stationHint": "Recherchez et sélectionnez la station qui accueillera ce pack.",
+  "create.batteries.attach.bikeHint":
+    "Recherchez une moto de flotte sans pack (la moto doit être sortie vers un propriétaire).",
+  "create.error.selectAttachStation": "Sélectionnez une station sur l'onglet Rattacher à.",
+  "create.error.selectAttachBike": "Sélectionnez une moto sur l'onglet Rattacher à.",
+  "create.error.batteryCreatedAttachFailed":
+    "La batterie a été créée mais le rattachement a échoué. Rattachez-la depuis Batteries.",
 
   "create.error.selectFleetOwner": "Sélectionnez un propriétaire de flotte.",
   "create.error.selectFleetOwnerTab": "Sélectionnez un propriétaire sur l'onglet Propriétaire de flotte.",

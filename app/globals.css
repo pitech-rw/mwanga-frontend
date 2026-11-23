@@ -1695,6 +1695,11 @@ table.data th.right {
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
 
+.create-attach-target .drawer-tabs {
+  padding: 0 0 4px;
+  border-bottom: none;
+}
+
 .drawer-body {
   flex: 1 1 auto;
   min-height: 0;

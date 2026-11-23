@@ -69,6 +69,18 @@ type StationListRow = {
   createdAt?: string | null;
 };
 
+type BikeCreateListRow = {
+  id: number;
+  plateNumber: string;
+  serialNumber: string;
+  model: string;
+  status?: string;
+  ownerId?: number | null;
+  currentBatteryId?: number | null;
+};
+
+type BatteryCreateAttachTarget = "inventory" | "station" | "bike";
+
 type SwapListUser = {
   id: number;
   username: string;
@@ -160,6 +172,27 @@ function stationSearchHaystack(station: StationListRow): string {
   return [station.code, station.name, station.status ?? "", String(station.id)].join(" ").toLowerCase();
 }
 
+function bikeEligibleForFleetAttach(bike: BikeCreateListRow): boolean {
+  return bike.ownerId != null && bike.currentBatteryId == null;
+}
+
+function bikeCreateOptionLine(bike: BikeCreateListRow): string {
+  const status = bike.status && bike.status !== "active" ? ` · ${bike.status}` : "";
+  return `${bike.id} · ${bike.plateNumber} — ${bike.model} · ${bike.serialNumber}${status}`;
+}
+
+function bikeCreateSearchHaystack(bike: BikeCreateListRow): string {
+  return [
+    String(bike.id),
+    bike.plateNumber,
+    bike.serialNumber,
+    bike.model,
+    bike.status ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
 function swapRiderLabel(user: SwapListUser | null | undefined, unknownRider: string): string {
   if (!user) {
     return unknownRider;
@@ -228,6 +261,15 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [incidentSwapSearch, setIncidentSwapSearch] = useState("");
   const [incidentSwaps, setIncidentSwaps] = useState<SwapListRow[]>([]);
   const [loadingIncidentSwaps, setLoadingIncidentSwaps] = useState(false);
+  const [batteryAttachTarget, setBatteryAttachTarget] = useState<BatteryCreateAttachTarget>("inventory");
+  const [batteryCreateStationId, setBatteryCreateStationId] = useState<number | null>(null);
+  const [batteryCreateStationSearch, setBatteryCreateStationSearch] = useState("");
+  const [batteryCreateStations, setBatteryCreateStations] = useState<StationListRow[]>([]);
+  const [loadingBatteryCreateStations, setLoadingBatteryCreateStations] = useState(false);
+  const [batteryCreateBikeId, setBatteryCreateBikeId] = useState<number | null>(null);
+  const [batteryCreateBikeSearch, setBatteryCreateBikeSearch] = useState("");
+  const [batteryCreateBikes, setBatteryCreateBikes] = useState<BikeCreateListRow[]>([]);
+  const [loadingBatteryCreateBikes, setLoadingBatteryCreateBikes] = useState(false);
   const [drawerTab, setDrawerTab] = useState("details");
 
   const drawerTabs = useMemo((): SlideOverDrawerTab[] => {
@@ -267,11 +309,22 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         { id: "swap", label: t("create.drawer.tab.relatedSwap") },
       ];
     }
+    if (section === "batteries") {
+      const tabs: SlideOverDrawerTab[] = [
+        { id: "details", label: t("create.drawer.tab.batteryDetails") },
+      ];
+      if (batteryAttachTarget === "station" || batteryAttachTarget === "bike") {
+        tabs.push({ id: "attach", label: t("create.drawer.tab.attachTarget") });
+      }
+      return tabs;
+    }
     return [];
-  }, [section, t, values.type]);
+  }, [batteryAttachTarget, section, t, values.type]);
 
   const useDrawerTabs =
-    section === "users" || section === "incidents" ? drawerTabs.length > 1 : drawerTabs.length > 0;
+    section === "users" || section === "incidents" || section === "batteries"
+      ? drawerTabs.length > 1
+      : drawerTabs.length > 0;
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
@@ -293,9 +346,122 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       setStationSwapperSearch("");
       setIncidentSwapId(null);
       setIncidentSwapSearch("");
+      setBatteryAttachTarget("inventory");
+      setBatteryCreateStationId(null);
+      setBatteryCreateStationSearch("");
+      setBatteryCreateBikeId(null);
+      setBatteryCreateBikeSearch("");
       setDrawerTab("details");
     }
   }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "batteries") {
+      return;
+    }
+    if (batteryAttachTarget === "inventory") {
+      setBatteryCreateStationId(null);
+      setBatteryCreateBikeId(null);
+      return;
+    }
+    setDrawerTab("attach");
+  }, [batteryAttachTarget, open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "batteries") {
+      return;
+    }
+    if (batteryAttachTarget === "inventory" && drawerTab === "attach") {
+      setDrawerTab("details");
+    }
+  }, [batteryAttachTarget, drawerTab, open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "batteries" || batteryAttachTarget !== "station") {
+      return;
+    }
+
+    let active = true;
+    setLoadingBatteryCreateStations(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch("/stations");
+        if (!response.ok) {
+          if (active) {
+            setBatteryCreateStations([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        if (!active) {
+          return;
+        }
+        setBatteryCreateStations(Array.isArray(data) ? (data as StationListRow[]) : []);
+        setError(null);
+      } catch {
+        if (active) {
+          setBatteryCreateStations([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingBatteryCreateStations(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [batteryAttachTarget, open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "batteries" || batteryAttachTarget !== "bike") {
+      return;
+    }
+
+    let active = true;
+    setLoadingBatteryCreateBikes(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch("/bikes");
+        if (!response.ok) {
+          if (active) {
+            setBatteryCreateBikes([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        if (!active) {
+          return;
+        }
+        const rows = Array.isArray(data) ? (data as BikeCreateListRow[]) : [];
+        if (active) {
+          setBatteryCreateBikes(rows.filter(bikeEligibleForFleetAttach));
+          setError(null);
+        }
+      } catch {
+        if (active) {
+          setBatteryCreateBikes([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingBatteryCreateBikes(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [batteryAttachTarget, open, section]);
 
   useEffect(() => {
     if (!open || section !== "users") {
@@ -686,6 +852,46 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     [incidentSwapId, incidentSwaps],
   );
 
+  const filteredBatteryCreateStations = useMemo(
+    () =>
+      recentPickerOptions(
+        batteryCreateStations,
+        batteryCreateStationSearch,
+        batteryCreateStationId,
+        (station, needle) => stationSearchHaystack(station).includes(needle),
+        true,
+      ),
+    [batteryCreateStationId, batteryCreateStationSearch, batteryCreateStations],
+  );
+
+  const selectedBatteryCreateStation = useMemo(
+    () =>
+      batteryCreateStationId != null
+        ? batteryCreateStations.find((station) => station.id === batteryCreateStationId)
+        : undefined,
+    [batteryCreateStationId, batteryCreateStations],
+  );
+
+  const filteredBatteryCreateBikes = useMemo(
+    () =>
+      recentPickerOptions(
+        batteryCreateBikes,
+        batteryCreateBikeSearch,
+        batteryCreateBikeId,
+        (bike, needle) => bikeCreateSearchHaystack(bike).includes(needle),
+        true,
+      ),
+    [batteryCreateBikeId, batteryCreateBikeSearch, batteryCreateBikes],
+  );
+
+  const selectedBatteryCreateBike = useMemo(
+    () =>
+      batteryCreateBikeId != null
+        ? batteryCreateBikes.find((bike) => bike.id === batteryCreateBikeId)
+        : undefined,
+    [batteryCreateBikeId, batteryCreateBikes],
+  );
+
   const filteredAgentUsers = useMemo(() => {
     const needle = agentUserSearch.trim().toLowerCase();
     if (!needle) {
@@ -760,6 +966,20 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     if (userCreateIsRider && walletOwnerId === null) {
       setError(t("create.error.selectFleetOwnerTab"));
       setDrawerTab("fleet");
+      setSaving(false);
+      return;
+    }
+
+    if (config.section === "batteries" && batteryAttachTarget === "station" && batteryCreateStationId === null) {
+      setError(t("create.error.selectAttachStation"));
+      setDrawerTab("attach");
+      setSaving(false);
+      return;
+    }
+
+    if (config.section === "batteries" && batteryAttachTarget === "bike" && batteryCreateBikeId === null) {
+      setError(t("create.error.selectAttachBike"));
+      setDrawerTab("attach");
       setSaving(false);
       return;
     }
@@ -888,6 +1108,41 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         }
       }
 
+      if (config.section === "batteries" && created?.id != null && batteryAttachTarget !== "inventory") {
+        const newBatteryId = Number(created.id);
+        if (!Number.isNaN(newBatteryId)) {
+          const attachBody: Record<string, number> =
+            batteryAttachTarget === "station" && batteryCreateStationId != null
+              ? { stationId: batteryCreateStationId }
+              : batteryAttachTarget === "bike" && batteryCreateBikeId != null
+                ? { bikeId: batteryCreateBikeId }
+                : {};
+
+          if (Object.keys(attachBody).length > 0) {
+            const attachResponse = await authFetch(`/batteries/${newBatteryId}`, {
+              method: "PATCH",
+              body: JSON.stringify(attachBody),
+            });
+            if (!attachResponse.ok) {
+              const message = await userMessageFromResponse("create", attachResponse);
+              const detail = t("create.error.batteryCreatedAttachFailed");
+              setError(message ? `${detail} ${message}` : detail);
+              onCreated?.(created);
+              onError?.(detail);
+              return;
+            }
+            try {
+              const attached: unknown = await attachResponse.json();
+              if (attached !== null && typeof attached === "object" && !Array.isArray(attached)) {
+                created = attached as Record<string, unknown>;
+              }
+            } catch {
+              /* keep original created row */
+            }
+          }
+        }
+      }
+
       onCreated?.(created);
       onClose();
     } catch {
@@ -916,7 +1171,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     <SlideOverDrawer
       open={open}
       title={config.title}
-      description={config.description}
+      description={config.description ?? undefined}
       onClose={onClose}
       tabs={useDrawerTabs ? drawerTabs : undefined}
       activeTab={drawerTab}
@@ -1271,6 +1526,169 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 onFileChange={(next) => setFiles({ ...files, [field.name]: next })}
               />
             ))}
+          </>
+        ) : null}
+
+        {config.section === "batteries" && showDrawerPanel("details") ? (
+          <div className="create-attach-target">
+            <p className="sub">{t("create.batteries.attachIntro")}</p>
+            <div className="drawer-tabs" role="radiogroup" aria-label={t("create.batteries.attachIntro")}>
+              {(
+                [
+                  { id: "inventory", label: t("create.batteries.attach.inventory") },
+                  { id: "station", label: t("create.batteries.attach.station") },
+                  { id: "bike", label: t("create.batteries.attach.bike") },
+                ] as const
+              ).map((option) => {
+                const selected = batteryAttachTarget === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    disabled={saving}
+                    className={selected ? "drawer-tab drawer-tab-active" : "drawer-tab"}
+                    onClick={() => setBatteryAttachTarget(option.id)}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {config.section === "batteries" && showDrawerPanel("attach") && batteryAttachTarget === "station" ? (
+          <>
+            <p className="sub">{t("create.batteries.attach.stationHint")}</p>
+            <label className="field">
+              <span>{t("modals.attachBatteryStation.findStation")}</span>
+              <input
+                type="search"
+                value={batteryCreateStationSearch}
+                disabled={saving || loadingBatteryCreateStations}
+                onChange={(event) => setBatteryCreateStationSearch(event.target.value)}
+                placeholder={t("modals.attachBatteryStation.findStation")}
+                autoComplete="off"
+                aria-label={t("modals.attachBatteryStation.findStation")}
+              />
+            </label>
+            {loadingBatteryCreateStations ? (
+              <p className="sub">{t("modals.picker.loadingStations")}</p>
+            ) : (
+              <label className="field">
+                <span>
+                  {t("modals.attachBatteryStation.stationField")} (
+                  {t("modals.picker.shownCount", { count: filteredBatteryCreateStations.length })}
+                  {!batteryCreateStationSearch.trim()
+                    ? t("modals.picker.shownRecentSuffix", { limit: RECENT_PICKER_LIMIT })
+                    : ""}
+                  )
+                  <span className="col-required" aria-hidden="true">
+                    {" "}
+                    *
+                  </span>
+                  <span className="sr-only"> {t("common.requiredSr")}</span>
+                </span>
+                <select
+                  value={batteryCreateStationId != null ? String(batteryCreateStationId) : ""}
+                  disabled={saving || filteredBatteryCreateStations.length === 0}
+                  required
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setBatteryCreateStationId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredBatteryCreateStations.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label={t("modals.attachBatteryStation.stationField")}
+                >
+                  <option value="">
+                    {filteredBatteryCreateStations.length === 0
+                      ? t("common.noMatches")
+                      : t("modals.attachBatteryStation.errorSelect")}
+                  </option>
+                  {filteredBatteryCreateStations.map((station) => (
+                    <option key={station.id} value={String(station.id)}>
+                      {station.id} · {stationOptionLine(station)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedBatteryCreateStation ? (
+              <p className="create-wallet-selection sub" role="status">
+                {t("modals.picker.selectedPrefix")}{" "}
+                <strong>
+                  {selectedBatteryCreateStation.id} · {stationOptionLine(selectedBatteryCreateStation)}
+                </strong>
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {config.section === "batteries" && showDrawerPanel("attach") && batteryAttachTarget === "bike" ? (
+          <>
+            <p className="sub">{t("create.batteries.attach.bikeHint")}</p>
+            <label className="field">
+              <span>{t("modals.attachBatteryBike.findBike")}</span>
+              <input
+                type="search"
+                value={batteryCreateBikeSearch}
+                disabled={saving || loadingBatteryCreateBikes}
+                onChange={(event) => setBatteryCreateBikeSearch(event.target.value)}
+                placeholder={t("modals.attachBatteryBike.findBike")}
+                autoComplete="off"
+                aria-label={t("modals.attachBatteryBike.findBike")}
+              />
+            </label>
+            {loadingBatteryCreateBikes ? (
+              <p className="sub">{t("modals.picker.loadingBikes")}</p>
+            ) : (
+              <label className="field">
+                <span>
+                  {t("modals.attachBatteryBike.bikeField")} (
+                  {t("modals.picker.shownCount", { count: filteredBatteryCreateBikes.length })}
+                  {!batteryCreateBikeSearch.trim()
+                    ? t("modals.picker.shownRecentSuffix", { limit: RECENT_PICKER_LIMIT })
+                    : ""}
+                  )
+                  <span className="col-required" aria-hidden="true">
+                    {" "}
+                    *
+                  </span>
+                  <span className="sr-only"> {t("common.requiredSr")}</span>
+                </span>
+                <select
+                  value={batteryCreateBikeId != null ? String(batteryCreateBikeId) : ""}
+                  disabled={saving || filteredBatteryCreateBikes.length === 0}
+                  required
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setBatteryCreateBikeId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredBatteryCreateBikes.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label={t("modals.attachBatteryBike.bikeField")}
+                >
+                  <option value="">
+                    {filteredBatteryCreateBikes.length === 0
+                      ? t("modals.attachBikeBattery.noEligible")
+                      : t("modals.attachBatteryBike.errorSelect")}
+                  </option>
+                  {filteredBatteryCreateBikes.map((bike) => (
+                    <option key={bike.id} value={String(bike.id)}>
+                      {bikeCreateOptionLine(bike)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedBatteryCreateBike ? (
+              <p className="create-wallet-selection sub" role="status">
+                {t("modals.picker.selectedPrefix")} <strong>{bikeCreateOptionLine(selectedBatteryCreateBike)}</strong>
+              </p>
+            ) : null}
           </>
         ) : null}
 

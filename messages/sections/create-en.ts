@@ -1,6 +1,5 @@
 export const createEn = {
   "create.batteries.title": "Register battery",
-  "create.batteries.description": "Adds a pack to the fleet inventory.",
   "create.batteries.submitLabel": "Create battery",
   "create.inventory.title": "Receive into warehouse",
   "create.inventory.description":
@@ -58,6 +57,20 @@ export const createEn = {
   "create.drawer.tab.assignSwapper": "Assign swapper",
   "create.drawer.tab.incidentDetails": "Incident details",
   "create.drawer.tab.relatedSwap": "Related swap",
+  "create.drawer.tab.batteryDetails": "Pack details",
+  "create.drawer.tab.attachTarget": "Attach to",
+
+  "create.batteries.attachIntro": "Choose where the pack goes after registration.",
+  "create.batteries.attach.inventory": "Warehouse inventory",
+  "create.batteries.attach.station": "Station",
+  "create.batteries.attach.bike": "Fleet bike",
+  "create.batteries.attach.stationHint": "Search and select the station that will hold this pack.",
+  "create.batteries.attach.bikeHint":
+    "Search and select a fleet bike with no pack yet (bike must be issued to an owner).",
+  "create.error.selectAttachStation": "Select a station on the Attach to tab.",
+  "create.error.selectAttachBike": "Select a bike on the Attach to tab.",
+  "create.error.batteryCreatedAttachFailed":
+    "Battery was created but attaching it failed. Attach it from the Batteries list.",
 
   "create.error.selectFleetOwner": "Select a fleet owner.",
   "create.error.selectFleetOwnerTab": "Select a fleet owner on the Fleet owner tab.",
