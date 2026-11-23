@@ -120,6 +120,7 @@ export const miscEn = {
   "actions.row.deactivate": "Deactivate",
   "actions.row.attachBatteryStation": "Attach to station",
   "actions.row.attachBatteryBike": "Attach to bike",
+  "actions.row.attachBikeBattery": "Attach battery",
   "actions.row.attachBikeRider": "Assign rider",
   "actions.row.assignCardRider": "Assign rider",
   "actions.row.associateOwnerRider": "Associate rider",

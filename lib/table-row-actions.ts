@@ -11,6 +11,7 @@ import type { MessageKey, TranslateFn } from "./i18n/translate";
 export const TABLE_ROW_ACTION_IDS = {
   attachBatteryStation: "attach-battery-station",
   attachBatteryBike: "attach-battery-bike",
+  attachBikeBattery: "attach-bike-battery",
   attachBikeRider: "attach-bike-rider",
   assignCardRider: "assign-card-rider",
   assignSwapperStation: "assign-swapper-station",
@@ -63,6 +64,14 @@ function batteryHasBike(row: Record<string, unknown>): boolean {
   return row.bike != null && typeof row.bike === "object";
 }
 
+function bikeHasFleetOwner(row: Record<string, unknown>): boolean {
+  return row.ownerId != null || (row.owner != null && typeof row.owner === "object");
+}
+
+function bikeHasInstalledPack(row: Record<string, unknown>): boolean {
+  return row.currentBatteryId != null || (row.currentBattery != null && typeof row.currentBattery === "object");
+}
+
 export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly TableRowActionDef[]> = {
   inventory: [
     {
@@ -77,6 +86,12 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       permission: PERMISSIONS.inventory.write,
       visibleForRow: (row) => row.kind === "battery",
     },
+    {
+      id: TABLE_ROW_ACTION_IDS.issueInventoryBatteryBike,
+      label: "Issue to bike",
+      permission: PERMISSIONS.inventory.write,
+      visibleForRow: (row) => row.kind === "battery",
+    },
     genericEdit(PERMISSIONS.inventory.write),
     genericDelete(PERMISSIONS.inventory.delete),
   ],
@@ -84,6 +99,12 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     {
       id: TABLE_ROW_ACTION_IDS.attachBatteryStation,
       label: "Attach to station",
+      permission: PERMISSIONS.batteries.write,
+      visibleForRow: (row) => !batteryHasBike(row) && !batteryHasStation(row),
+    },
+    {
+      id: TABLE_ROW_ACTION_IDS.attachBatteryBike,
+      label: "Attach to bike",
       permission: PERMISSIONS.batteries.write,
       visibleForRow: (row) => !batteryHasBike(row) && !batteryHasStation(row),
     },
@@ -118,6 +139,12 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericDelete(PERMISSIONS.agents.delete),
   ],
   bikes: [
+    {
+      id: TABLE_ROW_ACTION_IDS.attachBikeBattery,
+      label: "Attach battery",
+      permission: PERMISSIONS.bikes.write,
+      visibleForRow: (row) => bikeHasFleetOwner(row) && !bikeHasInstalledPack(row),
+    },
     {
       id: TABLE_ROW_ACTION_IDS.attachBikeRider,
       label: "Assign rider",
@@ -235,6 +262,7 @@ const ROW_ACTION_MESSAGE_KEYS: Partial<Record<TableRowActionId, MessageKey>> = {
   [TABLE_ROW_ACTION_IDS.resourceDelete]: "actions.row.delete",
   [TABLE_ROW_ACTION_IDS.attachBatteryStation]: "actions.row.attachBatteryStation",
   [TABLE_ROW_ACTION_IDS.attachBatteryBike]: "actions.row.attachBatteryBike",
+  [TABLE_ROW_ACTION_IDS.attachBikeBattery]: "actions.row.attachBikeBattery",
   [TABLE_ROW_ACTION_IDS.attachBikeRider]: "actions.row.attachBikeRider",
   [TABLE_ROW_ACTION_IDS.assignCardRider]: "actions.row.assignCardRider",
   [TABLE_ROW_ACTION_IDS.associateOwnerRider]: "actions.row.associateOwnerRider",

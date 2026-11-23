@@ -788,6 +788,7 @@ function buildRowActionMenuItems(
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
+  openBikeBatteryAttach: (bike: BikeBatteryAttachTarget) => void,
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
@@ -846,6 +847,23 @@ function buildRowActionMenuItems(
         id: def.id,
         label: def.label,
         onSelect: () => openBatteryBikeAttach({ id, serialNumber: serial }),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.attachBikeBattery) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+
+      const plateNumber = typeof row.plateNumber === "string" ? row.plateNumber : undefined;
+      const serialNumber = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
+
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openBikeBatteryAttach({ id, plateNumber, serialNumber }),
       });
       continue;
     }
@@ -1154,6 +1172,7 @@ function appendActionsColumn(
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
+  openBikeBatteryAttach: (bike: BikeBatteryAttachTarget) => void,
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
@@ -1189,6 +1208,7 @@ function appendActionsColumn(
           openBatteryStationAttach,
           openBatteryBikeAttach,
           openBikeRiderAttach,
+          openBikeBatteryAttach,
           openCardRiderAssign,
           openWalletTopUp,
           openAgentWalletTopUp,
@@ -1219,6 +1239,7 @@ function appendActionsColumn(
           openBatteryStationAttach,
           openBatteryBikeAttach,
           openBikeRiderAttach,
+          openBikeBatteryAttach,
           openCardRiderAssign,
           openWalletTopUp,
           openAgentWalletTopUp,
@@ -1480,6 +1501,10 @@ export function ApiResourcePanel({
     setAttachBikeRider(bikeTarget);
   }, []);
 
+  const openBikeBatteryAttach = useCallback((bikeTarget: BikeBatteryAttachTarget) => {
+    setAttachBikeBattery(bikeTarget);
+  }, []);
+
   const openCardRiderAssign = useCallback((cardTarget: CardRiderAssignTarget) => {
     setAssignCardRider(cardTarget);
   }, []);
@@ -1573,6 +1598,7 @@ export function ApiResourcePanel({
       openBatteryStationAttach,
       openBatteryBikeAttach,
       openBikeRiderAttach,
+      openBikeBatteryAttach,
       openCardRiderAssign,
       openWalletTopUpModal,
       openAgentWalletTopUpModal,
@@ -1595,6 +1621,7 @@ export function ApiResourcePanel({
     openAssignRiderFleetOwner,
     openAssociateOwnerRider,
     openBikeRiderAttach,
+    openBikeBatteryAttach,
     openCardRiderAssign,
     openBatteryBikeAttach,
     openBatteryStationAttach,
