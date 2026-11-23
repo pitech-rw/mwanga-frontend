@@ -19,6 +19,7 @@ import { STATION_LOCATION_FIELD_NAMES } from "../lib/station-form-fields";
 import { PlacesLocationPicker } from "./places-location-picker";
 import { ResourceFormField } from "./resource-form-field";
 import { Modal } from "./modal";
+import { EditBatteryModal } from "./edit-battery-modal";
 
 export type EditResourceTarget = {
   section: ResourceSection;
@@ -35,7 +36,14 @@ type EditResourceModalProps = {
   onError?: (message: string) => void;
 };
 
-export function EditResourceModal({ open, target, onClose, onSaved, onError }: EditResourceModalProps) {
+export function EditResourceModal(props: EditResourceModalProps) {
+  if (props.target?.section === "batteries") {
+    return <EditBatteryModal {...props} />;
+  }
+  return <EditResourceModalBody {...props} />;
+}
+
+function EditResourceModalBody({ open, target, onClose, onSaved, onError }: EditResourceModalProps) {
   const t = useT();
   const [values, setValues] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<Record<string, File | null>>({});

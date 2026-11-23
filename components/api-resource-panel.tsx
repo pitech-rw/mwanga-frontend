@@ -788,6 +788,7 @@ function buildRowActionMenuItems(
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
+  openBikeBatteryAttach: (bike: BikeBatteryAttachTarget) => void,
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
@@ -799,6 +800,7 @@ function buildRowActionMenuItems(
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
   openInventoryIssue?: (target: InventoryIssueTarget) => void,
+  returnBatteryToInventory?: (batteryId: number) => void,
   translate?: TranslateFn,
   detailLocale?: import("../lib/locale-storage").LocaleCode,
 ): TableRowMenuItem[] {
@@ -846,6 +848,23 @@ function buildRowActionMenuItems(
         id: def.id,
         label: def.label,
         onSelect: () => openBatteryBikeAttach({ id, serialNumber: serial }),
+      });
+      continue;
+    }
+
+    if (def.id === TABLE_ROW_ACTION_IDS.attachBikeBattery) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+
+      const plateNumber = typeof row.plateNumber === "string" ? row.plateNumber : undefined;
+      const serialNumber = typeof row.serialNumber === "string" ? row.serialNumber : undefined;
+
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openBikeBatteryAttach({ id, plateNumber, serialNumber }),
       });
       continue;
     }
@@ -1097,6 +1116,19 @@ function buildRowActionMenuItems(
       continue;
     }
 
+    if (def.id === TABLE_ROW_ACTION_IDS.sendBatteryToInventory && returnBatteryToInventory) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => returnBatteryToInventory(id),
+      });
+      continue;
+    }
+
     if (def.id === TABLE_ROW_ACTION_IDS.resourceEdit) {
       if (section === "wallets" || section === "overview" || section === "topUp" || section === "agentTransactions") {
         continue;
@@ -1154,6 +1186,7 @@ function appendActionsColumn(
   openBatteryStationAttach: (battery: BatteryAttachTarget) => void,
   openBatteryBikeAttach: (battery: BatteryBikeAttachTarget) => void,
   openBikeRiderAttach: (bike: BikeRiderAttachTarget) => void,
+  openBikeBatteryAttach: (bike: BikeBatteryAttachTarget) => void,
   openCardRiderAssign: (card: CardRiderAssignTarget) => void,
   openWalletTopUp: (wallet: WalletTopUpTarget) => void,
   openAgentWalletTopUp: (target: AgentWalletTopUpTarget) => void,
@@ -1165,6 +1198,7 @@ function appendActionsColumn(
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
   openInventoryIssue?: (target: InventoryIssueTarget) => void,
+  returnBatteryToInventory?: (batteryId: number) => void,
   translate?: TranslateFn,
   detailLocale?: import("../lib/locale-storage").LocaleCode,
 ): Column<Row>[] {
@@ -1189,6 +1223,7 @@ function appendActionsColumn(
           openBatteryStationAttach,
           openBatteryBikeAttach,
           openBikeRiderAttach,
+          openBikeBatteryAttach,
           openCardRiderAssign,
           openWalletTopUp,
           openAgentWalletTopUp,
@@ -1200,6 +1235,7 @@ function appendActionsColumn(
           openResourceEdit,
           openResourceDelete,
           openInventoryIssue,
+          returnBatteryToInventory,
           translate,
           detailLocale,
         );
@@ -1219,6 +1255,7 @@ function appendActionsColumn(
           openBatteryStationAttach,
           openBatteryBikeAttach,
           openBikeRiderAttach,
+          openBikeBatteryAttach,
           openCardRiderAssign,
           openWalletTopUp,
           openAgentWalletTopUp,
@@ -1230,6 +1267,7 @@ function appendActionsColumn(
           openResourceEdit,
           openResourceDelete,
           openInventoryIssue,
+          returnBatteryToInventory,
           translate,
           detailLocale,
         );
@@ -1480,6 +1518,10 @@ export function ApiResourcePanel({
     setAttachBikeRider(bikeTarget);
   }, []);
 
+  const openBikeBatteryAttach = useCallback((bikeTarget: BikeBatteryAttachTarget) => {
+    setAttachBikeBattery(bikeTarget);
+  }, []);
+
   const openCardRiderAssign = useCallback((cardTarget: CardRiderAssignTarget) => {
     setAssignCardRider(cardTarget);
   }, []);
@@ -1534,6 +1576,24 @@ export function ApiResourcePanel({
     setResourceDelete(payload);
   }, []);
 
+  const returnBatteryToInventory = useCallback(
+    async (batteryId: number) => {
+      try {
+        const response = await authFetch(`/inventory/return/battery/${batteryId}`, { method: "POST" });
+        if (!response.ok) {
+          const message = await userMessageFromResponse("create", response);
+          onCreateError?.(message);
+          return;
+        }
+        reload();
+        onCreateSuccess?.();
+      } catch {
+        onCreateError?.(userMessageForNetwork("create"));
+      }
+    },
+    [onCreateError, onCreateSuccess, reload],
+  );
+
   const allRowActionsForSection = useMemo(
     () => localizeRowActions(getAvailableRowActions(section, sessionPermissions), t, section),
     [section, sessionPermissions, t],
@@ -1573,6 +1633,7 @@ export function ApiResourcePanel({
       openBatteryStationAttach,
       openBatteryBikeAttach,
       openBikeRiderAttach,
+      openBikeBatteryAttach,
       openCardRiderAssign,
       openWalletTopUpModal,
       openAgentWalletTopUpModal,
@@ -1584,6 +1645,7 @@ export function ApiResourcePanel({
       openResourceEditModal,
       openResourceDeleteModal,
       setInventoryIssue,
+      returnBatteryToInventory,
       t,
       locale,
     );
@@ -1595,6 +1657,7 @@ export function ApiResourcePanel({
     openAssignRiderFleetOwner,
     openAssociateOwnerRider,
     openBikeRiderAttach,
+    openBikeBatteryAttach,
     openCardRiderAssign,
     openBatteryBikeAttach,
     openBatteryStationAttach,
@@ -1607,6 +1670,7 @@ export function ApiResourcePanel({
     openWalletDeleteModal,
     openResourceEditModal,
     openResourceDeleteModal,
+    returnBatteryToInventory,
     rows,
     section,
     title,

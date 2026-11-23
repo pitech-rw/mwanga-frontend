@@ -1,6 +1,5 @@
 export const createEn = {
   "create.batteries.title": "Register battery",
-  "create.batteries.description": "Adds a pack to the fleet inventory.",
   "create.batteries.submitLabel": "Create battery",
   "create.inventory.title": "Receive into warehouse",
   "create.inventory.description":
@@ -58,6 +57,30 @@ export const createEn = {
   "create.drawer.tab.assignSwapper": "Assign swapper",
   "create.drawer.tab.incidentDetails": "Incident details",
   "create.drawer.tab.relatedSwap": "Related swap",
+  "create.drawer.tab.batteryDetails": "Pack details",
+  "create.drawer.tab.attachTarget": "Attach to",
+
+  "create.batteries.attachIntro": "Choose where the pack goes after registration.",
+  "create.batteries.attach.inventory": "Send to inventory",
+  "create.batteries.attach.station": "Station",
+  "create.batteries.attach.bike": "Fleet bike",
+  "create.batteries.attach.stationHint": "Search and select the station that will hold this pack.",
+  "create.batteries.attach.bikeHint":
+    "Search and select a fleet bike with no pack yet (bike must be issued to an owner).",
+  "create.error.selectAttachStation": "Select a station on the Attach to tab.",
+  "create.error.selectAttachBike": "Select a bike on the Attach to tab.",
+  "create.error.batteryOfflineNoAssign":
+    "Offline or faulty packs stay in warehouse inventory. Change status or choose warehouse inventory only.",
+  "create.batteries.attach.offlineNote":
+    "Offline or faulty packs go to warehouse inventory only (use Send to inventory on deployed packs from the Batteries list).",
+  "create.batteries.attach.chargingNote": "Charging packs must be assigned to a station.",
+  "create.batteries.attach.inUseNote": "In-use packs must be assigned to a fleet bike.",
+  "create.error.batteryChargingNeedsStation":
+    "Charging status requires a station. Use the Attach to tab to pick one.",
+  "create.error.batteryInUseNeedsBike":
+    "In use status requires a fleet bike. Use the Attach to tab to pick one.",
+  "create.error.batteryCreatedAttachFailed":
+    "Battery was created but attaching it failed. Attach it from the Batteries list.",
 
   "create.error.selectFleetOwner": "Select a fleet owner.",
   "create.error.selectFleetOwnerTab": "Select a fleet owner on the Fleet owner tab.",

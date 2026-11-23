@@ -33,7 +33,10 @@ export function localizeCreateConfig(config: CreateResourceConfig, t: TranslateF
   return {
     ...config,
     title: t(`create.${section}.title` as MessageKey),
-    description: t(`create.${section}.description` as MessageKey),
+    description:
+      config.description !== undefined
+        ? t(`create.${section}.description` as MessageKey)
+        : undefined,
     submitLabel: t(`create.${section}.submitLabel` as MessageKey),
     fields: config.fields.map((field) => localizeField(field, t)),
   };

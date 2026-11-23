@@ -120,6 +120,7 @@ export const miscEn = {
   "actions.row.deactivate": "Deactivate",
   "actions.row.attachBatteryStation": "Attach to station",
   "actions.row.attachBatteryBike": "Attach to bike",
+  "actions.row.attachBikeBattery": "Attach battery",
   "actions.row.attachBikeRider": "Assign rider",
   "actions.row.assignCardRider": "Assign rider",
   "actions.row.associateOwnerRider": "Associate rider",
@@ -135,6 +136,7 @@ export const miscEn = {
   "actions.row.issueInventoryBike": "Issue to owner",
   "actions.row.issueInventoryBatteryStation": "Issue to station",
   "actions.row.issueInventoryBatteryBike": "Issue to bike",
+  "actions.row.sendBatteryToInventory": "Send to inventory",
 
   "recordDetail.summary": "Summary",
   "recordDetail.allFields": "All fields",

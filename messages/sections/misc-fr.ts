@@ -122,6 +122,7 @@ export const miscFr = {
   "actions.row.deactivate": "Désactiver",
   "actions.row.attachBatteryStation": "Attacher à la station",
   "actions.row.attachBatteryBike": "Attacher à la moto",
+  "actions.row.attachBikeBattery": "Attacher une batterie",
   "actions.row.attachBikeRider": "Affecter un conducteur",
   "actions.row.assignCardRider": "Affecter un conducteur",
   "actions.row.associateOwnerRider": "Associer un conducteur",
@@ -137,6 +138,7 @@ export const miscFr = {
   "actions.row.issueInventoryBike": "Sortir pour propriétaire",
   "actions.row.issueInventoryBatteryStation": "Sortir vers station",
   "actions.row.issueInventoryBatteryBike": "Sortir vers moto",
+  "actions.row.sendBatteryToInventory": "Renvoyer en entrepôt",
 
   "recordDetail.summary": "Résumé",
   "recordDetail.allFields": "Tous les champs",

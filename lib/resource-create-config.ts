@@ -1,4 +1,4 @@
-import { BATTERY_STATUS_VALUES } from "./battery-status";
+import { BATTERY_STATUS_VALUES_CREATABLE } from "./battery-status";
 import { DEFAULT_CURRENCY } from "./default-currency";
 import type { Section } from "./nav";
 
@@ -32,7 +32,8 @@ export type CreateResourceConfig = {
   section: Section;
   apiPath: string;
   title: string;
-  description: string;
+  /** When omitted, the create drawer shows no subtitle (e.g. batteries). */
+  description?: string;
   submitLabel: string;
   fields: FieldSpec[];
 };
@@ -52,7 +53,6 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     section: "batteries",
     apiPath: "/batteries",
     title: "Register battery",
-    description: "Adds a pack to the fleet inventory.",
     submitLabel: "Create battery",
     fields: [
       { name: "serialNumber", label: "Serial number", type: "text", required: true },
@@ -64,7 +64,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         name: "status",
         label: "Status",
         type: "select",
-        options: selectOptions(BATTERY_STATUS_VALUES),
+        options: selectOptions(BATTERY_STATUS_VALUES_CREATABLE),
       },
       { name: "soc", label: "State of charge (%)", type: "number" },
     ],

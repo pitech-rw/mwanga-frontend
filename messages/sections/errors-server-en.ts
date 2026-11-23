@@ -52,6 +52,10 @@ export const errorsServerEn = {
   "batteries.stationRequiresInventory":
     "Assign a battery to a station only while it is in warehouse inventory",
   "batteries.bikeViaSwapOnly": "Move batteries between stations and bikes only through a swap transaction",
+  "batteries.offlineCannotAssign":
+    "Offline or faulty batteries cannot be assigned to a station or bike. Set another status first.",
+  "batteries.chargingRequiresStation": "Charging status requires a station assignment.",
+  "batteries.inUseRequiresBike": "In use status requires a bike assignment.",
 
   "stations.uniqueCodeFailed": "Could not assign a unique station code; try again",
   "stations.duplicateCode": "A station with this code already exists",
