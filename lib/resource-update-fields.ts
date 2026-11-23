@@ -1,4 +1,4 @@
-import { BATTERY_STATUS_VALUES } from "./battery-status";
+import { batteryStatusOptionsForEdit } from "./battery-status";
 import { ENTITY_STATUS_VALUES } from "./entity-status";
 import { localizeField } from "./i18n/localize";
 import type { TranslateFn } from "./i18n/translate";
@@ -18,7 +18,10 @@ function selectOptions(values: readonly string[]) {
  * Editable fields per resource (aligned with server `Update*Dto` optional properties).
  * Wallets use the dedicated wallet modals instead.
  */
-export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] | null {
+export function getResourceUpdateFields(
+  section: ResourceSection,
+  row?: Record<string, unknown>,
+): FieldSpec[] | null {
   switch (section) {
     case "inventory":
       return [{ name: "notes", label: "Notes", type: "textarea" }];
@@ -34,7 +37,7 @@ export function getResourceUpdateFields(section: ResourceSection): FieldSpec[] |
           name: "status",
           label: "Status",
           type: "select",
-          options: selectOptions(BATTERY_STATUS_VALUES),
+          options: batteryStatusOptionsForEdit(row),
         },
         { name: "soc", label: "State of charge (%)", type: "number", placeholder: "0–100" },
         { name: "soh", label: "State of health (%)", type: "number", placeholder: "0–100" },
@@ -178,7 +181,9 @@ export function getLocalizedResourceUpdateFields(
   row?: Record<string, unknown>,
 ) {
   const fields =
-    section === "users" && row ? getUserUpdateFieldsForRow(row) : getResourceUpdateFields(section);
+    section === "users" && row
+      ? getUserUpdateFieldsForRow(row)
+      : getResourceUpdateFields(section, row);
   if (!fields) {
     return null;
   }

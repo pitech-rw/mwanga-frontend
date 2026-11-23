@@ -47,3 +47,16 @@ export function batteryCreateAttachOptionDisabled(
   }
   return option !== required;
 }
+
+function selectOptions(values: readonly string[]) {
+  return values.map((value) => ({ value, label: value.replace(/_/g, " ") }));
+}
+
+/** Edit form: creatable statuses plus `warehouse` when the pack is warehouse stock. */
+export function batteryStatusOptionsForEdit(row?: Record<string, unknown>) {
+  const current = typeof row?.status === "string" ? row.status : "";
+  if (current === "warehouse") {
+    return selectOptions([...BATTERY_STATUS_VALUES_CREATABLE, "warehouse"]);
+  }
+  return selectOptions(BATTERY_STATUS_VALUES_CREATABLE);
+}
