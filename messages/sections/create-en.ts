@@ -69,6 +69,10 @@ export const createEn = {
     "Search and select a fleet bike with no pack yet (bike must be issued to an owner).",
   "create.error.selectAttachStation": "Select a station on the Attach to tab.",
   "create.error.selectAttachBike": "Select a bike on the Attach to tab.",
+  "create.error.batteryOfflineNoAssign":
+    "Offline packs stay in warehouse inventory. Clear offline status or choose warehouse inventory only.",
+  "create.batteries.attach.offlineNote":
+    "Offline packs cannot be assigned to a station or bike.",
   "create.error.batteryCreatedAttachFailed":
     "Battery was created but attaching it failed. Attach it from the Batteries list.",
 

@@ -69,6 +69,10 @@ export const createFr = {
     "Recherchez une moto de flotte sans pack (la moto doit être sortie vers un propriétaire).",
   "create.error.selectAttachStation": "Sélectionnez une station sur l'onglet Rattacher à.",
   "create.error.selectAttachBike": "Sélectionnez une moto sur l'onglet Rattacher à.",
+  "create.error.batteryOfflineNoAssign":
+    "Les packs hors ligne restent en entrepôt. Retirez le statut hors ligne ou choisissez uniquement l'entrepôt.",
+  "create.batteries.attach.offlineNote":
+    "Les packs hors ligne ne peuvent pas être affectés à une station ou une moto.",
   "create.error.batteryCreatedAttachFailed":
     "La batterie a été créée mais le rattachement a échoué. Rattachez-la depuis Batteries.",
 

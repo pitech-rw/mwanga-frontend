@@ -1,3 +1,4 @@
+import { batteryMayBeAssigned } from "./battery-status";
 import { PERMISSIONS } from "./permission-strings";
 import type { ResourceSection } from "./resource-create-config";
 import type { Section } from "./nav";
@@ -64,6 +65,22 @@ function batteryHasBike(row: Record<string, unknown>): boolean {
   return row.bike != null && typeof row.bike === "object";
 }
 
+function batteryRowStatus(row: Record<string, unknown>): string | undefined {
+  if (typeof row.status === "string") {
+    return row.status;
+  }
+  const battery = row.battery;
+  if (battery != null && typeof battery === "object") {
+    const nested = (battery as Record<string, unknown>).status;
+    return typeof nested === "string" ? nested : undefined;
+  }
+  return undefined;
+}
+
+function batteryRowAssignable(row: Record<string, unknown>): boolean {
+  return batteryMayBeAssigned(batteryRowStatus(row));
+}
+
 function bikeHasFleetOwner(row: Record<string, unknown>): boolean {
   return row.ownerId != null || (row.owner != null && typeof row.owner === "object");
 }
@@ -84,13 +101,13 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       id: TABLE_ROW_ACTION_IDS.issueInventoryBatteryStation,
       label: "Issue to station",
       permission: PERMISSIONS.inventory.write,
-      visibleForRow: (row) => row.kind === "battery",
+      visibleForRow: (row) => row.kind === "battery" && batteryRowAssignable(row),
     },
     {
       id: TABLE_ROW_ACTION_IDS.issueInventoryBatteryBike,
       label: "Issue to bike",
       permission: PERMISSIONS.inventory.write,
-      visibleForRow: (row) => row.kind === "battery",
+      visibleForRow: (row) => row.kind === "battery" && batteryRowAssignable(row),
     },
     genericEdit(PERMISSIONS.inventory.write),
     genericDelete(PERMISSIONS.inventory.delete),
@@ -100,13 +117,15 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       id: TABLE_ROW_ACTION_IDS.attachBatteryStation,
       label: "Attach to station",
       permission: PERMISSIONS.batteries.write,
-      visibleForRow: (row) => !batteryHasBike(row) && !batteryHasStation(row),
+      visibleForRow: (row) =>
+        !batteryHasBike(row) && !batteryHasStation(row) && batteryRowAssignable(row),
     },
     {
       id: TABLE_ROW_ACTION_IDS.attachBatteryBike,
       label: "Attach to bike",
       permission: PERMISSIONS.batteries.write,
-      visibleForRow: (row) => !batteryHasBike(row) && !batteryHasStation(row),
+      visibleForRow: (row) =>
+        !batteryHasBike(row) && !batteryHasStation(row) && batteryRowAssignable(row),
     },
     genericEdit(PERMISSIONS.batteries.write),
     genericDelete(PERMISSIONS.batteries.delete),

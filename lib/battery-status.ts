@@ -14,3 +14,7 @@ export type BatteryStatusValue = (typeof BATTERY_STATUS_VALUES)[number];
 export const BATTERY_STATUS_VALUES_CREATABLE = BATTERY_STATUS_VALUES.filter(
   (status) => status !== "warehouse",
 );
+
+export function batteryMayBeAssigned(status: string | undefined | null): boolean {
+  return status !== "offline";
+}

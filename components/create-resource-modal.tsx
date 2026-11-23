@@ -5,6 +5,7 @@ import { useT } from "./locale";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
+import { batteryMayBeAssigned } from "../lib/battery-status";
 import { getDefaultCreatePassword } from "../lib/default-password";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
 import { localizeCreateConfig } from "../lib/i18n/localize";
@@ -325,6 +326,18 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     section === "users" || section === "incidents" || section === "batteries"
       ? drawerTabs.length > 1
       : drawerTabs.length > 0;
+
+  const batteryCreateStatus = section === "batteries" ? values.status?.trim() ?? "" : "";
+  const batteryCreateOffline = batteryCreateStatus === "offline";
+
+  useEffect(() => {
+    if (!open || section !== "batteries" || !batteryCreateOffline) {
+      return;
+    }
+    if (batteryAttachTarget !== "inventory") {
+      setBatteryAttachTarget("inventory");
+    }
+  }, [batteryAttachTarget, batteryCreateOffline, open, section]);
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
@@ -970,6 +983,17 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       return;
     }
 
+    if (
+      config.section === "batteries" &&
+      !batteryMayBeAssigned(batteryCreateStatus) &&
+      batteryAttachTarget !== "inventory"
+    ) {
+      setError(t("create.error.batteryOfflineNoAssign"));
+      setDrawerTab("details");
+      setSaving(false);
+      return;
+    }
+
     if (config.section === "batteries" && batteryAttachTarget === "station" && batteryCreateStationId === null) {
       setError(t("create.error.selectAttachStation"));
       setDrawerTab("attach");
@@ -1541,13 +1565,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 ] as const
               ).map((option) => {
                 const selected = batteryAttachTarget === option.id;
+                const assignOption = option.id !== "inventory";
                 return (
                   <button
                     key={option.id}
                     type="button"
                     role="radio"
                     aria-checked={selected}
-                    disabled={saving}
+                    disabled={saving || (assignOption && batteryCreateOffline)}
                     className={selected ? "drawer-tab drawer-tab-active" : "drawer-tab"}
                     onClick={() => setBatteryAttachTarget(option.id)}
                   >
@@ -1556,6 +1581,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 );
               })}
             </div>
+            {batteryCreateOffline ? (
+              <p className="sub" role="status">
+                {t("create.batteries.attach.offlineNote")}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

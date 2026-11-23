@@ -64,6 +64,8 @@ export const errorsServerFr = {
     "Affectez une batterie à une station uniquement lorsqu'elle est en stock entrepôt",
   "batteries.bikeViaSwapOnly":
     "Déplacez les batteries entre stations et motos uniquement via une opération d'échange",
+  "batteries.offlineCannotAssign":
+    "Les batteries hors ligne ne peuvent pas être affectées à une station ou une moto. Changez d'abord le statut.",
 
   "stations.uniqueCodeFailed": "Impossible d'attribuer un code station unique ; réessayez",
   "stations.duplicateCode": "Une station avec ce code existe déjà",

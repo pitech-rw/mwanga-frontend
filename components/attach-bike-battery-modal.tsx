@@ -5,6 +5,7 @@ import { useT } from "./locale";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { authFetch } from "../lib/auth";
+import { batteryMayBeAssigned } from "../lib/battery-status";
 import { Modal } from "./modal";
 
 export type BikeBatteryAttachTarget = {
@@ -44,7 +45,7 @@ function bikeHeading(bike: BikeBatteryAttachTarget): string {
 function batteryEligibleForBike(battery: BatteryOption): boolean {
   const atStation =
     battery.stationId != null || (battery.station != null && typeof battery.station === "object");
-  return !atStation;
+  return !atStation && batteryMayBeAssigned(battery.status);
 }
 
 function batteryOptionText(battery: BatteryOption): string {
