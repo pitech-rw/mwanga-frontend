@@ -800,6 +800,7 @@ function buildRowActionMenuItems(
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
   openInventoryIssue?: (target: InventoryIssueTarget) => void,
+  returnBatteryToInventory?: (batteryId: number) => void,
   translate?: TranslateFn,
   detailLocale?: import("../lib/locale-storage").LocaleCode,
 ): TableRowMenuItem[] {
@@ -1115,6 +1116,19 @@ function buildRowActionMenuItems(
       continue;
     }
 
+    if (def.id === TABLE_ROW_ACTION_IDS.sendBatteryToInventory && returnBatteryToInventory) {
+      const id = row.id;
+      if (typeof id !== "number") {
+        continue;
+      }
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => returnBatteryToInventory(id),
+      });
+      continue;
+    }
+
     if (def.id === TABLE_ROW_ACTION_IDS.resourceEdit) {
       if (section === "wallets" || section === "overview" || section === "topUp" || section === "agentTransactions") {
         continue;
@@ -1184,6 +1198,7 @@ function appendActionsColumn(
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
   openInventoryIssue?: (target: InventoryIssueTarget) => void,
+  returnBatteryToInventory?: (batteryId: number) => void,
   translate?: TranslateFn,
   detailLocale?: import("../lib/locale-storage").LocaleCode,
 ): Column<Row>[] {
@@ -1220,6 +1235,7 @@ function appendActionsColumn(
           openResourceEdit,
           openResourceDelete,
           openInventoryIssue,
+          returnBatteryToInventory,
           translate,
           detailLocale,
         );
@@ -1251,6 +1267,7 @@ function appendActionsColumn(
           openResourceEdit,
           openResourceDelete,
           openInventoryIssue,
+          returnBatteryToInventory,
           translate,
           detailLocale,
         );
@@ -1559,6 +1576,24 @@ export function ApiResourcePanel({
     setResourceDelete(payload);
   }, []);
 
+  const returnBatteryToInventory = useCallback(
+    async (batteryId: number) => {
+      try {
+        const response = await authFetch(`/inventory/return/battery/${batteryId}`, { method: "POST" });
+        if (!response.ok) {
+          const message = await userMessageFromResponse("create", response);
+          onCreateError?.(message);
+          return;
+        }
+        reload();
+        onCreateSuccess?.();
+      } catch {
+        onCreateError?.(userMessageForNetwork("create"));
+      }
+    },
+    [onCreateError, onCreateSuccess, reload],
+  );
+
   const allRowActionsForSection = useMemo(
     () => localizeRowActions(getAvailableRowActions(section, sessionPermissions), t, section),
     [section, sessionPermissions, t],
@@ -1610,6 +1645,7 @@ export function ApiResourcePanel({
       openResourceEditModal,
       openResourceDeleteModal,
       setInventoryIssue,
+      returnBatteryToInventory,
       t,
       locale,
     );
@@ -1634,6 +1670,7 @@ export function ApiResourcePanel({
     openWalletDeleteModal,
     openResourceEditModal,
     openResourceDeleteModal,
+    returnBatteryToInventory,
     rows,
     section,
     title,

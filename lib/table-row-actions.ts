@@ -29,6 +29,7 @@ export const TABLE_ROW_ACTION_IDS = {
   issueInventoryBike: "issue-inventory-bike",
   issueInventoryBatteryStation: "issue-inventory-battery-station",
   issueInventoryBatteryBike: "issue-inventory-battery-bike",
+  sendBatteryToInventory: "send-battery-to-inventory",
 } as const;
 
 export type TableRowActionId = (typeof TABLE_ROW_ACTION_IDS)[keyof typeof TABLE_ROW_ACTION_IDS];
@@ -81,6 +82,17 @@ function batteryRowAssignable(row: Record<string, unknown>): boolean {
   return batteryMayBeAssigned(batteryRowStatus(row));
 }
 
+function batteryIsOfflineOrFaulty(row: Record<string, unknown>): boolean {
+  const status = batteryRowStatus(row);
+  return status === "offline" || status === "faulty";
+}
+
+function batteryDeployedOfflineOrFaulty(row: Record<string, unknown>): boolean {
+  return (
+    batteryIsOfflineOrFaulty(row) && (batteryHasStation(row) || batteryHasBike(row))
+  );
+}
+
 function bikeHasFleetOwner(row: Record<string, unknown>): boolean {
   return row.ownerId != null || (row.owner != null && typeof row.owner === "object");
 }
@@ -126,6 +138,12 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       permission: PERMISSIONS.batteries.write,
       visibleForRow: (row) =>
         !batteryHasBike(row) && !batteryHasStation(row) && batteryRowAssignable(row),
+    },
+    {
+      id: TABLE_ROW_ACTION_IDS.sendBatteryToInventory,
+      label: "Send to inventory",
+      permission: PERMISSIONS.inventory.write,
+      visibleForRow: (row) => batteryDeployedOfflineOrFaulty(row),
     },
     genericEdit(PERMISSIONS.batteries.write),
     genericDelete(PERMISSIONS.batteries.delete),
@@ -296,6 +314,7 @@ const ROW_ACTION_MESSAGE_KEYS: Partial<Record<TableRowActionId, MessageKey>> = {
   [TABLE_ROW_ACTION_IDS.issueInventoryBike]: "actions.row.issueInventoryBike",
   [TABLE_ROW_ACTION_IDS.issueInventoryBatteryStation]: "actions.row.issueInventoryBatteryStation",
   [TABLE_ROW_ACTION_IDS.issueInventoryBatteryBike]: "actions.row.issueInventoryBatteryBike",
+  [TABLE_ROW_ACTION_IDS.sendBatteryToInventory]: "actions.row.sendBatteryToInventory",
 };
 
 export function localizeRowActions(

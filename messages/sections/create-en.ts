@@ -61,7 +61,7 @@ export const createEn = {
   "create.drawer.tab.attachTarget": "Attach to",
 
   "create.batteries.attachIntro": "Choose where the pack goes after registration.",
-  "create.batteries.attach.inventory": "Warehouse inventory",
+  "create.batteries.attach.inventory": "Send to inventory",
   "create.batteries.attach.station": "Station",
   "create.batteries.attach.bike": "Fleet bike",
   "create.batteries.attach.stationHint": "Search and select the station that will hold this pack.",
@@ -70,9 +70,15 @@ export const createEn = {
   "create.error.selectAttachStation": "Select a station on the Attach to tab.",
   "create.error.selectAttachBike": "Select a bike on the Attach to tab.",
   "create.error.batteryOfflineNoAssign":
-    "Offline packs stay in warehouse inventory. Clear offline status or choose warehouse inventory only.",
+    "Offline or faulty packs stay in warehouse inventory. Change status or choose warehouse inventory only.",
   "create.batteries.attach.offlineNote":
-    "Offline packs cannot be assigned to a station or bike.",
+    "Offline or faulty packs go to warehouse inventory only (use Send to inventory on deployed packs from the Batteries list).",
+  "create.batteries.attach.chargingNote": "Charging packs must be assigned to a station.",
+  "create.batteries.attach.inUseNote": "In-use packs must be assigned to a fleet bike.",
+  "create.error.batteryChargingNeedsStation":
+    "Charging status requires a station. Use the Attach to tab to pick one.",
+  "create.error.batteryInUseNeedsBike":
+    "In use status requires a fleet bike. Use the Attach to tab to pick one.",
   "create.error.batteryCreatedAttachFailed":
     "Battery was created but attaching it failed. Attach it from the Batteries list.",
 

@@ -5,7 +5,12 @@ import { useT } from "./locale";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
-import { batteryMayBeAssigned } from "../lib/battery-status";
+import {
+  batteryCreateAttachOptionDisabled,
+  batteryMayBeAssigned,
+  batteryRequiredAttachTarget,
+  type BatteryCreateAttachTarget,
+} from "../lib/battery-status";
 import { getDefaultCreatePassword } from "../lib/default-password";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
 import { localizeCreateConfig } from "../lib/i18n/localize";
@@ -79,8 +84,6 @@ type BikeCreateListRow = {
   ownerId?: number | null;
   currentBatteryId?: number | null;
 };
-
-type BatteryCreateAttachTarget = "inventory" | "station" | "bike";
 
 type SwapListUser = {
   id: number;
@@ -328,16 +331,16 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       : drawerTabs.length > 0;
 
   const batteryCreateStatus = section === "batteries" ? values.status?.trim() ?? "" : "";
-  const batteryCreateOffline = batteryCreateStatus === "offline";
+  const batteryCreateRequiredAttach = batteryRequiredAttachTarget(batteryCreateStatus);
 
   useEffect(() => {
-    if (!open || section !== "batteries" || !batteryCreateOffline) {
+    if (!open || section !== "batteries" || !batteryCreateRequiredAttach) {
       return;
     }
-    if (batteryAttachTarget !== "inventory") {
-      setBatteryAttachTarget("inventory");
+    if (batteryAttachTarget !== batteryCreateRequiredAttach) {
+      setBatteryAttachTarget(batteryCreateRequiredAttach);
     }
-  }, [batteryAttachTarget, batteryCreateOffline, open, section]);
+  }, [batteryAttachTarget, batteryCreateRequiredAttach, open, section]);
 
   useEffect(() => {
     const cfg = getCreateConfig(section);
@@ -994,6 +997,20 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       return;
     }
 
+    if (config.section === "batteries" && batteryCreateStatus === "charging" && batteryAttachTarget !== "station") {
+      setError(t("create.error.batteryChargingNeedsStation"));
+      setDrawerTab("details");
+      setSaving(false);
+      return;
+    }
+
+    if (config.section === "batteries" && batteryCreateStatus === "in_use" && batteryAttachTarget !== "bike") {
+      setError(t("create.error.batteryInUseNeedsBike"));
+      setDrawerTab("details");
+      setSaving(false);
+      return;
+    }
+
     if (config.section === "batteries" && batteryAttachTarget === "station" && batteryCreateStationId === null) {
       setError(t("create.error.selectAttachStation"));
       setDrawerTab("attach");
@@ -1080,6 +1097,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         if (incidentSwapId !== null) {
           body.swapTransactionId = incidentSwapId;
         }
+      } else if (config.section === "batteries") {
+        body = buildCreatePayload(config, values);
+        if (body.status === "charging" || body.status === "in_use") {
+          delete body.status;
+        }
       } else {
         body = buildCreatePayload(config, values);
       }
@@ -1135,12 +1157,15 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       if (config.section === "batteries" && created?.id != null && batteryAttachTarget !== "inventory") {
         const newBatteryId = Number(created.id);
         if (!Number.isNaN(newBatteryId)) {
-          const attachBody: Record<string, number> =
-            batteryAttachTarget === "station" && batteryCreateStationId != null
-              ? { stationId: batteryCreateStationId }
-              : batteryAttachTarget === "bike" && batteryCreateBikeId != null
-                ? { bikeId: batteryCreateBikeId }
-                : {};
+          const attachBody: Record<string, number | string> = {};
+          if (batteryAttachTarget === "station" && batteryCreateStationId != null) {
+            attachBody.stationId = batteryCreateStationId;
+            if (batteryCreateStatus === "charging") {
+              attachBody.status = "charging";
+            }
+          } else if (batteryAttachTarget === "bike" && batteryCreateBikeId != null) {
+            attachBody.bikeId = batteryCreateBikeId;
+          }
 
           if (Object.keys(attachBody).length > 0) {
             const attachResponse = await authFetch(`/batteries/${newBatteryId}`, {
@@ -1565,14 +1590,15 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 ] as const
               ).map((option) => {
                 const selected = batteryAttachTarget === option.id;
-                const assignOption = option.id !== "inventory";
                 return (
                   <button
                     key={option.id}
                     type="button"
                     role="radio"
                     aria-checked={selected}
-                    disabled={saving || (assignOption && batteryCreateOffline)}
+                    disabled={
+                      saving || batteryCreateAttachOptionDisabled(option.id, batteryCreateStatus)
+                    }
                     className={selected ? "drawer-tab drawer-tab-active" : "drawer-tab"}
                     onClick={() => setBatteryAttachTarget(option.id)}
                   >
@@ -1581,9 +1607,19 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 );
               })}
             </div>
-            {batteryCreateOffline ? (
+            {!batteryMayBeAssigned(batteryCreateStatus) && batteryCreateStatus ? (
               <p className="sub" role="status">
                 {t("create.batteries.attach.offlineNote")}
+              </p>
+            ) : null}
+            {batteryCreateStatus === "charging" ? (
+              <p className="sub" role="status">
+                {t("create.batteries.attach.chargingNote")}
+              </p>
+            ) : null}
+            {batteryCreateStatus === "in_use" ? (
+              <p className="sub" role="status">
+                {t("create.batteries.attach.inUseNote")}
               </p>
             ) : null}
           </div>

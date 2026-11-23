@@ -138,6 +138,7 @@ export const miscFr = {
   "actions.row.issueInventoryBike": "Sortir pour propriétaire",
   "actions.row.issueInventoryBatteryStation": "Sortir vers station",
   "actions.row.issueInventoryBatteryBike": "Sortir vers moto",
+  "actions.row.sendBatteryToInventory": "Renvoyer en entrepôt",
 
   "recordDetail.summary": "Résumé",
   "recordDetail.allFields": "Tous les champs",

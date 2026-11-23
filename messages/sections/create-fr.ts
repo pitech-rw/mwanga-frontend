@@ -61,7 +61,7 @@ export const createFr = {
   "create.drawer.tab.attachTarget": "Rattacher à",
 
   "create.batteries.attachIntro": "Choisissez où va le pack après l'enregistrement.",
-  "create.batteries.attach.inventory": "Entrepôt",
+  "create.batteries.attach.inventory": "Envoyer en entrepôt",
   "create.batteries.attach.station": "Station",
   "create.batteries.attach.bike": "Moto de flotte",
   "create.batteries.attach.stationHint": "Recherchez et sélectionnez la station qui accueillera ce pack.",
@@ -70,9 +70,15 @@ export const createFr = {
   "create.error.selectAttachStation": "Sélectionnez une station sur l'onglet Rattacher à.",
   "create.error.selectAttachBike": "Sélectionnez une moto sur l'onglet Rattacher à.",
   "create.error.batteryOfflineNoAssign":
-    "Les packs hors ligne restent en entrepôt. Retirez le statut hors ligne ou choisissez uniquement l'entrepôt.",
+    "Les packs hors ligne ou défectueux restent en entrepôt. Changez le statut ou choisissez uniquement l'entrepôt.",
   "create.batteries.attach.offlineNote":
-    "Les packs hors ligne ne peuvent pas être affectés à une station ou une moto.",
+    "Les packs hors ligne ou défectueux restent en entrepôt (pour un pack déjà déployé, utilisez Renvoyer en entrepôt dans Batteries).",
+  "create.batteries.attach.chargingNote": "Les packs en charge doivent être affectés à une station.",
+  "create.batteries.attach.inUseNote": "Les packs en utilisation doivent être affectés à une moto de flotte.",
+  "create.error.batteryChargingNeedsStation":
+    "Le statut « en charge » exige une station. Utilisez l'onglet Rattacher à.",
+  "create.error.batteryInUseNeedsBike":
+    "Le statut « en utilisation » exige une moto. Utilisez l'onglet Rattacher à.",
   "create.error.batteryCreatedAttachFailed":
     "La batterie a été créée mais le rattachement a échoué. Rattachez-la depuis Batteries.",
 

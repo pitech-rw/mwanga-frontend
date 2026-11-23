@@ -136,6 +136,7 @@ export const miscEn = {
   "actions.row.issueInventoryBike": "Issue to owner",
   "actions.row.issueInventoryBatteryStation": "Issue to station",
   "actions.row.issueInventoryBatteryBike": "Issue to bike",
+  "actions.row.sendBatteryToInventory": "Send to inventory",
 
   "recordDetail.summary": "Summary",
   "recordDetail.allFields": "All fields",
