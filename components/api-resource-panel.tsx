@@ -779,7 +779,7 @@ function buildRowActionMenuItems(
   row: Row,
   available: TableRowActionDef[],
   onDetail: ((payload: ResourceDetailPayload) => void) | undefined,
-  section: Section,
+  section: ResourceSection,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
   openAssignStationSwapper: (station: StationSwapperAssignTarget) => void,
@@ -1130,7 +1130,7 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.resourceEdit) {
-      if (section === "wallets" || section === "overview" || section === "topUp" || section === "agentTransactions") {
+      if (section === "wallets") {
         continue;
       }
       const id = row.id;
@@ -1154,7 +1154,7 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.resourceDelete) {
-      if (section === "wallets" || section === "overview" || section === "topUp" || section === "agentTransactions") {
+      if (section === "wallets") {
         continue;
       }
       const id = row.id;
@@ -1177,7 +1177,7 @@ function appendActionsColumn(
   baseColumns: Column<Row>[],
   available: TableRowActionDef[],
   onDetail: ((payload: ResourceDetailPayload) => void) | undefined,
-  section: Section,
+  section: ResourceSection,
   title: string,
   openAssign: (user: SwapperAssignTarget) => void,
   openAssignStationSwapper: (station: StationSwapperAssignTarget) => void,
@@ -1287,7 +1287,7 @@ function appendActionsColumn(
 }
 
 type ApiResourcePanelProps = {
-  section: Section;
+  section: ResourceSection;
   apiPath: string;
   title: string;
   /** Account route prefix, e.g. `/account` — used for in-app navigation from row actions. */

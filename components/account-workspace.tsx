@@ -20,7 +20,9 @@ import { useToast } from "./toast";
 import { getApiUrl } from "../lib/api";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../lib/auth";
 import { ProfileModal } from "./profile-modal";
+import { ErasureRequestsPanel } from "./erasure-requests-panel";
 import { AGENT_API_MENU_ITEMS, API_MENU_ITEMS, getMenuItem, type Section } from "../lib/nav";
+import { isResourceSection } from "../lib/resource-create-config";
 import {
   canManageOtherUsers,
   filterMenuItems,
@@ -367,6 +369,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           onClose={() => setProfileOpen(false)}
           onSaved={onProfileSaved}
           onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
+          onAccountErased={handleForbidden}
           onOpenUserAdministration={openUserAdministration}
         />
       </div>
@@ -543,7 +546,11 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           />
         ) : null}
 
-        {activeMenu.apiPath && section !== "overview" && !companyAccountTx && !stationDetail ? (
+        {section === "erasureRequests" ? (
+          <ErasureRequestsPanel onForbidden={handleForbidden} />
+        ) : null}
+
+        {activeMenu.apiPath && isResourceSection(section) && !companyAccountTx && !stationDetail ? (
           <ApiResourcePanel
             section={section}
             apiPath={activeMenu.apiPath}
@@ -617,6 +624,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         onClose={() => setProfileOpen(false)}
         onSaved={onProfileSaved}
         onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
+        onAccountErased={handleForbidden}
         onOpenUserAdministration={openUserAdministration}
       />
     </div>

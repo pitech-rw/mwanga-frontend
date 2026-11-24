@@ -3,7 +3,19 @@ import { DEFAULT_CURRENCY } from "./default-currency";
 import type { Section } from "./nav";
 
 /** Every dashboard section that lists API resources (excludes overview). */
-export type ResourceSection = Exclude<Section, "overview" | "topUp" | "agentTransactions">;
+export type ResourceSection = Exclude<
+  Section,
+  "overview" | "topUp" | "agentTransactions" | "erasureRequests"
+>;
+
+export function isResourceSection(section: Section): section is ResourceSection {
+  return (
+    section !== "overview" &&
+    section !== "topUp" &&
+    section !== "agentTransactions" &&
+    section !== "erasureRequests"
+  );
+}
 
 export type FieldType =
   | "text"
@@ -305,7 +317,13 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
 };
 
 export function getCreateConfig(section: Section): CreateResourceConfig | null {
-  if (section === "overview" || section === "topUp" || section === "agentTransactions" || section === "riders") {
+  if (
+    section === "overview" ||
+    section === "topUp" ||
+    section === "agentTransactions" ||
+    section === "riders" ||
+    section === "erasureRequests"
+  ) {
     return null;
   }
   return CONFIGS[section];

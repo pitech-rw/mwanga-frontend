@@ -22,6 +22,7 @@ import { ownerListSearchHaystack, ownerOptionLine, type OwnerListRow } from "../
 import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
 import { STATION_LOCATION_FIELD_NAMES } from "../lib/station-form-fields";
 import { usersListPath } from "../lib/users-list-query";
+import { userDisplayName } from "../lib/user-display";
 import { SlideOverDrawer, type SlideOverDrawerTab } from "./slide-over-drawer";
 
 type CreateResourceModalProps = {
@@ -151,8 +152,8 @@ function emptyValues(config: CreateResourceConfig): Record<string, string> {
 }
 
 function agentUserOptionLine(user: AgentUserRow): string {
-  const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-  const label = name ? `${name} (@${user.username})` : `@${user.username}`;
+  const name = userDisplayName(user);
+  const label = name.startsWith("Erased user #") ? name : name ? `${name} (@${user.username})` : `@${user.username}`;
   const contact = user.email ?? user.phone ?? "";
   return contact ? `${user.id} · ${label} · ${contact}` : `${user.id} · ${label}`;
 }
@@ -201,7 +202,10 @@ function swapRiderLabel(user: SwapListUser | null | undefined, unknownRider: str
   if (!user) {
     return unknownRider;
   }
-  const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  const name = userDisplayName(user);
+  if (name.startsWith("Erased user #")) {
+    return name;
+  }
   return name ? `${name} (@${user.username})` : `@${user.username}`;
 }
 

@@ -275,7 +275,12 @@ export function userMayUsePermission(permissions: readonly string[], required: s
 
 /** Returns which row actions the current user may see for this section (from registry + permissions). */
 export function getAvailableRowActions(section: Section, permissions: readonly string[]): TableRowActionDef[] {
-  if (section === "overview" || section === "topUp" || section === "agentTransactions") {
+  if (
+    section === "overview" ||
+    section === "topUp" ||
+    section === "agentTransactions" ||
+    section === "erasureRequests"
+  ) {
     return [];
   }
 

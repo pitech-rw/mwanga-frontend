@@ -32,6 +32,7 @@ export const SECTION_READ_PERMISSION: Record<Section, string | null> = {
   companyAccounts: PERMISSIONS.companyAccounts.read,
   violations: PERMISSIONS.violations.read,
   incidents: PERMISSIONS.incidents.read,
+  erasureRequests: PERMISSIONS.system.admin,
 };
 
 /** Permission required to show the create (+) control for a resource section. */

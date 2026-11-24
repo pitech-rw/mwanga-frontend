@@ -4,10 +4,27 @@ import { useT } from "./locale";
 
 import { FormEvent, useEffect, useId, useState } from "react";
 import { userMessageForNetwork } from "../lib/api-errors";
-import { fetchMyProfile, updateMyProfile, type MyProfile } from "../lib/auth";
+import {
+  clearSession,
+  confirmErasureRequest,
+  createErasureRequest,
+  fetchLatestErasureRequest,
+  fetchMyProfile,
+  updateMyProfile,
+  type ErasureRequestSummary,
+  type MyProfile,
+} from "../lib/auth";
 import { canManageOtherUsers } from "../lib/nav-permissions";
 import { Modal } from "./modal";
 import { PasswordInput } from "./password-input";
+
+/** Matches server `STAFF_ERASURE_USER_TYPES` — requires admin approval before erasure. */
+const ERASURE_REQUIRES_ADMIN_APPROVAL = new Set([
+  "admin",
+  "office",
+  "office_manager",
+  "swapper",
+]);
 
 type ProfileModalProps = {
   open: boolean;
@@ -15,6 +32,7 @@ type ProfileModalProps = {
   onSaved?: (profile: MyProfile) => void;
   onError?: (message: string) => void;
   onOpenUserAdministration?: () => void;
+  onAccountErased?: () => void;
 };
 
 type FormState = {
@@ -57,7 +75,14 @@ function formFromProfile(profile: MyProfile): FormState {
   };
 }
 
-export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdministration }: ProfileModalProps) {
+export function ProfileModal({
+  open,
+  onClose,
+  onSaved,
+  onError,
+  onOpenUserAdministration,
+  onAccountErased,
+}: ProfileModalProps) {
   const t = useT();
   const formId = useId();
   const [loading, setLoading] = useState(false);
@@ -66,6 +91,10 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
   const [meta, setMeta] = useState<{ role: string; type: string; canManageUsers: boolean } | null>(null);
   const [values, setValues] = useState<FormState>(emptyForm);
   const [initial, setInitial] = useState<FormState>(emptyForm);
+  const [erasureRequest, setErasureRequest] = useState<ErasureRequestSummary | null>(null);
+  const [erasurePassword, setErasurePassword] = useState("");
+  const [erasureForfeit, setErasureForfeit] = useState(false);
+  const [erasureBusy, setErasureBusy] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -90,6 +119,10 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
           type: profile.type,
           canManageUsers: canManageOtherUsers(profile.permissions),
         });
+        const erasure = await fetchLatestErasureRequest().catch(() => null);
+        if (active) {
+          setErasureRequest(erasure);
+        }
       } catch (loadError) {
         if (!active) {
           return;
@@ -158,6 +191,49 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
   };
 
   const disabled = loading || saving;
+
+  const requestErasure = async () => {
+    setErasureBusy(true);
+    setError(null);
+    try {
+      const row = await createErasureRequest();
+      setErasureRequest(row);
+    } catch (requestError) {
+      const message =
+        requestError instanceof Error ? requestError.message : userMessageForNetwork("profileUpdate");
+      setError(message);
+      onError?.(message);
+    } finally {
+      setErasureBusy(false);
+    }
+  };
+
+  const confirmErasure = async () => {
+    if (!erasurePassword.trim()) {
+      setError(t("erasure.profile.passwordRequired"));
+      return;
+    }
+    setErasureBusy(true);
+    setError(null);
+    try {
+      await confirmErasureRequest({
+        password: erasurePassword,
+        acknowledgeBalanceForfeiture: erasureForfeit,
+      });
+      clearSession();
+      onClose();
+      onAccountErased?.();
+    } catch (confirmError) {
+      const message =
+        confirmError instanceof Error ? confirmError.message : userMessageForNetwork("profileUpdate");
+      setError(message);
+      onError?.(message);
+    } finally {
+      setErasureBusy(false);
+    }
+  };
+
+  const needsAdminApproval = meta?.type ? ERASURE_REQUIRES_ADMIN_APPROVAL.has(meta.type) : false;
 
   return (
     <Modal
@@ -303,6 +379,59 @@ export function ProfileModal({ open, onClose, onSaved, onError, onOpenUserAdmini
               onChange={(event) => setValues({ ...values, image: event.target.value })}
             />
           </label>
+        </fieldset>
+
+        <fieldset className="profile-form-section profile-form-section--danger">
+          <legend>{t("erasure.profile.section")}</legend>
+          <p className="profile-form-section-hint">{t("erasure.profile.hint")}</p>
+          {erasureRequest?.status === "completed" ? (
+            <p className="muted">{t("erasure.profile.statusCompleted")}</p>
+          ) : needsAdminApproval ? (
+            <>
+              {erasureRequest?.status === "pending_approval" ? (
+                <p className="muted">{t("erasure.profile.statusPendingApproval")}</p>
+              ) : (
+                <button
+                  type="button"
+                  className="btn danger"
+                  disabled={disabled || erasureBusy}
+                  onClick={() => void requestErasure()}
+                >
+                  {t("erasure.profile.requestStaff")}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="muted">{t("erasure.profile.confirmHint")}</p>
+              <label className="field">
+                <span>{t("modals.profile.fields.currentPassword")}</span>
+                <PasswordInput
+                  value={erasurePassword}
+                  autoComplete="current-password"
+                  disabled={disabled || erasureBusy}
+                  onChange={setErasurePassword}
+                />
+              </label>
+              <label className="field field-checkbox">
+                <input
+                  type="checkbox"
+                  checked={erasureForfeit}
+                  disabled={disabled || erasureBusy}
+                  onChange={(event) => setErasureForfeit(event.target.checked)}
+                />
+                <span>{t("erasure.profile.forfeitBalance")}</span>
+              </label>
+              <button
+                type="button"
+                className="btn danger"
+                disabled={disabled || erasureBusy}
+                onClick={() => void confirmErasure()}
+              >
+                {t("erasure.profile.confirm")}
+              </button>
+            </>
+          )}
         </fieldset>
 
         <fieldset className="profile-form-section">

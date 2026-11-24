@@ -1,5 +1,6 @@
 import { getApiUrl } from "./api";
 import { userMessageFromApiCode, userMessageFromResponse, type ApiSuccessBody } from "./api-errors";
+import { userDisplayName } from "./user-display";
 
 const TOKEN_KEY = "mwanga-access-token";
 const USER_KEY = "mwanga-user";
@@ -203,16 +204,56 @@ export async function login(identifier: string, password: string): Promise<Login
   return (await response.json()) as LoginResponse;
 }
 
+export type ErasureRequestSummary = {
+  id: number;
+  userId: number;
+  status: string;
+  requestedAt: string;
+  approvedAt?: string | null;
+  completedAt?: string | null;
+  reason?: string | null;
+};
+
+export async function fetchLatestErasureRequest(): Promise<ErasureRequestSummary | null> {
+  const response = await authFetch("/auth/erasure-request");
+  if (response.status === 204) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(await userMessageFromResponse("profileLoad", response));
+  }
+  const body = (await response.json()) as ErasureRequestSummary | null;
+  return body;
+}
+
+export async function createErasureRequest(reason?: string): Promise<ErasureRequestSummary> {
+  const response = await authFetch("/auth/erasure-request", {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+  if (!response.ok) {
+    throw new Error(await userMessageFromResponse("profileUpdate", response));
+  }
+  return (await response.json()) as ErasureRequestSummary;
+}
+
+export async function confirmErasureRequest(payload: {
+  password: string;
+  acknowledgeBalanceForfeiture?: boolean;
+}): Promise<void> {
+  const response = await authFetch("/auth/erasure-request/confirm", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(await userMessageFromResponse("profileUpdate", response));
+  }
+}
+
 export function displayName(user: AuthUser | null): string {
   if (!user) {
     return "Operator";
   }
 
-  const parts = [user.firstName, user.lastName].filter(Boolean);
-
-  if (parts.length > 0) {
-    return parts.join(" ");
-  }
-
-  return user.username;
+  return userDisplayName(user);
 }

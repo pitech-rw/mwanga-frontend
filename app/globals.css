@@ -963,6 +963,49 @@ a {
   font-size: 1.02rem;
 }
 
+.panel-lead {
+  margin: -4px 0 16px;
+  max-width: 42rem;
+  color: var(--text-soft);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.table-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
+.erasure-user-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+.erasure-user-cell strong {
+  font-weight: 600;
+}
+
+.erasure-user-meta {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+
+.erasure-requests-panel table.data th:last-child,
+.erasure-requests-panel table.data td:last-child {
+  white-space: normal;
+  min-width: 11rem;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -1801,6 +1844,15 @@ table.data th.right {
   display: grid;
   gap: 12px;
   min-inline-size: 0;
+}
+
+.btn.danger {
+  border-color: #b42318;
+  color: #b42318;
+}
+
+.profile-form-section--danger legend {
+  color: #b42318;
 }
 
 .profile-form-section + .profile-form-section {
