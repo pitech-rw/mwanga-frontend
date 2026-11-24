@@ -27,7 +27,6 @@ export const createFr = {
   "create.swaps.description": "Démarre une transaction à une station.",
   "create.swaps.submitLabel": "Créer l'échange",
   "create.users.title": "Ajouter un utilisateur",
-  "create.users.description": "Crée un compte personnel avec identifiants.",
   "create.users.submitLabel": "Créer l'utilisateur",
   "create.incidents.title": "Signaler un incident batterie",
   "create.incidents.description": "Signalez un pack défectueux à votre station.",
@@ -91,11 +90,6 @@ export const createFr = {
 
   "create.agents.intro":
     "Créez d'abord le compte dans Utilisateurs (type agent), puis associez-le ici pour ouvrir le flottant.",
-  "create.users.fleetTabHint":
-    "L'association propriétaire concerne les comptes conducteur. Choisissez le type conducteur sur l'onglet Compte.",
-  "create.users.stationTabHint":
-    "L'affectation station concerne les comptes échangeur. Choisissez le type échangeur sur l'onglet Compte.",
-  "create.users.stationOptional": "Facultatif — affectez la station d'échange de cet opérateur.",
   "create.stations.swapperOptional": "Facultatif — affectez un opérateur d'échange à cette station.",
   "create.error.stationCreatedSwapperAssign":
     "La station a été créée, mais l'affectation de l'échangeur a échoué. Affectez-le depuis Utilisateurs.",

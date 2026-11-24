@@ -326,9 +326,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   }, [batteryAttachTarget, section, t, values.type]);
 
   const useDrawerTabs =
-    section === "users" || section === "incidents" || section === "batteries"
-      ? drawerTabs.length > 1
-      : drawerTabs.length > 0;
+    section === "users"
+      ? true
+      : section === "incidents" || section === "batteries"
+        ? drawerTabs.length > 1
+        : drawerTabs.length > 0;
 
   const batteryCreateStatus = section === "batteries" ? values.status?.trim() ?? "" : "";
   const batteryCreateRequiredAttach = batteryRequiredAttachTarget(batteryCreateStatus);
@@ -489,6 +491,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     }
     if (drawerTab === "station" && accountType !== "swapper") {
       setDrawerTab("details");
+    }
+    if (accountType !== "rider") {
+      setWalletOwnerId(null);
+      setWalletOwnerSearch("");
+    }
+    if (accountType !== "swapper") {
+      setUserStationId(null);
+      setUserStationSearch("");
     }
   }, [drawerTab, open, section, values.type]);
 
@@ -951,11 +961,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
   const needsOwnerPicker = config.section === "wallets";
   const bikeOwnerPicker = config.section === "bikes";
-  const userCreateIsRider = config.section === "users" && values.type?.trim() === "rider";
-  const userCreateIsSwapper = config.section === "users" && values.type?.trim() === "swapper";
+  const userCreateAccountType = config.section === "users" ? values.type?.trim() ?? "" : "";
+  const userCreateAccountTypeChosen = userCreateAccountType !== "";
+  const userCreateIsRider = config.section === "users" && userCreateAccountType === "rider";
+  const userCreateIsSwapper = config.section === "users" && userCreateAccountType === "swapper";
 
   const submitDisabled =
     saving ||
+    (config.section === "users" && !userCreateAccountTypeChosen) ||
     (needsOwnerPicker && (walletOwnerId === null || loadingWalletUsers)) ||
     (bikeOwnerPicker && (loadingWalletUsers || loadingBikeRiders)) ||
     (config.section === "agents" && (agentUserId === null || loadingAgentUsers));
@@ -1215,6 +1228,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     config.section === "stations"
       ? formFields.filter((field) => STATION_LOCATION_FIELD_NAMES.has(field.name))
       : [];
+  const userCreateAccountTypeField =
+    config.section === "users" ? stationDetailFields.find((field) => field.name === "type") : undefined;
+  const userCreateDetailFields =
+    config.section === "users"
+      ? stationDetailFields.filter((field) => field.name !== "type")
+      : stationDetailFields;
+  const createDetailFields =
+    config.section === "users" ? userCreateDetailFields : stationDetailFields;
 
   return (
     <SlideOverDrawer
@@ -1241,6 +1262,19 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           <div className="login-error" role="alert">
             {error}
           </div>
+        ) : null}
+
+        {config.section === "users" && showDrawerPanel("details") && userCreateAccountTypeField ? (
+          <>
+            <ResourceFormField
+              field={userCreateAccountTypeField}
+              value={values.type ?? ""}
+              disabled={saving}
+              onValueChange={(next) => setValues({ ...values, type: next })}
+              file={null}
+              onFileChange={() => {}}
+            />
+          </>
         ) : null}
 
         {config.section === "agents" && showDrawerPanel("details") ? (
@@ -1295,17 +1329,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
-        {config.section === "users" && showDrawerPanel("fleet") && !userCreateIsRider ? (
-          <p className="sub">{t("create.users.fleetTabHint")}</p>
-        ) : null}
-
-        {config.section === "users" && showDrawerPanel("station") && !userCreateIsSwapper ? (
-          <p className="sub">{t("create.users.stationTabHint")}</p>
-        ) : null}
-
         {config.section === "users" && showDrawerPanel("station") && userCreateIsSwapper ? (
           <>
-            <p className="sub">{t("create.users.stationOptional")}</p>
             <label className="field">
               <span>
                 {t("modals.picker.findStation")}
@@ -1818,12 +1843,12 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         ) : null}
 
         {(!useDrawerTabs || showDrawerPanel("details"))
-          ? stationDetailFields.map((field) => (
+          ? createDetailFields.map((field) => (
               <ResourceFormField
                 key={field.name}
                 field={field}
                 value={values[field.name] ?? ""}
-                disabled={saving}
+                disabled={saving || (config.section === "users" && !userCreateAccountTypeChosen)}
                 onValueChange={(next) => setValues({ ...values, [field.name]: next })}
                 file={files[field.name] ?? null}
                 onFileChange={(next) => setFiles({ ...files, [field.name]: next })}

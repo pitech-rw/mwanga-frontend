@@ -27,7 +27,6 @@ export const createEn = {
   "create.swaps.description": "Starts a swap transaction at a station.",
   "create.swaps.submitLabel": "Create swap",
   "create.users.title": "Add user",
-  "create.users.description": "Creates a staff account with sign-in credentials.",
   "create.users.submitLabel": "Create user",
   "create.incidents.title": "Report battery incident",
   "create.incidents.description": "Report a faulty or damaged pack at your assigned station.",
@@ -91,11 +90,6 @@ export const createEn = {
 
   "create.agents.intro":
     "Create the sign-in account under Users first (role type agent), then link it here to open float.",
-  "create.users.fleetTabHint":
-    "Fleet owner association applies to rider accounts. Choose role type rider on the Account tab first.",
-  "create.users.stationTabHint":
-    "Station assignment applies to swapper accounts. Choose role type swapper on the Account tab first.",
-  "create.users.stationOptional": "Optional — assign the swap station this operator works from.",
   "create.stations.swapperOptional": "Optional — assign a swap operator to work at this station.",
   "create.error.stationCreatedSwapperAssign":
     "Station was created, but assigning the swapper failed. Assign them from Users.",
