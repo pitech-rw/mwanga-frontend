@@ -13,6 +13,10 @@ export const modalsEn = {
   "modals.profile.hintDefault":
     "Role and account type are assigned by an administrator and cannot be changed here.",
   "modals.profile.hintPasswordBlank": "Leave new password blank unless you want to change it.",
+  "modals.rolePermissions.title": "Role permissions",
+  "modals.rolePermissions.description": "Choose capabilities for the {name} role. Users must sign in again for changes to apply.",
+  "modals.rolePermissions.save": "Save permissions",
+
   "modals.profile.fields.role": "Role",
   "modals.profile.fields.accountType": "Account type",
   "modals.profile.fields.username": "Username",

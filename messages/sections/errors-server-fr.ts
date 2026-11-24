@@ -194,6 +194,7 @@ export const errorsServerFr = {
   "cards.duplicateCard": "Une carte NFC avec ce jeton ou numéro de série existe déjà",
 
   "roles.duplicateRole": "Un rôle avec ce nom existe déjà",
+  "roles.unknownPermission": "Permission inconnue : {names}",
 
   "fleet.userNotFound": "Utilisateur introuvable (id {userId})",
   "fleet.assignedMustBeRiderOrOwner": "L'utilisateur affecté doit être conducteur ou propriétaire",

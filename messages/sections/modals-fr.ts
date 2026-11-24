@@ -13,6 +13,10 @@ export const modalsFr = {
   "modals.profile.hintDefault":
     "Le rôle et le type de compte sont attribués par un administrateur et ne peuvent pas être modifiés ici.",
   "modals.profile.hintPasswordBlank": "Laissez le nouveau mot de passe vide si vous ne souhaitez pas le changer.",
+  "modals.rolePermissions.title": "Permissions du rôle",
+  "modals.rolePermissions.description": "Choisissez les droits du rôle {name}. Les utilisateurs doivent se reconnecter pour appliquer les changements.",
+  "modals.rolePermissions.save": "Enregistrer les permissions",
+
   "modals.profile.fields.role": "Rôle",
   "modals.profile.fields.accountType": "Type de compte",
   "modals.profile.fields.username": "Nom d'utilisateur",

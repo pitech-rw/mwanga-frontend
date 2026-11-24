@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../lib/auth";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
 import { userDisplayName } from "../lib/user-display";
-import { useT } from "./locale";
+import { useLocale, useT } from "./locale";
+import { roleOrUserTypeLabel } from "../lib/role-labels";
 import { DataTable, type Column } from "./data-table";
 
 type ErasureRow = {
@@ -27,12 +28,9 @@ type ErasureRequestsPanelProps = {
   onForbidden?: () => void;
 };
 
-function formatAccountType(type: string): string {
-  return type.replace(/_/g, " ");
-}
-
 export function ErasureRequestsPanel({ onForbidden }: ErasureRequestsPanelProps) {
   const t = useT();
+  const { locale } = useLocale();
   const [rows, setRows] = useState<ErasureRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +117,7 @@ export function ErasureRequestsPanel({ onForbidden }: ErasureRequestsPanelProps)
           if (!type) {
             return "—";
           }
-          return <span className="badge info">{formatAccountType(type)}</span>;
+          return <span className="badge info">{roleOrUserTypeLabel(locale, type)}</span>;
         },
       },
       {
@@ -179,7 +177,7 @@ export function ErasureRequestsPanel({ onForbidden }: ErasureRequestsPanelProps)
         ),
       },
     ];
-  }, [act, actingId, t]);
+  }, [act, actingId, locale, t]);
 
   const headCount =
     loading && rows.length === 0

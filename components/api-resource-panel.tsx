@@ -7,6 +7,7 @@ import { authFetch, type AuthUser } from "../lib/auth";
 import type { Section } from "../lib/nav";
 import { buildResourceDetailPayload, type ResourceDetailPayload } from "../lib/resource-detail";
 import type { ResourceSection } from "../lib/resource-create-config";
+import { roleOrUserTypeLabel } from "../lib/role-labels";
 import { getLocalizedResourceUpdateFields, getResourceUpdateFields } from "../lib/resource-update-fields";
 import { getUserUpdateFieldsForRow } from "../lib/user-update-fields";
 import {
@@ -67,6 +68,7 @@ import { TableRowActionsMenu, type TableRowMenuItem } from "./table-row-actions-
 import { DeleteResourceModal } from "./delete-resource-modal";
 import { DeleteWalletModal } from "./delete-wallet-modal";
 import { EditResourceModal, type EditResourceTarget } from "./edit-resource-modal";
+import { EditRolePermissionsModal, type RolePermissionsTarget } from "./edit-role-permissions-modal";
 import { AgentWalletTopUpModal } from "./agent-wallet-top-up-modal";
 import { WalletTopUpModal, type WalletTopUpTarget } from "./wallet-top-up-modal";
 import { WalletLedgerModal } from "./wallet-ledger-modal";
@@ -90,7 +92,6 @@ const SKIP_KEYS = new Set([
   "transactions",
   "bikes",
   "cards",
-  "permissions",
   "ledgerEntries",
   "readings",
   "wallet",
@@ -117,6 +118,13 @@ function cellValue(value: unknown): string {
 
   if (typeof value === "boolean") {
     return value ? "Yes" : "No";
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length > 0 && value.every((item) => typeof item === "string")) {
+      return `${value.length} permission${value.length === 1 ? "" : "s"}`;
+    }
+    return value.map((item) => String(item)).join(", ");
   }
 
   if (typeof value === "object") {
@@ -158,7 +166,11 @@ function addressCellDisplay(value: unknown): string {
   return text === "—" ? "" : text;
 }
 
-function buildColumns(rows: Row[], locale: import("../lib/locale-storage").LocaleCode): Column<Row>[] {
+function buildColumns(
+  rows: Row[],
+  locale: import("../lib/locale-storage").LocaleCode,
+  section?: ResourceSection,
+): Column<Row>[] {
   if (rows.length === 0) {
     return [
       {
@@ -234,6 +246,10 @@ function buildColumns(rows: Row[], locale: import("../lib/locale-storage").Local
             </span>
           );
         }
+      }
+
+      if (section === "roles" && key === "name" && typeof value === "string") {
+        return roleOrUserTypeLabel(locale, value);
       }
 
       return cellValue(value);
@@ -799,6 +815,7 @@ function buildRowActionMenuItems(
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
+  openRolePermissions: (target: RolePermissionsTarget) => void,
   openInventoryIssue?: (target: InventoryIssueTarget) => void,
   returnBatteryToInventory?: (batteryId: number) => void,
   translate?: TranslateFn,
@@ -1129,6 +1146,23 @@ function buildRowActionMenuItems(
       continue;
     }
 
+    if (def.id === TABLE_ROW_ACTION_IDS.rolePermissions) {
+      const id = row.id;
+      const name = typeof row.name === "string" ? row.name : "";
+      if (typeof id !== "number" || !name) {
+        continue;
+      }
+      const permissions = Array.isArray(row.permissions)
+        ? row.permissions.filter((p): p is string => typeof p === "string")
+        : [];
+      items.push({
+        id: def.id,
+        label: def.label,
+        onSelect: () => openRolePermissions({ id, name, permissions }),
+      });
+      continue;
+    }
+
     if (def.id === TABLE_ROW_ACTION_IDS.resourceEdit) {
       if (section === "wallets") {
         continue;
@@ -1197,6 +1231,7 @@ function appendActionsColumn(
   openWalletDelete: (payload: { id: number; ownerLabel: string }) => void,
   openResourceEdit: (target: EditResourceTarget) => void,
   openResourceDelete: (payload: { section: ResourceSection; id: number; row: Row }) => void,
+  openRolePermissions: (target: RolePermissionsTarget) => void,
   openInventoryIssue?: (target: InventoryIssueTarget) => void,
   returnBatteryToInventory?: (batteryId: number) => void,
   translate?: TranslateFn,
@@ -1234,6 +1269,7 @@ function appendActionsColumn(
           openWalletDelete,
           openResourceEdit,
           openResourceDelete,
+          openRolePermissions,
           openInventoryIssue,
           returnBatteryToInventory,
           translate,
@@ -1266,6 +1302,7 @@ function appendActionsColumn(
           openWalletDelete,
           openResourceEdit,
           openResourceDelete,
+          openRolePermissions,
           openInventoryIssue,
           returnBatteryToInventory,
           translate,
@@ -1372,6 +1409,7 @@ export function ApiResourcePanel({
   const [walletDelete, setWalletDelete] = useState<{ id: number; ownerLabel: string } | null>(null);
   const [resourceEdit, setResourceEdit] = useState<EditResourceTarget | null>(null);
   const [resourceDelete, setResourceDelete] = useState<{ section: ResourceSection; id: number; row: Row } | null>(null);
+  const [rolePermissionsEdit, setRolePermissionsEdit] = useState<RolePermissionsTarget | null>(null);
   const [inventoryIssue, setInventoryIssue] = useState<InventoryIssueTarget | null>(null);
   const onForbiddenRef = useRef(onForbidden);
   const onRecordsChangeRef = useRef(onRecordsChange);
@@ -1576,6 +1614,10 @@ export function ApiResourcePanel({
     setResourceDelete(payload);
   }, []);
 
+  const openRolePermissionsModal = useCallback((target: RolePermissionsTarget) => {
+    setRolePermissionsEdit(target);
+  }, []);
+
   const returnBatteryToInventory = useCallback(
     async (batteryId: number) => {
       try {
@@ -1617,7 +1659,7 @@ export function ApiResourcePanel({
     } else if (section === "agents") {
       base = buildAgentColumns();
     } else {
-      base = buildColumns(rows, locale);
+      base = buildColumns(rows, locale, section);
     }
 
     return appendActionsColumn(
@@ -1644,6 +1686,7 @@ export function ApiResourcePanel({
       openWalletDeleteModal,
       openResourceEditModal,
       openResourceDeleteModal,
+      openRolePermissionsModal,
       setInventoryIssue,
       returnBatteryToInventory,
       t,
@@ -1670,6 +1713,7 @@ export function ApiResourcePanel({
     openWalletDeleteModal,
     openResourceEditModal,
     openResourceDeleteModal,
+    openRolePermissionsModal,
     returnBatteryToInventory,
     rows,
     section,
@@ -1904,6 +1948,17 @@ export function ApiResourcePanel({
         open={resourceEdit !== null}
         target={resourceEdit}
         onClose={() => setResourceEdit(null)}
+        onSaved={() => {
+          reload();
+          onResourceEditSuccess?.();
+        }}
+        onError={onResourceEditError}
+      />
+
+      <EditRolePermissionsModal
+        open={rolePermissionsEdit !== null}
+        target={rolePermissionsEdit}
+        onClose={() => setRolePermissionsEdit(null)}
         onSaved={() => {
           reload();
           onResourceEditSuccess?.();

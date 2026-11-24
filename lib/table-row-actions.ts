@@ -26,6 +26,7 @@ export const TABLE_ROW_ACTION_IDS = {
   walletDelete: "wallet-delete",
   resourceEdit: "resource-edit",
   resourceDelete: "resource-delete",
+  rolePermissions: "role-permissions",
   issueInventoryBike: "issue-inventory-bike",
   issueInventoryBatteryStation: "issue-inventory-battery-station",
   issueInventoryBatteryBike: "issue-inventory-battery-bike",
@@ -199,7 +200,15 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
     genericEdit(PERMISSIONS.cards.write),
     genericDelete(PERMISSIONS.cards.delete),
   ],
-  roles: [genericEdit(PERMISSIONS.roles.write), genericDelete(PERMISSIONS.roles.delete)],
+  roles: [
+    {
+      id: TABLE_ROW_ACTION_IDS.rolePermissions,
+      label: "Permissions",
+      permission: PERMISSIONS.roles.write,
+    },
+    genericEdit(PERMISSIONS.roles.write),
+    genericDelete(PERMISSIONS.roles.delete),
+  ],
   stations: [
     {
       id: TABLE_ROW_ACTION_IDS.stationOpen,
@@ -320,6 +329,7 @@ const ROW_ACTION_MESSAGE_KEYS: Partial<Record<TableRowActionId, MessageKey>> = {
   [TABLE_ROW_ACTION_IDS.issueInventoryBatteryStation]: "actions.row.issueInventoryBatteryStation",
   [TABLE_ROW_ACTION_IDS.issueInventoryBatteryBike]: "actions.row.issueInventoryBatteryBike",
   [TABLE_ROW_ACTION_IDS.sendBatteryToInventory]: "actions.row.sendBatteryToInventory",
+  [TABLE_ROW_ACTION_IDS.rolePermissions]: "actions.row.rolePermissions",
 };
 
 export function localizeRowActions(

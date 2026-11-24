@@ -181,6 +181,7 @@ export const errorsServerEn = {
   "cards.duplicateCard": "An NFC card with this token or serial number already exists",
 
   "roles.duplicateRole": "A role with this name already exists",
+  "roles.unknownPermission": "Unknown permission: {names}",
 
   "fleet.userNotFound": "User with id {userId} not found",
   "fleet.assignedMustBeRiderOrOwner": "Assigned user must be a rider or owner account",
