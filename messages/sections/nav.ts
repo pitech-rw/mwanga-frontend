@@ -1,6 +1,6 @@
 const sections = [
   "overview", "topUp", "agentTransactions", "riders", "stations", "swaps", "inventory", "batteries",
-  "bikes", "owners", "agents", "users", "roles", "cards", "wallets", "companyAccounts", "violations", "incidents",
+  "bikes", "owners", "agents", "users", "erasureRequests", "roles", "cards", "wallets", "companyAccounts", "violations", "incidents",
 ] as const;
 
 const enNav: Record<string, { label: string; eyebrow: string; title: string }> = {
@@ -16,6 +16,7 @@ const enNav: Record<string, { label: string; eyebrow: string; title: string }> =
   owners: { label: "Owners", eyebrow: "Fleet", title: "Fleet owners" },
   agents: { label: "Agents", eyebrow: "Fleet", title: "Agents" },
   users: { label: "Users", eyebrow: "Administration", title: "Users" },
+  erasureRequests: { label: "Erasure requests", eyebrow: "Privacy", title: "Account erasure requests" },
   roles: { label: "Roles", eyebrow: "Access", title: "Roles" },
   cards: { label: "Cards", eyebrow: "Access", title: "NFC cards" },
   wallets: { label: "Wallets", eyebrow: "Finance", title: "Wallets" },
@@ -37,6 +38,7 @@ const frNav: Record<string, { label: string; eyebrow: string; title: string }> =
   owners: { label: "Propriétaires", eyebrow: "Flotte", title: "Propriétaires de flotte" },
   agents: { label: "Agents", eyebrow: "Flotte", title: "Agents" },
   users: { label: "Utilisateurs", eyebrow: "Administration", title: "Utilisateurs" },
+  erasureRequests: { label: "Demandes d'effacement", eyebrow: "Confidentialité", title: "Demandes d'effacement de compte" },
   roles: { label: "Rôles", eyebrow: "Accès", title: "Rôles" },
   cards: { label: "Cartes", eyebrow: "Accès", title: "Cartes NFC" },
   wallets: { label: "Portefeuilles", eyebrow: "Finance", title: "Portefeuilles" },

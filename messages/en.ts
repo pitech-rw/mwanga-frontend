@@ -5,6 +5,7 @@ import { fieldsEn } from "./sections/fields-en";
 import { miscEn } from "./sections/misc-en";
 import { modalsEn } from "./sections/modals-en";
 import { errorsServerEn } from "./sections/errors-server-en";
+import { erasureEn } from "./sections/erasure-en";
 
 const enNavData = {
   overview: { label: "Overview", eyebrow: "Operations", title: "Battery swap command" },
@@ -19,6 +20,7 @@ const enNavData = {
   owners: { label: "Owners", eyebrow: "Fleet", title: "Fleet owners" },
   agents: { label: "Agents", eyebrow: "Fleet", title: "Agents" },
   users: { label: "Users", eyebrow: "Administration", title: "Users" },
+  erasureRequests: { label: "Erasure requests", eyebrow: "Privacy", title: "Account erasure requests" },
   roles: { label: "Roles", eyebrow: "Access", title: "Roles" },
   cards: { label: "Cards", eyebrow: "Access", title: "NFC cards" },
   wallets: { label: "Wallets", eyebrow: "Finance", title: "Wallets" },
@@ -35,4 +37,5 @@ export const en = {
   ...miscEn,
   ...modalsEn,
   ...errorsServerEn,
+  ...erasureEn,
 } as const;

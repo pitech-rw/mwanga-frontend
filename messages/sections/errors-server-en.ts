@@ -25,6 +25,20 @@ export const errorsServerEn = {
   "users.inactiveMustReactivateFirst":
     "Enable sign-in (reactivate) before changing this account or its assignments",
 
+  "erasure.alreadyErased": "This account has already been erased",
+  "erasure.requestNotFound": "Erasure request not found",
+  "erasure.requestNotConfirmable": "This erasure request cannot be confirmed or processed",
+  "erasure.staffRequiresApproval": "Staff accounts must wait for administrator approval",
+  "erasure.confirmPasswordRequired": "Password is required to confirm erasure",
+  "erasure.confirmPasswordIncorrect": "Password is incorrect",
+  "erasure.openSwapInProgress": "Finish or cancel open swaps before erasing your account",
+  "erasure.walletBalanceRemaining": "Wallet balance must be zero or you must acknowledge forfeiture",
+  "erasure.forfeitureRequired": "Acknowledge wallet balance forfeiture to continue",
+  "erasure.cannotApproveOwnErasure": "You cannot approve your own erasure request",
+  "erasure.adminFourEyesRequired": "Administrator erasure requires another administrator",
+  "erasure.activeRequestExists": "An erasure request is already in progress",
+  "erasure.cannotDeactivateSelf": "You cannot deactivate your own account this way",
+
   "owners.userNotFound": "User with id {userId} not found",
   "owners.portalUserMustBeOwner": "Portal user must have type owner",
   "owners.portalUserMustNotHaveOwnerId": "Owner portal users must not have ownerId set",

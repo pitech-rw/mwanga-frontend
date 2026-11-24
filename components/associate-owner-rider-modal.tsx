@@ -9,6 +9,7 @@ import { usersListPath } from "../lib/users-list-query";
 import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
 import { riderListOptionLine, riderListSearchHaystack, type RiderListRow } from "../lib/rider-list-format";
 import { Modal } from "./modal";
+import { PickerSelectionStatus } from "./picker-selection-status";
 
 export type OwnerRiderAssociateTarget = {
   id: number;
@@ -224,9 +225,9 @@ export function AssociateOwnerRiderModal({
         )}
 
         {selectedRider ? (
-          <p className="create-wallet-selection sub" role="status">
-            <strong>Selected:</strong> {riderListOptionLine(selectedRider)}
-          </p>
+          <PickerSelectionStatus disabled={saving || loadingRiders} onClear={() => setRiderId(null)}>
+            {riderListOptionLine(selectedRider)}
+          </PickerSelectionStatus>
         ) : null}
       </form>
     </Modal>

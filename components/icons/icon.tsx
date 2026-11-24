@@ -307,6 +307,7 @@ const NAV_ICON_MAP = {
   incidents: IconTriangleAlert,
   wallets: IconWallet,
   companyAccounts: IconLandmark,
+  erasureRequests: IconShield,
 } as const satisfies Record<Section, (props: IconProps) => React.JSX.Element>;
 
 export function NavIcon({ section, className, size }: { section: Section; className?: string; size?: number }) {

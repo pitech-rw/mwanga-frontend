@@ -67,6 +67,7 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
 
   const name = displayName(user);
   const role = user?.role.name ?? t("account.member");
+  const accountType = user?.type?.replace(/_/g, " ") ?? t("account.member");
 
   return (
     <div className="account-menu" ref={rootRef}>
@@ -83,7 +84,7 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
         </span>
         <span className="account-trigger-copy">
           <strong>{name}</strong>
-          <span>{role}</span>
+          <span>{accountType}</span>
         </span>
         <IconChevronDown size={16} className={`account-chevron ${open ? "open" : ""}`} />
       </button>

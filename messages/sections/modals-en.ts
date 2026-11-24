@@ -187,6 +187,7 @@ export const modalsEn = {
   "modals.picker.searchDefault": "Search…",
   "modals.picker.recentHint": "{count} shown · {limit} most recent",
   "modals.picker.selectedPrefix": "Selected:",
+  "modals.picker.clearSelection": "Clear",
   "modals.picker.findOwner": "Find owner",
   "modals.picker.fleetOwner": "Fleet owner",
   "modals.picker.chooseOwner": "Choose an owner…",

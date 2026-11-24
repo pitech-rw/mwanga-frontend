@@ -20,6 +20,12 @@ export function getUserUpdateFieldsForRow(row: Record<string, unknown>): FieldSp
   const inactive = row.isActive === false;
 
   return [
+    {
+      name: "type",
+      label: "Account type",
+      type: "pills",
+      options: selectOptions(USER_TYPES),
+    },
     { name: "username", label: "Username", type: "text" },
     { name: "firstName", label: "First name", type: "text" },
     { name: "lastName", label: "Last name", type: "text" },
@@ -27,12 +33,6 @@ export function getUserUpdateFieldsForRow(row: Record<string, unknown>): FieldSp
     { name: "phone", label: "Phone", type: "text" },
     { name: "nationalId", label: "National ID", type: "text" },
     { name: "image", label: "Image URL", type: "text" },
-    {
-      name: "type",
-      label: "Account type",
-      type: "select",
-      options: selectOptions(USER_TYPES),
-    },
     {
       name: "password",
       label: inactive ? "New password" : "New password",

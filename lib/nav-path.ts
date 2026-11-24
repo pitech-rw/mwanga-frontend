@@ -105,3 +105,60 @@ export function stationDetailHref(pathPrefix: string, stationId: number): string
   const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
   return `${base}/stations/${stationId}`;
 }
+
+export const PROFILE_TABS = ["details", "location", "security", "privacy"] as const;
+export type ProfileTab = (typeof PROFILE_TABS)[number];
+
+const PROFILE_TAB_SET = new Set<string>(PROFILE_TABS);
+
+export function isProfileTab(value: string): value is ProfileTab {
+  return PROFILE_TAB_SET.has(value);
+}
+
+/** `/account/profile` or `/account/profile/:tab` — self-service profile settings. */
+export function profileSubRoute(pathname: string, pathPrefix: string): { tab: ProfileTab } | null {
+  const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  const rest = pathname === base ? "" : pathname.slice(base.length).replace(/^\/+/, "");
+  const parts = rest.split("/").filter(Boolean);
+
+  if (parts[0] !== "profile") {
+    return null;
+  }
+
+  const tabRaw = parts[1];
+  if (!tabRaw) {
+    return { tab: "details" };
+  }
+
+  if (isProfileTab(tabRaw)) {
+    return { tab: tabRaw };
+  }
+
+  return null;
+}
+
+/** Unknown tab segment or extra path segments under `/profile`. */
+export function profilePathInvalid(pathname: string, pathPrefix: string): boolean {
+  const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  const rest = pathname === base ? "" : pathname.slice(base.length).replace(/^\/+/, "");
+  const parts = rest.split("/").filter(Boolean);
+
+  if (parts[0] !== "profile") {
+    return false;
+  }
+
+  if (parts.length > 2) {
+    return true;
+  }
+
+  const tabRaw = parts[1];
+  return Boolean(tabRaw && !isProfileTab(tabRaw));
+}
+
+export function profileHref(pathPrefix: string, tab: ProfileTab = "details"): string {
+  const base = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
+  if (tab === "details") {
+    return `${base}/profile`;
+  }
+  return `${base}/profile/${tab}`;
+}

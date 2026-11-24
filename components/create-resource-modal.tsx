@@ -22,6 +22,8 @@ import { ownerListSearchHaystack, ownerOptionLine, type OwnerListRow } from "../
 import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
 import { STATION_LOCATION_FIELD_NAMES } from "../lib/station-form-fields";
 import { usersListPath } from "../lib/users-list-query";
+import { userDisplayName } from "../lib/user-display";
+import { PickerSelectionStatus } from "./picker-selection-status";
 import { SlideOverDrawer, type SlideOverDrawerTab } from "./slide-over-drawer";
 
 type CreateResourceModalProps = {
@@ -151,8 +153,8 @@ function emptyValues(config: CreateResourceConfig): Record<string, string> {
 }
 
 function agentUserOptionLine(user: AgentUserRow): string {
-  const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-  const label = name ? `${name} (@${user.username})` : `@${user.username}`;
+  const name = userDisplayName(user);
+  const label = name.startsWith("Erased user #") ? name : name ? `${name} (@${user.username})` : `@${user.username}`;
   const contact = user.email ?? user.phone ?? "";
   return contact ? `${user.id} · ${label} · ${contact}` : `${user.id} · ${label}`;
 }
@@ -201,7 +203,10 @@ function swapRiderLabel(user: SwapListUser | null | undefined, unknownRider: str
   if (!user) {
     return unknownRider;
   }
-  const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  const name = userDisplayName(user);
+  if (name.startsWith("Erased user #")) {
+    return name;
+  }
   return name ? `${name} (@${user.username})` : `@${user.username}`;
 }
 
@@ -326,9 +331,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   }, [batteryAttachTarget, section, t, values.type]);
 
   const useDrawerTabs =
-    section === "users" || section === "incidents" || section === "batteries"
-      ? drawerTabs.length > 1
-      : drawerTabs.length > 0;
+    section === "users"
+      ? true
+      : section === "incidents" || section === "batteries"
+        ? drawerTabs.length > 1
+        : drawerTabs.length > 0;
 
   const batteryCreateStatus = section === "batteries" ? values.status?.trim() ?? "" : "";
   const batteryCreateRequiredAttach = batteryRequiredAttachTarget(batteryCreateStatus);
@@ -489,6 +496,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     }
     if (drawerTab === "station" && accountType !== "swapper") {
       setDrawerTab("details");
+    }
+    if (accountType !== "rider") {
+      setWalletOwnerId(null);
+      setWalletOwnerSearch("");
+    }
+    if (accountType !== "swapper") {
+      setUserStationId(null);
+      setUserStationSearch("");
     }
   }, [drawerTab, open, section, values.type]);
 
@@ -951,11 +966,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
   const needsOwnerPicker = config.section === "wallets";
   const bikeOwnerPicker = config.section === "bikes";
-  const userCreateIsRider = config.section === "users" && values.type?.trim() === "rider";
-  const userCreateIsSwapper = config.section === "users" && values.type?.trim() === "swapper";
+  const userCreateAccountType = config.section === "users" ? values.type?.trim() ?? "" : "";
+  const userCreateAccountTypeChosen = userCreateAccountType !== "";
+  const userCreateIsRider = config.section === "users" && userCreateAccountType === "rider";
+  const userCreateIsSwapper = config.section === "users" && userCreateAccountType === "swapper";
 
   const submitDisabled =
     saving ||
+    (config.section === "users" && !userCreateAccountTypeChosen) ||
     (needsOwnerPicker && (walletOwnerId === null || loadingWalletUsers)) ||
     (bikeOwnerPicker && (loadingWalletUsers || loadingBikeRiders)) ||
     (config.section === "agents" && (agentUserId === null || loadingAgentUsers));
@@ -1215,6 +1233,14 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     config.section === "stations"
       ? formFields.filter((field) => STATION_LOCATION_FIELD_NAMES.has(field.name))
       : [];
+  const userCreateAccountTypeField =
+    config.section === "users" ? stationDetailFields.find((field) => field.name === "type") : undefined;
+  const userCreateDetailFields =
+    config.section === "users"
+      ? stationDetailFields.filter((field) => field.name !== "type")
+      : stationDetailFields;
+  const createDetailFields =
+    config.section === "users" ? userCreateDetailFields : stationDetailFields;
 
   return (
     <SlideOverDrawer
@@ -1241,6 +1267,19 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           <div className="login-error" role="alert">
             {error}
           </div>
+        ) : null}
+
+        {config.section === "users" && showDrawerPanel("details") && userCreateAccountTypeField ? (
+          <>
+            <ResourceFormField
+              field={userCreateAccountTypeField}
+              value={values.type ?? ""}
+              disabled={saving}
+              onValueChange={(next) => setValues({ ...values, type: next })}
+              file={null}
+              onFileChange={() => {}}
+            />
+          </>
         ) : null}
 
         {config.section === "agents" && showDrawerPanel("details") ? (
@@ -1288,24 +1327,15 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </label>
             )}
             {selectedAgentUser ? (
-              <p className="create-wallet-selection sub" role="status">
-                {t("modals.picker.selectedPrefix")} <strong>{agentUserOptionLine(selectedAgentUser)}</strong>
-              </p>
+              <PickerSelectionStatus disabled={saving} onClear={() => setAgentUserId(null)}>
+                {agentUserOptionLine(selectedAgentUser)}
+              </PickerSelectionStatus>
             ) : null}
           </>
         ) : null}
 
-        {config.section === "users" && showDrawerPanel("fleet") && !userCreateIsRider ? (
-          <p className="sub">{t("create.users.fleetTabHint")}</p>
-        ) : null}
-
-        {config.section === "users" && showDrawerPanel("station") && !userCreateIsSwapper ? (
-          <p className="sub">{t("create.users.stationTabHint")}</p>
-        ) : null}
-
         {config.section === "users" && showDrawerPanel("station") && userCreateIsSwapper ? (
           <>
-            <p className="sub">{t("create.users.stationOptional")}</p>
             <label className="field">
               <span>
                 {t("modals.picker.findStation")}
@@ -1355,9 +1385,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </label>
             )}
             {selectedUserStation ? (
-              <p className="create-wallet-selection sub" role="status">
-                {t("modals.picker.selectedPrefix")} <strong>{stationOptionLine(selectedUserStation)}</strong>
-              </p>
+              <PickerSelectionStatus disabled={saving} onClear={() => setUserStationId(null)}>
+                {stationOptionLine(selectedUserStation)}
+              </PickerSelectionStatus>
             ) : null}
           </>
         ) : null}
@@ -1441,9 +1471,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </label>
             )}
             {selectedWalletOwner ? (
-              <p className="create-wallet-selection sub" role="status">
-                {t("modals.picker.selectedPrefix")} <strong>{ownerOptionLine(selectedWalletOwner)}</strong>
-              </p>
+              <PickerSelectionStatus disabled={saving || loadingWalletUsers} onClear={() => setWalletOwnerId(null)}>
+                {ownerOptionLine(selectedWalletOwner)}
+              </PickerSelectionStatus>
             ) : null}
           </>
         ) : null}
@@ -1497,10 +1527,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </label>
             )}
             {selectedIncidentSwap ? (
-              <p className="create-wallet-selection sub" role="status">
-                {t("modals.picker.selectedPrefix")}{" "}
-                <strong>{swapOptionLine(selectedIncidentSwap, t("create.picker.unknownRider"))}</strong>
-              </p>
+              <PickerSelectionStatus disabled={saving} onClear={() => setIncidentSwapId(null)}>
+                {swapOptionLine(selectedIncidentSwap, t("create.picker.unknownRider"))}
+              </PickerSelectionStatus>
             ) : null}
           </>
         ) : null}
@@ -1554,9 +1583,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </label>
             )}
             {selectedBikeRider ? (
-              <p className="create-wallet-selection sub" role="status">
-                {t("modals.picker.selectedPrefix")} <strong>{riderUserOptionLine(selectedBikeRider)}</strong>
-              </p>
+              <PickerSelectionStatus disabled={saving} onClear={() => setBikeRiderId(null)}>
+                {riderUserOptionLine(selectedBikeRider)}
+              </PickerSelectionStatus>
             ) : null}
           </>
         ) : null}
@@ -1683,12 +1712,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </label>
             )}
             {selectedBatteryCreateStation ? (
-              <p className="create-wallet-selection sub" role="status">
-                {t("modals.picker.selectedPrefix")}{" "}
-                <strong>
-                  {selectedBatteryCreateStation.id} · {stationOptionLine(selectedBatteryCreateStation)}
-                </strong>
-              </p>
+              <PickerSelectionStatus disabled={saving} onClear={() => setBatteryCreateStationId(null)}>
+                {selectedBatteryCreateStation.id} · {stationOptionLine(selectedBatteryCreateStation)}
+              </PickerSelectionStatus>
             ) : null}
           </>
         ) : null}
@@ -1751,9 +1777,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </label>
             )}
             {selectedBatteryCreateBike ? (
-              <p className="create-wallet-selection sub" role="status">
-                {t("modals.picker.selectedPrefix")} <strong>{bikeCreateOptionLine(selectedBatteryCreateBike)}</strong>
-              </p>
+              <PickerSelectionStatus disabled={saving} onClear={() => setBatteryCreateBikeId(null)}>
+                {bikeCreateOptionLine(selectedBatteryCreateBike)}
+              </PickerSelectionStatus>
             ) : null}
           </>
         ) : null}
@@ -1810,20 +1836,20 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
               </label>
             )}
             {selectedStationSwapper ? (
-              <p className="create-wallet-selection sub" role="status">
-                {t("modals.picker.selectedPrefix")} <strong>{swapperUserOptionLine(selectedStationSwapper)}</strong>
-              </p>
+              <PickerSelectionStatus disabled={saving} onClear={() => setStationSwapperId(null)}>
+                {swapperUserOptionLine(selectedStationSwapper)}
+              </PickerSelectionStatus>
             ) : null}
           </>
         ) : null}
 
         {(!useDrawerTabs || showDrawerPanel("details"))
-          ? stationDetailFields.map((field) => (
+          ? createDetailFields.map((field) => (
               <ResourceFormField
                 key={field.name}
                 field={field}
                 value={values[field.name] ?? ""}
-                disabled={saving}
+                disabled={saving || (config.section === "users" && !userCreateAccountTypeChosen)}
                 onValueChange={(next) => setValues({ ...values, [field.name]: next })}
                 file={files[field.name] ?? null}
                 onFileChange={(next) => setFiles({ ...files, [field.name]: next })}

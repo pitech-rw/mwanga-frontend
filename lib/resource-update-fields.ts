@@ -36,7 +36,7 @@ export function getResourceUpdateFields(
         {
           name: "status",
           label: "Status",
-          type: "select",
+          type: "pills",
           options: batteryStatusOptionsForEdit(row),
         },
         { name: "soc", label: "State of charge (%)", type: "number", placeholder: "0–100" },
@@ -54,7 +54,7 @@ export function getResourceUpdateFields(
         {
           name: "status",
           label: "Status",
-          type: "select",
+          type: "pills",
           options: selectOptions(ENTITY_STATUS_VALUES),
         },
         { name: "ownerId", label: "Owner ID", type: "number" },
@@ -68,7 +68,7 @@ export function getResourceUpdateFields(
         {
           name: "status",
           label: "Status",
-          type: "select",
+          type: "pills",
           options: selectOptions(ENTITY_STATUS_VALUES),
         },
         { name: "userId", label: "Portal user ID", type: "number" },
@@ -81,7 +81,7 @@ export function getResourceUpdateFields(
         {
           name: "status",
           label: "Status",
-          type: "select",
+          type: "pills",
           options: selectOptions(ENTITY_STATUS_VALUES),
         },
         { name: "userId", label: "Portal user ID", type: "number" },
@@ -94,7 +94,7 @@ export function getResourceUpdateFields(
         {
           name: "status",
           label: "Status",
-          type: "select",
+          type: "pills",
           options: selectOptions(ENTITY_STATUS_VALUES),
         },
         { name: "userId", label: "User ID", type: "number" },
@@ -110,7 +110,7 @@ export function getResourceUpdateFields(
         {
           name: "status",
           label: "Status",
-          type: "select",
+          type: "pills",
           options: selectOptions(ENTITY_STATUS_VALUES),
         },
         { name: "chargingCapacity", label: "Charging capacity", type: "number" },
@@ -129,13 +129,13 @@ export function getResourceUpdateFields(
         {
           name: "status",
           label: "Status",
-          type: "select",
+          type: "pills",
           options: selectOptions(SWAP_STATUS_VALUES),
         },
         {
           name: "paymentStatus",
           label: "Payment status",
-          type: "select",
+          type: "pills",
           options: selectOptions(SWAP_PAYMENT_STATUS_VALUES),
         },
         { name: "fee", label: "Fee", type: "number" },
@@ -155,13 +155,13 @@ export function getResourceUpdateFields(
         {
           name: "status",
           label: "Status",
-          type: "select",
+          type: "pills",
           options: selectOptions(VIOLATION_STATUSES),
         },
         {
           name: "severity",
           label: "Severity",
-          type: "select",
+          type: "pills",
           options: selectOptions(VIOLATION_SEVERITIES),
         },
         { name: "stationId", label: "Station ID", type: "number" },

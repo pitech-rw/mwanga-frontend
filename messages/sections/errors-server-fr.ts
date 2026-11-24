@@ -32,6 +32,20 @@ export const errorsServerFr = {
   "users.inactiveMustReactivateFirst":
     "Réactivez le compte (autoriser la connexion) avant de modifier le profil ou les affectations",
 
+  "erasure.alreadyErased": "Ce compte a déjà été effacé",
+  "erasure.requestNotFound": "Demande d'effacement introuvable",
+  "erasure.requestNotConfirmable": "Cette demande d'effacement ne peut pas être confirmée",
+  "erasure.staffRequiresApproval": "Les comptes staff doivent attendre l'approbation d'un administrateur",
+  "erasure.confirmPasswordRequired": "Le mot de passe est requis pour confirmer l'effacement",
+  "erasure.confirmPasswordIncorrect": "Mot de passe incorrect",
+  "erasure.openSwapInProgress": "Terminez ou annulez les échanges en cours avant d'effacer le compte",
+  "erasure.walletBalanceRemaining": "Le solde doit être nul ou vous devez accepter la perte du solde",
+  "erasure.forfeitureRequired": "Acceptez la perte du solde pour continuer",
+  "erasure.cannotApproveOwnErasure": "Vous ne pouvez pas approuver votre propre demande",
+  "erasure.adminFourEyesRequired": "L'effacement d'un administrateur requiert un autre administrateur",
+  "erasure.activeRequestExists": "Une demande d'effacement est déjà en cours",
+  "erasure.cannotDeactivateSelf": "Vous ne pouvez pas désactiver votre propre compte de cette façon",
+
   "owners.userNotFound": "Utilisateur introuvable (id {userId})",
   "owners.portalUserMustBeOwner": "Le compte portail doit être de type propriétaire",
   "owners.portalUserMustNotHaveOwnerId": "Les comptes propriétaire portail ne doivent pas avoir ownerId",

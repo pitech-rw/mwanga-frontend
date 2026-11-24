@@ -184,6 +184,7 @@ export const modalsFr = {
   "modals.picker.searchDefault": "Rechercher…",
   "modals.picker.recentHint": "{count} affichés · {limit} plus récents",
   "modals.picker.selectedPrefix": "Sélection :",
+  "modals.picker.clearSelection": "Effacer",
   "modals.picker.findOwner": "Rechercher un propriétaire",
   "modals.picker.fleetOwner": "Propriétaire de flotte",
   "modals.picker.chooseOwner": "Choisir un propriétaire…",

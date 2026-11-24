@@ -5,6 +5,7 @@ import { fieldsFr } from "./sections/fields-fr";
 import { miscFr } from "./sections/misc-fr";
 import { modalsFr } from "./sections/modals-fr";
 import { errorsServerFr } from "./sections/errors-server-fr";
+import { erasureFr } from "./sections/erasure-fr";
 
 const frNavData = {
   overview: { label: "Vue d'ensemble", eyebrow: "Opérations", title: "Pilotage des échanges" },
@@ -19,6 +20,7 @@ const frNavData = {
   owners: { label: "Propriétaires", eyebrow: "Flotte", title: "Propriétaires de flotte" },
   agents: { label: "Agents", eyebrow: "Flotte", title: "Agents" },
   users: { label: "Utilisateurs", eyebrow: "Administration", title: "Utilisateurs" },
+  erasureRequests: { label: "Demandes d'effacement", eyebrow: "Confidentialité", title: "Demandes d'effacement de compte" },
   roles: { label: "Rôles", eyebrow: "Accès", title: "Rôles" },
   cards: { label: "Cartes", eyebrow: "Accès", title: "Cartes NFC" },
   wallets: { label: "Portefeuilles", eyebrow: "Finance", title: "Portefeuilles" },
@@ -35,4 +37,5 @@ export const fr = {
   ...miscFr,
   ...modalsFr,
   ...errorsServerFr,
+  ...erasureFr,
 } as const;

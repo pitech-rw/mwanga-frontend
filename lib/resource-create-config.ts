@@ -3,7 +3,19 @@ import { DEFAULT_CURRENCY } from "./default-currency";
 import type { Section } from "./nav";
 
 /** Every dashboard section that lists API resources (excludes overview). */
-export type ResourceSection = Exclude<Section, "overview" | "topUp" | "agentTransactions">;
+export type ResourceSection = Exclude<
+  Section,
+  "overview" | "topUp" | "agentTransactions" | "erasureRequests"
+>;
+
+export function isResourceSection(section: Section): section is ResourceSection {
+  return (
+    section !== "overview" &&
+    section !== "topUp" &&
+    section !== "agentTransactions" &&
+    section !== "erasureRequests"
+  );
+}
 
 export type FieldType =
   | "text"
@@ -11,6 +23,7 @@ export type FieldType =
   | "password"
   | "number"
   | "select"
+  | "pills"
   | "datetime-local"
   | "textarea"
   | "checkbox"
@@ -202,21 +215,20 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     section: "users",
     apiPath: "/users",
     title: "Add user",
-    description: "Creates a staff account with sign-in credentials.",
     submitLabel: "Create user",
     fields: [
+      {
+        name: "type",
+        label: "Account type",
+        type: "select",
+        required: true,
+        options: selectOptions(USER_TYPES),
+      },
       { name: "username", label: "Username", type: "text", required: true },
       { name: "firstName", label: "First name", type: "text", required: true },
       { name: "lastName", label: "Last name", type: "text", required: true },
       { name: "email", label: "Email", type: "email", required: true },
       { name: "password", label: "Password", type: "password", required: true, placeholder: "Min. 8 characters" },
-      {
-        name: "type",
-        label: "Role type",
-        type: "select",
-        required: true,
-        options: selectOptions(USER_TYPES),
-      },
       { name: "phone", label: "Phone", type: "text" },
     ],
   },
@@ -306,7 +318,13 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
 };
 
 export function getCreateConfig(section: Section): CreateResourceConfig | null {
-  if (section === "overview" || section === "topUp" || section === "agentTransactions" || section === "riders") {
+  if (
+    section === "overview" ||
+    section === "topUp" ||
+    section === "agentTransactions" ||
+    section === "riders" ||
+    section === "erasureRequests"
+  ) {
     return null;
   }
   return CONFIGS[section];

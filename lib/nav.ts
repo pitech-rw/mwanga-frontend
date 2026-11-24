@@ -16,7 +16,8 @@ export type Section =
   | "incidents"
   | "wallets"
   | "companyAccounts"
-  | "inventory";
+  | "inventory"
+  | "erasureRequests";
 
 export type MenuItem = {
   id: Section;
@@ -162,6 +163,13 @@ const MENU_ITEM_MAP: Record<Section, MenuItem> = {
     eyebrow: "Compliance",
     title: "Battery incidents",
   },
+  erasureRequests: {
+    id: "erasureRequests",
+    label: "Erasure requests",
+    apiPath: null,
+    eyebrow: "Privacy",
+    title: "Account erasure requests",
+  },
 };
 
 /** Top-level destinations (ungrouped) — common SaaS pattern for home / dashboard. */
@@ -171,7 +179,11 @@ export const NAV_PRIMARY_ITEMS: MenuItem[] = [MENU_ITEM_MAP.overview];
 const NAV_GROUP_SECTIONS: { groupKey: NavMenuGroupKey; label: string; sections: Section[] }[] = [
   { groupKey: "network", label: "Network", sections: ["stations", "swaps"] },
   { groupKey: "fleetInventory", label: "Fleet & inventory", sections: ["inventory", "batteries", "bikes", "owners", "agents"] },
-  { groupKey: "peopleAccess", label: "People & access", sections: ["users", "roles", "cards"] },
+  {
+    groupKey: "peopleAccess",
+    label: "People & access",
+    sections: ["users", "erasureRequests", "roles", "cards"],
+  },
   { groupKey: "finance", label: "Finance", sections: ["wallets", "companyAccounts"] },
 ];
 
