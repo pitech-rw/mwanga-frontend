@@ -11,7 +11,8 @@ import {
   IconUsers,
 } from "./icons/icon";
 import { displayName, type AuthUser } from "../lib/auth";
-import { useT } from "./locale";
+import { useLocale, useT } from "./locale";
+import { roleOrUserTypeLabel } from "../lib/role-labels";
 
 type AccountMenuProps = {
   user: AuthUser | null;
@@ -35,6 +36,7 @@ function initials(user: AuthUser | null): string {
 
 export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfile, onManageUsers }: AccountMenuProps) {
   const t = useT();
+  const { locale } = useLocale();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -66,8 +68,8 @@ export function AccountMenu({ user, theme, onToggleTheme, onSignOut, onOpenProfi
   }, [open]);
 
   const name = displayName(user);
-  const role = user?.role.name ?? t("account.member");
-  const accountType = user?.type?.replace(/_/g, " ") ?? t("account.member");
+  const role = user?.role?.name ? roleOrUserTypeLabel(locale, user.role.name) : t("account.member");
+  const accountType = user?.type ? roleOrUserTypeLabel(locale, user.type) : t("account.member");
 
   return (
     <div className="account-menu" ref={rootRef}>

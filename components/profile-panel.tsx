@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useT } from "./locale";
+import { useLocale, useT } from "./locale";
+import { roleOrUserTypeLabel } from "../lib/role-labels";
 
 import { FormEvent, useCallback, useEffect, useId, useMemo, useState } from "react";
 import { userMessageForNetwork } from "../lib/api-errors";
@@ -98,6 +99,7 @@ function formFromProfile(profile: MyProfile): FormState {
 
 export function ProfilePanel({ tab, pathPrefix, onSaved, onError, onAccountErased }: ProfilePanelProps) {
   const t = useT();
+  const { locale } = useLocale();
   const detailsFormId = useId();
   const locationFormId = useId();
   const securityFormId = useId();
@@ -374,11 +376,11 @@ export function ProfilePanel({ tab, pathPrefix, onSaved, onError, onAccountErase
               >
                 <span className="profile-account-chip">
                   <span className="profile-account-chip-label">{t("modals.profile.fields.accountType")}</span>
-                  <span className="profile-account-chip-value">{meta.type.replace(/_/g, " ")}</span>
+                  <span className="profile-account-chip-value">{roleOrUserTypeLabel(locale, meta.type)}</span>
                 </span>
                 <span className="profile-account-chip">
                   <span className="profile-account-chip-label">{t("modals.profile.fields.role")}</span>
-                  <span className="profile-account-chip-value">{meta.role.replace(/_/g, " ")}</span>
+                  <span className="profile-account-chip-value">{roleOrUserTypeLabel(locale, meta.role)}</span>
                 </span>
               </div>
             ) : null}

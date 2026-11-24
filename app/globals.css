@@ -2119,6 +2119,48 @@ table.data th.right {
   background: color-mix(in srgb, var(--warning) 8%, var(--surface));
 }
 
+.role-permissions-matrix {
+  display: grid;
+  gap: 16px;
+  max-height: min(60vh, 520px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.role-permissions-group {
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  padding: 12px 14px;
+  margin: 0;
+}
+
+.role-permissions-group legend {
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 0 6px;
+}
+
+.role-permissions-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.role-permission-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.role-permission-label span {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85rem;
+}
+
 .owner-fleet-block {
   display: grid;
   gap: 12px;
