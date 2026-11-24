@@ -23,6 +23,7 @@ export type FieldType =
   | "password"
   | "number"
   | "select"
+  | "pills"
   | "datetime-local"
   | "textarea"
   | "checkbox"

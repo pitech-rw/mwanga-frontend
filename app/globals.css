@@ -1006,6 +1006,68 @@ a {
   min-width: 11rem;
 }
 
+.field-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.field-pill-group--scroll {
+  max-height: 11rem;
+  overflow-y: auto;
+  padding: 4px 2px;
+  margin: -4px -2px;
+}
+
+.field-pills > span,
+.field.field-pills > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
+.field-pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  background: var(--surface);
+  color: var(--text-soft);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.field-pill:hover:not(:disabled) {
+  border-color: var(--brand-mint);
+  color: var(--text);
+}
+
+.field-pill[aria-pressed="true"] {
+  border-color: var(--brand-mint);
+  background: color-mix(in srgb, var(--brand-mint) 14%, transparent);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-mint) 35%, transparent);
+}
+
+.field-pill:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.edit-user-reactivate {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
 .table-wrap {
   overflow-x: auto;
 }

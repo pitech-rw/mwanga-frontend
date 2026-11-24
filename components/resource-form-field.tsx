@@ -3,6 +3,7 @@
 import { useT } from "./locale";
 
 import type { FieldSpec } from "../lib/resource-create-config";
+import { FieldPills } from "./field-pills";
 import { PasswordInput } from "./password-input";
 
 type ResourceFormFieldProps = {
@@ -39,7 +40,17 @@ export function ResourceFormField({
           </>
         ) : null}
       </span>
-      {field.type === "select" ? (
+      {field.type === "pills" ? (
+        <FieldPills
+          bare
+          label={field.label}
+          value={value}
+          disabled={disabled}
+          required={field.required}
+          options={field.options ?? []}
+          onChange={onValueChange}
+        />
+      ) : field.type === "select" ? (
         <select
           required={field.required}
           value={value}

@@ -17,6 +17,7 @@ import { emptyFileState, mergeUploadedFiles } from "../lib/resource-form-files";
 import { recordLabelForRow } from "../lib/resource-record-label";
 import { STATION_LOCATION_FIELD_NAMES } from "../lib/station-form-fields";
 import { PlacesLocationPicker } from "./places-location-picker";
+import { FieldPills } from "./field-pills";
 import { ResourceFormField } from "./resource-form-field";
 import { Modal } from "./modal";
 import { EditBatteryModal } from "./edit-battery-modal";
@@ -284,19 +285,17 @@ function EditResourceModalBody({ open, target, onClose, onSaved, onError }: Edit
           <>
             {userInactive ? (
               <div className="edit-user-reactivate" role="region">
-                <p className="edit-user-sign-in-value">{t("modals.edit.user.statusInactive")}</p>
                 <p className="sub">{t("modals.edit.user.reactivateHint")}</p>
-                <label className="field field-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={values.reactivate === "true"}
-                    disabled={saving}
-                    onChange={(event) =>
-                      setValues({ ...values, reactivate: event.target.checked ? "true" : "false" })
-                    }
-                  />
-                  <span>{t("modals.edit.user.reactivateEnable")}</span>
-                </label>
+                <FieldPills
+                  label={t("modals.edit.user.signInStatus")}
+                  value={values.reactivate === "true" ? "true" : "false"}
+                  disabled={saving}
+                  options={[
+                    { value: "false", label: t("modals.edit.user.statusInactive") },
+                    { value: "true", label: t("modals.edit.user.reactivateEnable") },
+                  ]}
+                  onChange={(next) => setValues({ ...values, reactivate: next })}
+                />
                 {userEditLocked ? (
                   <p className="sub">{t("modals.edit.user.fieldsLockedHint")}</p>
                 ) : null}
@@ -321,42 +320,36 @@ function EditResourceModalBody({ open, target, onClose, onSaved, onError }: Edit
         {stationDetailFields.map((field) => renderField(field))}
 
         {section === "users" && userAccountTypeLive === "swapper" ? (
-          <label className="field">
-            <span>{t("modals.edit.user.stationField")}</span>
-            <select
-              value={values.stationId ?? ""}
-              disabled={saving || loadingUserLinks || userEditLocked}
-              onChange={(event) => setValues({ ...values, stationId: event.target.value })}
-            >
-              <option value="">{t("modals.edit.user.noStation")}</option>
-              {stationOptions.map((station) => (
-                <option key={station.id} value={String(station.id)}>
-                  {station.code} — {station.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FieldPills
+            label={t("modals.edit.user.stationField")}
+            value={values.stationId ?? ""}
+            disabled={saving || loadingUserLinks || userEditLocked}
+            emptyLabel={t("modals.edit.user.noStation")}
+            scrollable={stationOptions.length > 8}
+            options={stationOptions.map((station) => ({
+              value: String(station.id),
+              label: `${station.code} — ${station.name}`,
+            }))}
+            onChange={(next) => setValues({ ...values, stationId: next })}
+          />
         ) : null}
 
         {section === "users" && userAccountTypeLive === "rider" ? (
-          <label className="field">
-            <span>{t("modals.edit.user.fleetOwnerField")}</span>
-            <select
-              value={values.ownerId ?? ""}
-              disabled={saving || loadingUserLinks || ownerOptions.length === 0 || userEditLocked}
-              required
-              onChange={(event) => setValues({ ...values, ownerId: event.target.value })}
-            >
-              {ownerOptions.length === 0 ? (
-                <option value="">{t("modals.edit.user.noFleetOwner")}</option>
-              ) : null}
-              {ownerOptions.map((owner) => (
-                <option key={owner.id} value={String(owner.id)}>
-                  {ownerOptionLine(owner)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FieldPills
+            label={t("modals.edit.user.fleetOwnerField")}
+            value={values.ownerId ?? ""}
+            disabled={saving || loadingUserLinks || ownerOptions.length === 0 || userEditLocked}
+            required
+            emptyLabel={
+              ownerOptions.length === 0 ? t("modals.edit.user.noFleetOwner") : undefined
+            }
+            scrollable={ownerOptions.length > 8}
+            options={ownerOptions.map((owner) => ({
+              value: String(owner.id),
+              label: ownerOptionLine(owner),
+            }))}
+            onChange={(next) => setValues({ ...values, ownerId: next })}
+          />
         ) : null}
       </form>
     </Modal>

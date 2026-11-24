@@ -23,7 +23,7 @@ export function getUserUpdateFieldsForRow(row: Record<string, unknown>): FieldSp
     {
       name: "type",
       label: "Account type",
-      type: "select",
+      type: "pills",
       options: selectOptions(USER_TYPES),
     },
     { name: "username", label: "Username", type: "text" },
