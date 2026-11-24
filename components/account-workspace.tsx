@@ -19,7 +19,7 @@ import { useTheme } from "./theme";
 import { useToast } from "./toast";
 import { getApiUrl } from "../lib/api";
 import { authFetch, clearSession, getAccessToken, getStoredUser, type AuthUser } from "../lib/auth";
-import { ProfileModal } from "./profile-modal";
+import { ProfilePanel } from "./profile-panel";
 import { ErasureRequestsPanel } from "./erasure-requests-panel";
 import { AGENT_API_MENU_ITEMS, API_MENU_ITEMS, getMenuItem, type Section } from "../lib/nav";
 import { isResourceSection } from "../lib/resource-create-config";
@@ -33,6 +33,9 @@ import {
 } from "../lib/nav-permissions";
 import {
   companyAccountTransactionsSubRoute,
+  profileHref,
+  profilePathInvalid,
+  profileSubRoute,
   sectionFromPathname,
   sectionHref,
   stationDetailSubRoute,
@@ -71,11 +74,11 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   const [resourceReloadKey, setResourceReloadKey] = useState(0);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [profileOpen, setProfileOpen] = useState(false);
-
   const section = sectionFromPathname(pathname, pathPrefix);
   const companyAccountTx = companyAccountTransactionsSubRoute(pathname, pathPrefix);
   const stationDetail = stationDetailSubRoute(pathname, pathPrefix);
+  const profileRoute = profileSubRoute(pathname, pathPrefix);
+  const onProfilePage = profileRoute !== null;
   const sessionPermissions = sessionUser?.permissions ?? [];
 
   useEffect(() => {
@@ -99,6 +102,10 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
   useEffect(() => {
     const item = localizedMenuItem(section, t);
+    if (onProfilePage) {
+      document.title = t("meta.titleSignedIn", { section: t("workspace.breadcrumbProfile") });
+      return;
+    }
     if (companyAccountTx) {
       document.title = `Transactions · Company account #${companyAccountTx.accountId} — Mwanga`;
       return;
@@ -109,7 +116,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     }
     const label = section === "overview" ? t("workspace.breadcrumbOverview") : item.title;
     document.title = t("meta.titleSignedIn", { section: label });
-  }, [section, companyAccountTx, stationDetail, t]);
+  }, [section, companyAccountTx, stationDetail, onProfilePage, t]);
 
   useEffect(() => {
     if (!getAccessToken()) {
@@ -193,8 +200,8 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
   };
 
   const openProfile = useCallback(() => {
-    setProfileOpen(true);
-  }, []);
+    router.push(profileHref(pathPrefix));
+  }, [pathPrefix, router]);
 
   const onProfileSaved = useCallback(() => {
     setSessionUser(getStoredUser());
@@ -212,13 +219,15 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
 
   const activeMenu = localizedMenuItem(section, t);
   const accountHome = pathPrefix.endsWith("/") ? pathPrefix.slice(0, -1) : pathPrefix;
-  const pageTitle = companyAccountTx
-    ? t("workspace.breadcrumbTransactions")
-    : stationDetail
-      ? t("workspace.breadcrumbStationDetail")
-      : section === "overview"
-        ? t("workspace.breadcrumbOverview")
-        : activeMenu.title;
+  const pageTitle = onProfilePage
+    ? t("workspace.breadcrumbProfile")
+    : companyAccountTx
+      ? t("workspace.breadcrumbTransactions")
+      : stationDetail
+        ? t("workspace.breadcrumbStationDetail")
+        : section === "overview"
+          ? t("workspace.breadcrumbOverview")
+          : activeMenu.title;
   const breadcrumbLeaf = pageTitle;
   const isAgent = sessionReady && sessionUser?.type === "agent";
   type AgentSection = "topUp" | "agentTransactions" | "riders";
@@ -230,8 +239,17 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
       return;
     }
 
+    if (profilePathInvalid(pathname, pathPrefix)) {
+      router.replace(profileHref(pathPrefix));
+      return;
+    }
+
     const permissions = sessionUser?.permissions ?? [];
     const agent = sessionUser?.type === "agent";
+
+    if (onProfilePage) {
+      return;
+    }
 
     if (agent) {
       const blocked =
@@ -260,6 +278,8 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     stationDetail,
     router,
     pathPrefix,
+    pathname,
+    onProfilePage,
   ]);
 
   if (!sessionReady) {
@@ -307,10 +327,22 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
                     <li className="topbar-breadcrumb-sep" aria-hidden="true">
                       /
                     </li>
-                    <li className="topbar-breadcrumb-current">{agentBreadcrumb}</li>
+                    {onProfilePage ? (
+                      <>
+                        <li>
+                          <Link href={sectionHref(pathPrefix, agentSection)}>{agentBreadcrumb}</Link>
+                        </li>
+                        <li className="topbar-breadcrumb-sep" aria-hidden="true">
+                          /
+                        </li>
+                        <li className="topbar-breadcrumb-current">{t("workspace.breadcrumbProfile")}</li>
+                      </>
+                    ) : (
+                      <li className="topbar-breadcrumb-current">{agentBreadcrumb}</li>
+                    )}
                   </ol>
                 </nav>
-                <h1>{agentTitle}</h1>
+                <h1>{onProfilePage ? pageTitle : agentTitle}</h1>
               </div>
             </div>
             <div className="topbar-actions">
@@ -334,7 +366,15 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
             </div>
           ) : null}
 
-          {agentSection === "topUp" ? (
+          {onProfilePage && profileRoute ? (
+            <ProfilePanel
+              tab={profileRoute.tab}
+              pathPrefix={pathPrefix}
+              onSaved={onProfileSaved}
+              onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
+              onAccountErased={handleForbidden}
+            />
+          ) : agentSection === "topUp" ? (
             <AgentTopUpPanel />
           ) : agentSection === "agentTransactions" ? (
             <AgentTransactionsPanel reloadKey={resourceReloadKey} onForbidden={handleForbidden} />
@@ -360,13 +400,6 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         </main>
 
         <RecordDetailModal open={detail !== null} payload={detail} onClose={() => setDetail(null)} />
-        <ProfileModal
-          open={profileOpen}
-          onClose={() => setProfileOpen(false)}
-          onSaved={onProfileSaved}
-          onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
-          onAccountErased={handleForbidden}
-        />
       </div>
     );
   }
@@ -448,6 +481,16 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
                       </li>
                       <li className="topbar-breadcrumb-current">Station detail</li>
                     </>
+                  ) : onProfilePage ? (
+                    <>
+                      <li>
+                        <Link href={accountHome}>{t("workspace.breadcrumbOverview")}</Link>
+                      </li>
+                      <li className="topbar-breadcrumb-sep" aria-hidden="true">
+                        /
+                      </li>
+                      <li className="topbar-breadcrumb-current">{t("workspace.breadcrumbProfile")}</li>
+                    </>
                   ) : (
                     <li className="topbar-breadcrumb-current">{breadcrumbLeaf}</li>
                   )}
@@ -496,7 +539,17 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           </div>
         ) : null}
 
-        {section === "overview" ? (
+        {onProfilePage && profileRoute ? (
+          <ProfilePanel
+            tab={profileRoute.tab}
+            pathPrefix={pathPrefix}
+            onSaved={onProfileSaved}
+            onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
+            onAccountErased={handleForbidden}
+          />
+        ) : null}
+
+        {!onProfilePage && section === "overview" ? (
           <section className="stats">
             {userCanAccessSection("batteries", sessionPermissions) ? (
               <article className="card stat">
@@ -525,7 +578,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           </section>
         ) : null}
 
-        {companyAccountTx ? (
+        {!onProfilePage && companyAccountTx ? (
           <CompanyAccountTransactionsPanel
             accountId={companyAccountTx.accountId}
             pathPrefix={pathPrefix}
@@ -533,7 +586,7 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           />
         ) : null}
 
-        {stationDetail ? (
+        {!onProfilePage && stationDetail ? (
           <StationDetailPanel
             stationId={stationDetail.stationId}
             pathPrefix={pathPrefix}
@@ -541,11 +594,15 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           />
         ) : null}
 
-        {section === "erasureRequests" ? (
+        {!onProfilePage && section === "erasureRequests" ? (
           <ErasureRequestsPanel onForbidden={handleForbidden} />
         ) : null}
 
-        {activeMenu.apiPath && isResourceSection(section) && !companyAccountTx && !stationDetail ? (
+        {!onProfilePage &&
+        activeMenu.apiPath &&
+        isResourceSection(section) &&
+        !companyAccountTx &&
+        !stationDetail ? (
           <ApiResourcePanel
             section={section}
             apiPath={activeMenu.apiPath}
@@ -614,13 +671,6 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
       </main>
 
       <RecordDetailModal open={detail !== null} payload={detail} onClose={() => setDetail(null)} />
-      <ProfileModal
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        onSaved={onProfileSaved}
-        onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
-        onAccountErased={handleForbidden}
-      />
     </div>
   );
 }

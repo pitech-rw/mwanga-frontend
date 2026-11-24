@@ -20,6 +20,8 @@ export type AuthUser = {
 export type MyProfile = AuthUser & {
   phone?: string | null;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   image?: string | null;
   nationalId?: string | null;
   lastLoginAt?: string | null;
@@ -103,6 +105,8 @@ export type UpdateMePayload = {
   email?: string;
   phone?: string;
   address?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   image?: string;
   password?: string;
   currentPassword?: string;

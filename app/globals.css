@@ -1929,6 +1929,99 @@ table.data th.right {
   text-transform: capitalize;
 }
 
+.profile-page {
+  max-width: 640px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.profile-page--wide {
+  max-width: min(720px, 100%);
+}
+
+.profile-location-map-wrap {
+  margin-top: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+
+.profile-location-map {
+  display: block;
+  width: 100%;
+  height: 280px;
+  border: none;
+}
+
+.profile-location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+
+.profile-page-tabs {
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-page-tabs .drawer-tab {
+  text-decoration: none;
+}
+
+.profile-page-body {
+  padding: 20px;
+}
+
+.profile-page-form {
+  margin-top: 16px;
+}
+
+.profile-account-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.profile-account-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  font-size: 0.85rem;
+}
+
+.profile-account-chip-label {
+  color: var(--text-soft);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+
+.profile-account-chip-value {
+  color: var(--text);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.profile-account-hint {
+  margin: -8px 0 12px;
+}
+
+.profile-page-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 .profile-form-section {
   border: none;
   padding: 0;

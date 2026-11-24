@@ -15,6 +15,9 @@ function accountPathname(segments: string[] | undefined): string {
 }
 
 function titleForSection(pathname: string): string {
+  if (pathname === `${ACCOUNT_BASE}/profile` || pathname.startsWith(`${ACCOUNT_BASE}/profile/`)) {
+    return "Your profile";
+  }
   const section = sectionFromPathname(pathname, ACCOUNT_BASE);
   const item = getMenuItem(section);
   if (section === "overview") {
