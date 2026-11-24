@@ -8,6 +8,7 @@ import { authFetch } from "../lib/auth";
 import { ownerListSearchHaystack, ownerOptionLine, type OwnerListRow } from "../lib/owner-list-format";
 import { RECENT_PICKER_LIMIT, recentPickerOptions } from "../lib/recent-picker";
 import { Modal } from "./modal";
+import { PickerSelectionStatus } from "./picker-selection-status";
 
 export type RiderFleetOwnerAssignTarget = {
   id: number;
@@ -229,9 +230,9 @@ export function AssignRiderFleetOwnerModal({
         )}
 
         {selectedOwner ? (
-          <p className="create-wallet-selection sub" role="status">
-            <strong>Selected:</strong> {ownerOptionLine(selectedOwner)}
-          </p>
+          <PickerSelectionStatus disabled={saving || loadingOwners} onClear={() => setOwnerId(null)}>
+            {ownerOptionLine(selectedOwner)}
+          </PickerSelectionStatus>
         ) : null}
       </form>
     </Modal>

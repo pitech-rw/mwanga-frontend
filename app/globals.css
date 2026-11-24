@@ -1899,6 +1899,36 @@ table.data th.right {
   margin-top: 0;
 }
 
+.profile-form-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0 0 4px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-form-meta > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+}
+
+.profile-form-meta dt {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.profile-form-meta dd {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
 .profile-form-section {
   border: none;
   padding: 0;
@@ -1939,16 +1969,6 @@ table.data th.right {
   font-size: 0.85rem;
   color: var(--text-soft);
   line-height: 1.4;
-}
-
-.profile-form-section--readonly .field input:disabled {
-  cursor: default;
-  opacity: 1;
-}
-
-.profile-form-admin-link {
-  justify-self: start;
-  margin-bottom: 4px;
 }
 
 .edit-station-location {
@@ -2365,8 +2385,39 @@ table.data th.right {
 }
 
 .create-wallet-selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
   margin-top: 4px;
   line-height: 1.45;
+}
+
+.create-wallet-selection-label strong {
+  font-weight: 600;
+}
+
+.create-wallet-selection-clear {
+  margin: 0;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent, #2563eb);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.create-wallet-selection-clear:hover:not(:disabled) {
+  color: color-mix(in srgb, var(--accent, #2563eb) 82%, var(--text));
+}
+
+.create-wallet-selection-clear:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .wallet-owner-cell {

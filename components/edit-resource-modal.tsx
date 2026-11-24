@@ -340,9 +340,7 @@ function EditResourceModalBody({ open, target, onClose, onSaved, onError }: Edit
             value={values.ownerId ?? ""}
             disabled={saving || loadingUserLinks || ownerOptions.length === 0 || userEditLocked}
             required
-            emptyLabel={
-              ownerOptions.length === 0 ? t("modals.edit.user.noFleetOwner") : undefined
-            }
+            emptyLabel={t("modals.edit.user.noFleetOwner")}
             scrollable={ownerOptions.length > 8}
             options={ownerOptions.map((owner) => ({
               value: String(owner.id),

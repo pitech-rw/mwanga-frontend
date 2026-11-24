@@ -14,7 +14,6 @@ import {
   type ErasureRequestSummary,
   type MyProfile,
 } from "../lib/auth";
-import { canManageOtherUsers } from "../lib/nav-permissions";
 import { Modal } from "./modal";
 import { PasswordInput } from "./password-input";
 
@@ -31,7 +30,6 @@ type ProfileModalProps = {
   onClose: () => void;
   onSaved?: (profile: MyProfile) => void;
   onError?: (message: string) => void;
-  onOpenUserAdministration?: () => void;
   onAccountErased?: () => void;
 };
 
@@ -80,7 +78,6 @@ export function ProfileModal({
   onClose,
   onSaved,
   onError,
-  onOpenUserAdministration,
   onAccountErased,
 }: ProfileModalProps) {
   const t = useT();
@@ -88,7 +85,7 @@ export function ProfileModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [meta, setMeta] = useState<{ role: string; type: string; canManageUsers: boolean } | null>(null);
+  const [meta, setMeta] = useState<{ role: string; type: string } | null>(null);
   const [values, setValues] = useState<FormState>(emptyForm);
   const [initial, setInitial] = useState<FormState>(emptyForm);
   const [erasureRequest, setErasureRequest] = useState<ErasureRequestSummary | null>(null);
@@ -117,7 +114,6 @@ export function ProfileModal({
         setMeta({
           role: profile.role.name,
           type: profile.type,
-          canManageUsers: canManageOtherUsers(profile.permissions),
         });
         const erasure = await fetchLatestErasureRequest().catch(() => null);
         if (active) {
@@ -240,7 +236,6 @@ export function ProfileModal({
       open={open}
       variant="panel"
       title={t("modals.profile.title")}
-      description={t("modals.profile.description")}
       onClose={onClose}
       footer={
         <>
@@ -260,47 +255,18 @@ export function ProfileModal({
           </div>
         ) : null}
 
-        <fieldset className="profile-form-section profile-form-section--readonly" disabled={loading}>
-          <legend>{t("modals.profile.sectionAccount")}</legend>
-          <p className="profile-form-section-hint">
-            {meta?.canManageUsers ? t("modals.profile.hintAdmin") : t("modals.profile.hintDefault")}
-          </p>
-          {meta?.canManageUsers && onOpenUserAdministration ? (
-            <button
-              type="button"
-              className="btn profile-form-admin-link"
-              onClick={() => {
-                onClose();
-                onOpenUserAdministration();
-              }}
-            >
-              {t("common.userAdministration")}
-            </button>
-          ) : null}
-          <label className="field">
-            <span>{t("modals.profile.fields.role")}</span>
-            <input
-              type="text"
-              value={meta ? meta.role.replace(/_/g, " ") : "—"}
-              disabled
-              readOnly
-              tabIndex={-1}
-            />
-          </label>
-          <label className="field">
-            <span>{t("modals.profile.fields.accountType")}</span>
-            <input
-              type="text"
-              value={meta ? meta.type.replace(/_/g, " ") : "—"}
-              disabled
-              readOnly
-              tabIndex={-1}
-            />
-          </label>
-        </fieldset>
+        <dl className="profile-form-meta" aria-label={t("modals.profile.sectionAccount")}>
+          <div>
+            <dt>{t("modals.profile.fields.role")}</dt>
+            <dd>{meta ? meta.role.replace(/_/g, " ") : "—"}</dd>
+          </div>
+          <div>
+            <dt>{t("modals.profile.fields.accountType")}</dt>
+            <dd>{meta ? meta.type.replace(/_/g, " ") : "—"}</dd>
+          </div>
+        </dl>
 
         <fieldset className="profile-form-section">
-          <legend>{t("modals.profile.sectionPersonal")}</legend>
           <label className="field">
             <span>{t("modals.profile.fields.username")}</span>
             <input
@@ -436,7 +402,6 @@ export function ProfileModal({
 
         <fieldset className="profile-form-section">
           <legend>{t("modals.profile.sectionSecurity")}</legend>
-          <p className="profile-form-section-hint">{t("modals.profile.hintPasswordBlank")}</p>
           <label className="field">
             <span>{t("modals.profile.fields.currentPassword")}</span>
             <PasswordInput

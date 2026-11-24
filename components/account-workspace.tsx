@@ -196,10 +196,6 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
     setProfileOpen(true);
   }, []);
 
-  const openUserAdministration = useCallback(() => {
-    router.push(sectionHref(pathPrefix, "users"));
-  }, [router, pathPrefix]);
-
   const onProfileSaved = useCallback(() => {
     setSessionUser(getStoredUser());
     notify({ title: t("toast.profileUpdated"), message: t("toast.profileUpdatedMessage"), tone: "success" });
@@ -370,7 +366,6 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
           onSaved={onProfileSaved}
           onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
           onAccountErased={handleForbidden}
-          onOpenUserAdministration={openUserAdministration}
         />
       </div>
     );
@@ -625,7 +620,6 @@ export function AccountWorkspace({ pathPrefix }: AccountWorkspaceProps) {
         onSaved={onProfileSaved}
         onError={(message) => notify({ title: t("toast.profileError"), message, tone: "error" })}
         onAccountErased={handleForbidden}
-        onOpenUserAdministration={openUserAdministration}
       />
     </div>
   );
