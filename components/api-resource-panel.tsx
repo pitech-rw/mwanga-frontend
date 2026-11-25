@@ -14,11 +14,14 @@ import {
   walletBalanceNumber,
   walletCurrency,
   walletDeleteLabelFromRow,
-  walletOwnerCell,
+  walletHolderCell,
+  walletHolderSearchHaystack,
   walletLedgerTargetFromRow,
   companyAccountTransactionsHref,
   type AccountLedgerTarget,
+  agentDirectoryLedgerTargetFromRow,
   agentDirectoryTopUpTargetFromRow,
+  directoryFleetOwnerLabel,
   agentFloatTopUpTargetFromRow,
   type AgentWalletTopUpTarget,
 } from "../lib/wallet-row-helpers";
@@ -80,6 +83,7 @@ import {
 import { stationDetailHref } from "../lib/nav-path";
 import { formatTableDateTime, isTableDateFieldKey } from "../lib/format-datetime";
 import { translateFieldKey, type TranslateFn } from "../lib/i18n/translate";
+import { erasedUserLabel, isErasedUser } from "../lib/user-display";
 import { localizeRowActions } from "../lib/table-row-actions";
 import { useLocale, useT } from "./locale";
 
@@ -283,29 +287,118 @@ function userDisplayName(row: Row): string {
   return combined || cellValue(row.username);
 }
 
+function cardRiderUsernameCell(row: Row, unassignedLabel: string): string {
+  const user = row.user;
+  if (user && typeof user === "object") {
+    const u = user as Record<string, unknown>;
+    const id =
+      typeof u.id === "number" ? u.id : typeof row.userId === "number" ? row.userId : null;
+    if (id != null) {
+      if (
+        isErasedUser({
+          erasedAt: typeof u.erasedAt === "string" ? u.erasedAt : null,
+          username: typeof u.username === "string" ? u.username : null,
+        })
+      ) {
+        return erasedUserLabel(id);
+      }
+    }
+    const username = typeof u.username === "string" ? u.username.trim() : "";
+    if (username) {
+      return username;
+    }
+  }
+  if (row.userId == null) {
+    return unassignedLabel;
+  }
+  return "—";
+}
+
+function cardRiderSearchHaystack(row: Row): string {
+  const parts: string[] = [];
+  const user = row.user;
+  if (user && typeof user === "object") {
+    const u = user as Record<string, unknown>;
+    for (const key of ["username", "firstName", "lastName", "email"] as const) {
+      const value = u[key];
+      if (typeof value === "string" && value.trim()) {
+        parts.push(value.trim());
+      }
+    }
+    if (typeof u.id === "number") {
+      parts.push(String(u.id));
+    }
+  }
+  if (row.userId != null) {
+    parts.push(String(row.userId));
+  }
+  return parts.join(" ");
+}
+
+function buildCardDataColumns(
+  t: TranslateFn,
+  locale: import("../lib/locale-storage").LocaleCode,
+): Column<Row>[] {
+  const unassigned = t("tables.headers.unassigned");
+  return [
+    {
+      key: "serialNumber",
+      header: translateFieldKey(locale, "serialNumber"),
+      sortValue: (row) => String(row.serialNumber ?? ""),
+      searchValue: (row) => cellValue(row.serialNumber),
+      render: (row) => cellValue(row.serialNumber),
+    },
+    {
+      key: "token",
+      header: translateFieldKey(locale, "token"),
+      sortValue: (row) => String(row.token ?? ""),
+      searchValue: (row) => cellValue(row.token),
+      render: (row) => {
+        const token = typeof row.token === "string" ? row.token : "";
+        if (!token) {
+          return "—";
+        }
+        const shown = token.length > 20 ? `${token.slice(0, 16)}…` : token;
+        return (
+          <span className="data-table-ellipsis-inner" title={token}>
+            {shown}
+          </span>
+        );
+      },
+    },
+    {
+      key: "type",
+      header: translateFieldKey(locale, "type"),
+      sortValue: (row) => String(row.type ?? ""),
+      searchValue: (row) => cellValue(row.type),
+      render: (row) => cellValue(row.type),
+    },
+    {
+      key: "status",
+      header: translateFieldKey(locale, "status"),
+      sortValue: (row) => String(row.status ?? ""),
+      searchValue: (row) => cellValue(row.status),
+      render: (row) => <Badge status={String(row.status ?? "—")} />,
+    },
+    {
+      key: "username",
+      header: translateFieldKey(locale, "username"),
+      sortValue: (row) => cardRiderUsernameCell(row, unassigned),
+      searchValue: (row) => cardRiderSearchHaystack(row),
+      render: (row) => cardRiderUsernameCell(row, unassigned),
+    },
+  ];
+}
+
 function buildWalletDataColumns(t: TranslateFn): Column<Row>[] {
   return [
     {
-      key: "owner",
-      header: t("tables.headers.owner"),
-      sortValue: (row) => walletOwnerCell(row).label,
-      searchValue: (row) => {
-        const { label, type } = walletOwnerCell(row);
-        const parts = [label, type, row.ownerId != null ? String(row.ownerId) : ""];
-        const owner = row.owner;
-        if (owner && typeof owner === "object") {
-          const o = owner as Record<string, unknown>;
-          if (typeof o.email === "string") {
-            parts.push(o.email);
-          }
-          if (typeof o.name === "string") {
-            parts.push(o.name);
-          }
-        }
-        return parts.filter(Boolean).join(" ");
-      },
+      key: "holder",
+      header: t("tables.headers.holder"),
+      sortValue: (row) => walletHolderCell(row).label,
+      searchValue: (row) => walletHolderSearchHaystack(row),
       render: (row) => {
-        const { label, type } = walletOwnerCell(row);
+        const { label, type } = walletHolderCell(row);
         return (
           <span className="wallet-owner-cell">
             <span className="wallet-owner-name">{label}</span>
@@ -665,7 +758,10 @@ function topUpDirectoryKind(row: Row): string {
   return row.directoryKind === "owner" ? "owner" : "rider";
 }
 
-function buildAgentTopUpDirectoryColumns(): Column<Row>[] {
+function buildAgentTopUpDirectoryColumns(t: TranslateFn): Column<Row>[] {
+  const unassigned = t("tables.headers.unassigned");
+  const fleetOwnerHeader = t("detail.labels.fleetOwner" as import("../lib/i18n/translate").MessageKey);
+
   return [
     {
       key: "kind",
@@ -685,6 +781,23 @@ function buildAgentTopUpDirectoryColumns(): Column<Row>[] {
         return parts.join(" ");
       },
       render: (row) => topUpDirectoryName(row),
+    },
+    {
+      key: "fleetOwner",
+      header: fleetOwnerHeader,
+      sortValue: (row) => directoryFleetOwnerLabel(row) || unassigned,
+      searchValue: (row) => {
+        const label = directoryFleetOwnerLabel(row);
+        const parts = [label, row.ownerId != null ? String(row.ownerId) : ""];
+        return parts.filter(Boolean).join(" ") || unassigned;
+      },
+      render: (row) => {
+        if (row.directoryKind === "owner") {
+          return "—";
+        }
+        const label = directoryFleetOwnerLabel(row);
+        return label || unassigned;
+      },
     },
     {
       key: "phone",
@@ -1010,7 +1123,7 @@ function buildRowActionMenuItems(
         continue;
       }
 
-      const { label } = walletOwnerCell(row);
+      const { label } = walletHolderCell(row);
 
       items.push({
         id: def.id,
@@ -1027,7 +1140,8 @@ function buildRowActionMenuItems(
     }
 
     if (def.id === TABLE_ROW_ACTION_IDS.walletLedger) {
-      const target = walletLedgerTargetFromRow(row);
+      const target =
+        section === "riders" ? agentDirectoryLedgerTargetFromRow(row) : walletLedgerTargetFromRow(row);
       if (!target) {
         continue;
       }
@@ -1171,18 +1285,20 @@ function buildRowActionMenuItems(
       if (typeof id !== "number") {
         continue;
       }
+      const editSection: ResourceSection =
+        section === "riders" && row.directoryKind === "owner" ? "owners" : section;
       const fields = translate
-        ? getLocalizedResourceUpdateFields(section, translate, row)
-        : section === "users"
+        ? getLocalizedResourceUpdateFields(editSection, translate, row)
+        : editSection === "users"
           ? getUserUpdateFieldsForRow(row)
-          : getResourceUpdateFields(section);
+          : getResourceUpdateFields(editSection);
       if (!fields?.length) {
         continue;
       }
       items.push({
         id: def.id,
         label: def.label,
-        onSelect: () => openResourceEdit({ section, id, row, fields }),
+        onSelect: () => openResourceEdit({ section: editSection, id, row, fields }),
       });
       continue;
     }
@@ -1195,10 +1311,12 @@ function buildRowActionMenuItems(
       if (typeof id !== "number") {
         continue;
       }
+      const deleteSection: ResourceSection =
+        section === "riders" && row.directoryKind === "owner" ? "owners" : section;
       items.push({
         id: def.id,
         label: def.label,
-        onSelect: () => openResourceDelete({ section, id, row }),
+        onSelect: () => openResourceDelete({ section: deleteSection, id, row }),
       });
       continue;
     }
@@ -1645,7 +1763,7 @@ export function ApiResourcePanel({
     let base: Column<Row>[];
 
     if (section === "riders") {
-      base = buildAgentTopUpDirectoryColumns();
+      base = buildAgentTopUpDirectoryColumns(t);
     } else if (section === "users") {
       base = buildUserColumns();
     } else if (section === "batteries") {
@@ -1658,6 +1776,8 @@ export function ApiResourcePanel({
       base = buildWalletDataColumns(t);
     } else if (section === "agents") {
       base = buildAgentColumns();
+    } else if (section === "cards") {
+      base = buildCardDataColumns(t, locale);
     } else {
       base = buildColumns(rows, locale, section);
     }
@@ -1759,12 +1879,23 @@ export function ApiResourcePanel({
           <CreateResourceButton
             section={section}
             permissions={sessionPermissions}
-            onCreated={(created) => {
+            onCreated={() => {
               reload();
               onCreateSuccess?.();
             }}
             onError={onCreateError}
           />
+          {section === "riders" && userMayUsePermission(sessionPermissions, PERMISSIONS.owners.write) ? (
+            <CreateResourceButton
+              section="owners"
+              permissions={sessionPermissions}
+              onCreated={() => {
+                reload();
+                onCreateSuccess?.();
+              }}
+              onError={onCreateError}
+            />
+          ) : null}
         </div>
       </div>
       {error ? <p className="resource-error">{error}</p> : null}

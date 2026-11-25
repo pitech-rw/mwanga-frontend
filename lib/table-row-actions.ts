@@ -165,6 +165,30 @@ export const TABLE_ROW_ACTIONS_BY_SECTION: Record<ResourceSection, readonly Tabl
       permission: PERMISSIONS.wallets.agentTopup,
       visibleForRow: (row) => agentDirectoryTopUpTargetFromRow(row) != null,
     },
+    {
+      id: TABLE_ROW_ACTION_IDS.walletLedger,
+      label: "Ledger",
+      permission: PERMISSIONS.wallets.read,
+      visibleForRow: (row) => {
+        const walletRaw =
+          row.directoryKind === "owner" ? row.wallet : (row.riderWallet ?? row.wallet);
+        return walletRaw != null && typeof walletRaw === "object" && typeof (walletRaw as Record<string, unknown>).id === "number";
+      },
+    },
+    {
+      id: TABLE_ROW_ACTION_IDS.associateOwnerRider,
+      label: "Associate rider",
+      permission: PERMISSIONS.users.write,
+      visibleForRow: (row) => row.directoryKind === "owner",
+    },
+    {
+      ...genericEdit(PERMISSIONS.owners.write),
+      visibleForRow: (row) => row.directoryKind === "owner",
+    },
+    {
+      ...genericDelete(PERMISSIONS.owners.delete),
+      visibleForRow: (row) => row.directoryKind === "owner",
+    },
   ],
   agents: [
     {

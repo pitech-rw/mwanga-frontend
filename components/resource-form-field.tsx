@@ -124,7 +124,12 @@ export function ResourceFormField({
           value={value}
           placeholder={field.placeholder}
           disabled={disabled}
-          onChange={(event) => onValueChange(event.target.value)}
+          readOnly={field.readOnly}
+          onChange={(event) => {
+            if (!field.readOnly) {
+              onValueChange(event.target.value);
+            }
+          }}
         />
       )}
     </label>

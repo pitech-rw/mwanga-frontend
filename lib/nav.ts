@@ -178,11 +178,11 @@ export const NAV_PRIMARY_ITEMS: MenuItem[] = [MENU_ITEM_MAP.overview];
 /** Collapsible sections — multi-item groups only (no single-link sections). */
 const NAV_GROUP_SECTIONS: { groupKey: NavMenuGroupKey; label: string; sections: Section[] }[] = [
   { groupKey: "network", label: "Network", sections: ["stations", "swaps"] },
-  { groupKey: "fleetInventory", label: "Fleet & inventory", sections: ["inventory", "batteries", "bikes", "owners", "agents"] },
+  { groupKey: "fleetInventory", label: "Fleet & inventory", sections: ["inventory", "batteries", "bikes", "agents"] },
   {
     groupKey: "peopleAccess",
     label: "People & access",
-    sections: ["users", "erasureRequests", "roles", "cards"],
+    sections: ["users", "riders", "erasureRequests", "roles", "cards"],
   },
   { groupKey: "finance", label: "Finance", sections: ["wallets", "companyAccounts"] },
 ];

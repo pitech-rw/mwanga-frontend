@@ -1,6 +1,8 @@
 import type { Section } from "./nav";
 import { translateFieldKey, type MessageKey, type TranslateFn } from "./i18n/translate";
 import type { LocaleCode } from "./locale-storage";
+import { DEFAULT_CURRENCY } from "./default-currency";
+import { walletCurrency, walletHolderCell } from "./wallet-row-helpers";
 
 /** Payload for the dashboard record detail dialog (structured like a confirmation panel). */
 export type ResourceDetailPayload = {
@@ -208,6 +210,17 @@ export function buildResourceDetailPayload(
           usedKeys.add("status");
           summary.push([dl(translate, "detail.labels.status" as MessageKey, "Status"), status]);
         }
+        const ownerWallet = row.wallet;
+        if (ownerWallet && typeof ownerWallet === "object") {
+          usedKeys.add("wallet");
+          const w = ownerWallet as Record<string, unknown>;
+          usedKeys.add("balance");
+          usedKeys.add("currency");
+          summary.push([
+            dl(translate, "detail.labels.balance" as MessageKey, "Balance"),
+            `${cellText(w.balance)} ${walletCurrency(w)}`.trim(),
+          ]);
+        }
         break;
       }
       const username = pickString(row, "username") ?? idStr;
@@ -226,6 +239,33 @@ export function buildResourceDetailPayload(
         usedKeys.add("phone");
         summary.push([dl(translate, "detail.labels.phone" as MessageKey, "Phone"), phone]);
       }
+      const fleetOwner = row.fleetOwner;
+      if (fleetOwner && typeof fleetOwner === "object") {
+        usedKeys.add("ownerId");
+        usedKeys.add("fleetOwner");
+        const o = fleetOwner as Record<string, unknown>;
+        const ownerName = typeof o.name === "string" ? o.name : cellText(fleetOwner);
+        summary.push([dl(translate, "detail.labels.fleetOwner" as MessageKey, "Fleet owner"), ownerName]);
+      } else if (row.ownerId != null) {
+        usedKeys.add("ownerId");
+        summary.push([
+          dl(translate, "detail.labels.fleetOwner" as MessageKey, "Fleet owner"),
+          `#${String(row.ownerId)}`,
+        ]);
+      }
+      const riderWallet = row.riderWallet ?? row.wallet;
+      if (riderWallet && typeof riderWallet === "object") {
+        usedKeys.add("riderWallet");
+        usedKeys.add("wallet");
+        const w = riderWallet as Record<string, unknown>;
+        usedKeys.add("balance");
+        usedKeys.add("currency");
+        summary.push([
+          dl(translate, "detail.labels.balance" as MessageKey, "Balance"),
+          `${cellText(w.balance)} ${walletCurrency(w)}`.trim(),
+        ]);
+      }
+      usedKeys.add("directoryKind");
       break;
     }
     case "users": {
@@ -446,40 +486,53 @@ export function buildResourceDetailPayload(
         usedKeys.add("balance");
         summary.push([dl(translate, "detail.labels.balance" as MessageKey, "Balance"), cellText(row.balance)]);
       }
-      const cur = pickString(row, "currency");
-      if (cur) {
-        usedKeys.add("currency");
-        summary.push([dl(translate, "detail.labels.currency" as MessageKey, "Currency"), cur]);
-      }
+      usedKeys.add("currency");
+      summary.push([dl(translate, "detail.labels.currency" as MessageKey, "Currency"), DEFAULT_CURRENCY]);
       break;
     }
     case "wallets": {
       headingTitle = `Wallet · #${idStr}`;
       description = "Liability account for an owner, a rider, or an agent float. Balance changes only via the ledger.";
+      const holder = walletHolderCell(row);
+      if (holder.label !== "—") {
+        summary.push([dl(translate, "detail.labels.holder" as MessageKey, "Holder"), holder.label]);
+        if (holder.type !== "—") {
+          summary.push([dl(translate, "detail.labels.holderKind" as MessageKey, "Holder type"), holder.type]);
+        }
+      }
+      usedKeys.add("ownerId");
+      usedKeys.add("owner");
+      usedKeys.add("userId");
+      usedKeys.add("riderUser");
+      usedKeys.add("agentId");
+      usedKeys.add("agent");
       const owner = row.owner;
       if (owner && typeof owner === "object") {
-        const o = owner as Record<string, unknown>;
-        usedKeys.add("ownerId");
-        usedKeys.add("owner");
-        const name = typeof o.name === "string" ? o.name : "";
-        summary.push([dl(translate, "detail.labels.owner" as MessageKey, "Owner"), name || cellText(owner)]);
-        const email = typeof o.email === "string" ? o.email : "";
+        const email = pickString(owner as Record<string, unknown>, "email");
         if (email) {
           summary.push([dl(translate, "detail.labels.email" as MessageKey, "Email"), email]);
         }
-      } else if (row.ownerId != null) {
-        usedKeys.add("ownerId");
-        summary.push([dl(translate, "detail.labels.ownerId" as MessageKey, "Owner ID"), String(row.ownerId)]);
+      }
+      const agent = row.agent;
+      if (agent && typeof agent === "object") {
+        const phone = pickString(agent as Record<string, unknown>, "phone");
+        if (phone) {
+          summary.push([dl(translate, "detail.labels.phone" as MessageKey, "Phone"), phone]);
+        }
+      }
+      const rider = row.riderUser;
+      if (rider && typeof rider === "object") {
+        const phone = pickString(rider as Record<string, unknown>, "phone");
+        if (phone) {
+          summary.push([dl(translate, "detail.labels.phone" as MessageKey, "Phone"), phone]);
+        }
       }
       if (row.balance != null) {
         usedKeys.add("balance");
         summary.push([dl(translate, "detail.labels.balance" as MessageKey, "Balance"), cellText(row.balance)]);
       }
-      const cur = pickString(row, "currency");
-      if (cur) {
-        usedKeys.add("currency");
-        summary.push([dl(translate, "detail.labels.currency" as MessageKey, "Currency"), cur]);
-      }
+      usedKeys.add("currency");
+      summary.push([dl(translate, "detail.labels.currency" as MessageKey, "Currency"), walletCurrency(row)]);
       break;
     }
     case "incidents": {

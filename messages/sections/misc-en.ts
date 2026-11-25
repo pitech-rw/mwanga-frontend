@@ -160,6 +160,8 @@ export const miscEn = {
   "detail.labels.batteryInstalled": "Battery installed",
   "detail.labels.plate": "Plate",
   "detail.labels.owner": "Owner",
+  "detail.labels.holder": "Holder",
+  "detail.labels.holderKind": "Holder type",
   "detail.labels.email": "Email",
   "detail.labels.phone": "Phone",
   "detail.labels.name": "Name",
@@ -195,6 +197,7 @@ export const miscEn = {
 
   "tables.headers.batteryInstalled": "Battery",
   "tables.headers.owner": "Owner",
+  "tables.headers.holder": "Holder",
   "tables.headers.actions": "Actions",
   "actions.row.view": "View",
   "tables.headers.unassigned": "Unassigned",
