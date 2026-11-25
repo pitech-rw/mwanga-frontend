@@ -39,6 +39,8 @@ export type FieldSpec = {
   defaultValue?: string;
   accept?: string;
   options?: { value: string; label: string }[];
+  /** Fixed-value fields (e.g. platform currency). */
+  readOnly?: boolean;
 };
 
 export type CreateResourceConfig = {
@@ -138,6 +140,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         type: "text",
         placeholder: DEFAULT_CURRENCY,
         defaultValue: DEFAULT_CURRENCY,
+        readOnly: true,
       },
     ],
   },
@@ -154,6 +157,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         type: "text",
         placeholder: DEFAULT_CURRENCY,
         defaultValue: DEFAULT_CURRENCY,
+        readOnly: true,
       },
     ],
   },
@@ -285,6 +289,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         type: "text",
         placeholder: DEFAULT_CURRENCY,
         defaultValue: DEFAULT_CURRENCY,
+        readOnly: true,
       },
     ],
   },
@@ -292,7 +297,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     section: "riders",
     apiPath: "/users/riders",
     title: "Rider",
-    description: "Riders and fleet owners (read-only listing for agents).",
+    description: "Riders and fleet owners — fleet assignment, wallets, and top-ups.",
     submitLabel: "Create rider",
     fields: [],
   },
@@ -312,6 +317,7 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
         type: "text",
         placeholder: DEFAULT_CURRENCY,
         defaultValue: DEFAULT_CURRENCY,
+        readOnly: true,
       },
     ],
   },
@@ -346,6 +352,11 @@ export function buildCreatePayload(config: CreateResourceConfig, values: Record<
 
   for (const field of config.fields) {
     if (field.type === "file") {
+      continue;
+    }
+
+    if (field.name === "currency") {
+      payload.currency = DEFAULT_CURRENCY;
       continue;
     }
 

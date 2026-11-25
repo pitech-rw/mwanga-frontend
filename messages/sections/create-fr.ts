@@ -38,7 +38,7 @@ export const createFr = {
   "create.wallets.description": "Choisissez un propriétaire. Un portefeuille partagé par propriétaire.",
   "create.wallets.submitLabel": "Créer un portefeuille",
   "create.riders.title": "Rider",
-  "create.riders.description": "Riders and fleet owners (read-only listing for agents).",
+  "create.riders.description": "Riders and fleet owners — fleet assignment, wallets, and top-ups.",
   "create.riders.submitLabel": "Create rider",
   "create.companyAccounts.title": "Ajouter un compte société",
   "create.companyAccounts.description": "Enregistre un compte bancaire pour la collecte.",

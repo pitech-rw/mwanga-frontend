@@ -162,6 +162,8 @@ export const miscFr = {
   "detail.labels.batteryInstalled": "Batterie installée",
   "detail.labels.plate": "Immatriculation",
   "detail.labels.owner": "Propriétaire",
+  "detail.labels.holder": "Titulaire",
+  "detail.labels.holderKind": "Type de titulaire",
   "detail.labels.email": "E-mail",
   "detail.labels.phone": "Téléphone",
   "detail.labels.name": "Nom",
@@ -197,6 +199,7 @@ export const miscFr = {
 
   "tables.headers.batteryInstalled": "Batterie",
   "tables.headers.owner": "Propriétaire",
+  "tables.headers.holder": "Titulaire",
   "tables.headers.actions": "Actions",
   "actions.row.view": "Voir",
   "tables.headers.unassigned": "Non assigné",

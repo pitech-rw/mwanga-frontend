@@ -55,6 +55,12 @@ export const SECTION_WRITE_PERMISSION: Record<ResourceSection, string> = {
 };
 
 export function userCanAccessSection(section: Section, permissions: readonly string[]): boolean {
+  if (section === "riders") {
+    return (
+      userMayUsePermission(permissions, PERMISSIONS.riders.read) ||
+      userMayUsePermission(permissions, PERMISSIONS.owners.read)
+    );
+  }
   const required = SECTION_READ_PERMISSION[section];
   if (required === null) {
     return true;

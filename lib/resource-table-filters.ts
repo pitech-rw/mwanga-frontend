@@ -1,7 +1,8 @@
 import type { Column, DataTableSelectFilter, DataTableSortOption } from "../components/data-table";
 import type { Section } from "./nav";
 import { BATTERY_STATUS_VALUES } from "./battery-status";
-import { walletOwnerCell } from "./wallet-row-helpers";
+import { DEFAULT_CURRENCY } from "./default-currency";
+import { walletHolderCell } from "./wallet-row-helpers";
 import { buildUsersTableFilters, USERS_TABLE_SORT_OPTIONS } from "./users-table-filters";
 
 type Row = Record<string, unknown>;
@@ -178,7 +179,9 @@ function buildRidersTableFilters(): DataTableSelectFilter<Row>[] {
 }
 
 function buildWalletsTableFilters(rows: Row[]): DataTableSelectFilter<Row>[] {
-  const holderTypes = distinctValues(rows, (row) => normalizeString(walletOwnerCell(row).type));
+  const holderTypes = distinctValues(rows, (row) => normalizeString(walletHolderCell(row).type)).filter(
+    (value) => value !== "—",
+  );
 
   return [
     {
@@ -193,7 +196,7 @@ function buildWalletsTableFilters(rows: Row[]): DataTableSelectFilter<Row>[] {
         if (!value) {
           return true;
         }
-        return normalizeString(walletOwnerCell(row).type) === value;
+        return normalizeString(walletHolderCell(row).type) === value;
       },
     },
   ];
@@ -249,9 +252,7 @@ function buildGenericStatusAndTypeFilters(rows: Row[]): DataTableSelectFilter<Ro
     filters.push(kindFilter);
   }
 
-  const currencyFilter = fieldSelectFilter("currency", "Currency", "All currencies", rows, (row) =>
-    normalizeString(row.currency),
-  );
+  const currencyFilter = fieldSelectFilter("currency", "Currency", "All currencies", rows, () => DEFAULT_CURRENCY);
   if (currencyFilter) {
     filters.push(currencyFilter);
   }

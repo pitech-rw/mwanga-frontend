@@ -11,6 +11,7 @@ import {
   batteryRequiredAttachTarget,
   type BatteryCreateAttachTarget,
 } from "../lib/battery-status";
+import { DEFAULT_CURRENCY } from "../lib/default-currency";
 import { getDefaultCreatePassword } from "../lib/default-password";
 import { buildCreatePayload, getCreateConfig, type CreateResourceConfig } from "../lib/resource-create-config";
 import { localizeCreateConfig } from "../lib/i18n/localize";
@@ -1068,10 +1069,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         if (balanceRaw) {
           body.balance = Number(balanceRaw);
         }
-        const currencyRaw = values.currency?.trim() ?? "";
-        if (currencyRaw) {
-          body.currency = currencyRaw;
-        }
+        body.currency = DEFAULT_CURRENCY;
       } else if (config.section === "bikes") {
         body = buildCreatePayload(config, values);
         if (walletOwnerId !== null) {
@@ -1093,10 +1091,7 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         delete body.kind;
       } else if (config.section === "agents") {
         body = { userId: agentUserId };
-        const currencyRaw = values.currency?.trim() ?? "";
-        if (currencyRaw) {
-          body.currency = currencyRaw;
-        }
+        body.currency = DEFAULT_CURRENCY;
       } else if (config.section === "owners") {
         body = buildCreatePayload(config, values);
         if (ownerBikesPayload?.length) {

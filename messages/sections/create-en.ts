@@ -38,7 +38,7 @@ export const createEn = {
   "create.wallets.description": "Pick a fleet owner (search). Each owner has one shared wallet.",
   "create.wallets.submitLabel": "Create wallet",
   "create.riders.title": "Rider",
-  "create.riders.description": "Riders and fleet owners (read-only listing for agents).",
+  "create.riders.description": "Riders and fleet owners — fleet assignment, wallets, and top-ups.",
   "create.riders.submitLabel": "Create rider",
   "create.companyAccounts.title": "Add company account",
   "create.companyAccounts.description": "Register a bank account used for float collection.",
