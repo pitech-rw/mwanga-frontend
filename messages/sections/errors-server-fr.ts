@@ -161,6 +161,12 @@ export const errorsServerFr = {
   "ledger.insufficientWalletBalance": "Solde portefeuille insuffisant",
   "ledger.floatTopUpAccounts": "Le rechargement flottant doit débiter le compte société et créditer le portefeuille",
   "ledger.floatTopUpReferenceRequired": "externalReference est requis pour le rechargement flottant",
+  "ledger.companyFloatCreditReferenceRequired":
+    "La référence de virement est requise pour créditer le flottant",
+  "ledger.companyFloatSourceAccountMissing":
+    "Le compte source de flottant société n'est pas configuré. Exécutez seed:ledger-accounts.",
+  "ledger.currencyMismatchCompanyRevenue":
+    "Les devises du compte société et de la source de flottant doivent correspondre",
   "ledger.agentTopUpInvalid": "Écritures de rechargement agent invalides",
   "ledger.agentTopUpWalletPair":
     "Le rechargement agent doit débiter le portefeuille agent et créditer un autre portefeuille",

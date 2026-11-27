@@ -19,6 +19,11 @@ type TopUpTarget = {
   walletId: number;
 };
 
+type AgentTopUpResponse = {
+  transaction: { externalReference?: string | null };
+  receipt: { receiptNumber: string } | null;
+};
+
 function money(value: string | number): string {
   const amount = Number(value);
   if (Number.isNaN(amount)) {
@@ -34,8 +39,7 @@ export function AgentTopUpPanel() {
   const [lookup, setLookup] = useState("");
   const [target, setTarget] = useState<TopUpTarget | null>(null);
   const [amount, setAmount] = useState("");
-  const [externalReference, setExternalReference] = useState("");
-  const [description, setDescription] = useState("");
+  const [note, setNote] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -101,30 +105,29 @@ export function AgentTopUpPanel() {
       setFormError("Enter an amount greater than zero.");
       return;
     }
-    if (externalReference.trim().length < 2) {
-      setFormError("Enter the cash receipt reference.");
-      return;
-    }
     setSaving(true);
     try {
+      const trimmedNote = note.trim();
       const response = await authFetch("/agents/top-ups", {
         method: "POST",
         body: JSON.stringify({
           walletId: target.walletId,
           amount: parsed,
-          externalReference: externalReference.trim(),
-          description: description.trim() || undefined,
+          ...(trimmedNote ? { note: trimmedNote } : {}),
         }),
       });
       if (!response.ok) {
         setFormError(await userMessageFromResponse("create", response));
         return;
       }
-      const created = (await response.json()) as { externalReference?: string | null };
-      setNotice(`Topped up ${target.name} · ${created.externalReference ?? externalReference.trim()}`);
+      const created = (await response.json()) as AgentTopUpResponse;
+      const reference =
+        created.receipt?.receiptNumber ?? created.transaction.externalReference ?? null;
+      setNotice(
+        reference ? `Topped up ${target.name} · ${reference}` : `Topped up ${target.name}`,
+      );
       setAmount("");
-      setExternalReference("");
-      setDescription("");
+      setNote("");
       setLookup("");
       setTarget(null);
       await loadFloat();
@@ -195,23 +198,13 @@ export function AgentTopUpPanel() {
           />
         </label>
         <label className="field">
-          <span>Receipt reference</span>
-          <input
-            type="text"
-            value={externalReference}
-            disabled={saving}
-            onChange={(event) => setExternalReference(event.target.value)}
-            placeholder="Cash receipt id"
-            aria-label="Receipt reference"
-          />
-        </label>
-        <label className="field">
           <span>Notes (optional)</span>
           <input
             type="text"
-            value={description}
+            value={note}
             disabled={saving}
-            onChange={(event) => setDescription(event.target.value)}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Internal note for the ledger"
             aria-label="Top-up notes"
           />
         </label>

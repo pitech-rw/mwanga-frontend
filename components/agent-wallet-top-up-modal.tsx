@@ -33,16 +33,14 @@ export function AgentWalletTopUpModal({
 }: AgentWalletTopUpModalProps) {
   const t = useT();
   const [amount, setAmount] = useState("");
-  const [externalReference, setExternalReference] = useState("");
-  const [description, setDescription] = useState("");
+  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && target) {
       setAmount("");
-      setExternalReference("");
-      setDescription("");
+      setNote("");
       setError(null);
     }
   }, [open, target]);
@@ -62,23 +60,17 @@ export function AgentWalletTopUpModal({
       return;
     }
 
-    const bankRef = externalReference.trim();
-    if (bankRef.length < 2) {
-      setError("Enter the cash receipt reference.");
-      return;
-    }
-
     setSaving(true);
     setError(null);
 
     try {
+      const trimmedNote = note.trim();
       const response = await authFetch("/agents/top-ups", {
         method: "POST",
         body: JSON.stringify({
           walletId: target.walletId,
           amount: add,
-          externalReference: bankRef,
-          description: description.trim() || undefined,
+          ...(trimmedNote ? { note: trimmedNote } : {}),
         }),
       });
 
@@ -140,25 +132,13 @@ export function AgentWalletTopUpModal({
         </label>
 
         <label className="field">
-          <span>Receipt reference</span>
-          <input
-            type="text"
-            value={externalReference}
-            disabled={saving}
-            onChange={(event) => setExternalReference(event.target.value)}
-            placeholder="Cash receipt id"
-            aria-label="Receipt reference"
-          />
-        </label>
-
-        <label className="field">
           <span>Notes (optional)</span>
           <input
             type="text"
-            value={description}
+            value={note}
             disabled={saving}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Internal note"
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Internal note for the ledger"
             aria-label="Top-up notes"
           />
         </label>
