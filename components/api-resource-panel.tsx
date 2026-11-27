@@ -1885,17 +1885,6 @@ export function ApiResourcePanel({
             }}
             onError={onCreateError}
           />
-          {section === "riders" && userMayUsePermission(sessionPermissions, PERMISSIONS.owners.write) ? (
-            <CreateResourceButton
-              section="owners"
-              permissions={sessionPermissions}
-              onCreated={() => {
-                reload();
-                onCreateSuccess?.();
-              }}
-              onError={onCreateError}
-            />
-          ) : null}
         </div>
       </div>
       {error ? <p className="resource-error">{error}</p> : null}

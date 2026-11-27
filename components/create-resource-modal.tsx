@@ -66,6 +66,10 @@ type AgentUserRow = {
   phone?: string | null;
 };
 
+type DirectoryRiderUserRow = AgentUserRow & {
+  ownerId?: number | null;
+};
+
 type AgentListRow = {
   userId?: number | null;
 };
@@ -153,11 +157,35 @@ function emptyValues(config: CreateResourceConfig): Record<string, string> {
   );
 }
 
+function portalUserSearchHaystack(user: AgentUserRow): string {
+  return [user.username, user.firstName, user.lastName, user.email, user.phone ?? "", String(user.id)]
+    .join(" ")
+    .toLowerCase();
+}
+
 function agentUserOptionLine(user: AgentUserRow): string {
   const name = userDisplayName(user);
   const label = name.startsWith("Erased user #") ? name : name ? `${name} (@${user.username})` : `@${user.username}`;
   const contact = user.email ?? user.phone ?? "";
   return contact ? `${user.id} · ${label} · ${contact}` : `${user.id} · ${label}`;
+}
+
+function ownerCreateBodyFromPortalUser(user: AgentUserRow): Record<string, unknown> {
+  const rawName = userDisplayName(user);
+  const name =
+    rawName.startsWith("Erased user #") || !rawName.trim() ? user.username : rawName.trim();
+  const body: Record<string, unknown> = {
+    userId: user.id,
+    name,
+    currency: DEFAULT_CURRENCY,
+  };
+  if (user.email?.trim()) {
+    body.email = user.email.trim();
+  }
+  if (user.phone?.trim()) {
+    body.phone = user.phone.trim();
+  }
+  return body;
 }
 
 function riderUserOptionLine(user: RiderUserRow): string {
@@ -252,6 +280,15 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   const [agentUserSearch, setAgentUserSearch] = useState("");
   const [agentUsers, setAgentUsers] = useState<AgentUserRow[]>([]);
   const [loadingAgentUsers, setLoadingAgentUsers] = useState(false);
+  const [directoryRegisterKind, setDirectoryRegisterKind] = useState<"owner" | "rider">("owner");
+  const [ownerPortalUserId, setOwnerPortalUserId] = useState<number | null>(null);
+  const [ownerPortalUserSearch, setOwnerPortalUserSearch] = useState("");
+  const [ownerPortalUsers, setOwnerPortalUsers] = useState<AgentUserRow[]>([]);
+  const [loadingOwnerPortalUsers, setLoadingOwnerPortalUsers] = useState(false);
+  const [directoryRiderUserId, setDirectoryRiderUserId] = useState<number | null>(null);
+  const [directoryRiderUserSearch, setDirectoryRiderUserSearch] = useState("");
+  const [directoryRiderUsers, setDirectoryRiderUsers] = useState<DirectoryRiderUserRow[]>([]);
+  const [loadingDirectoryRiderUsers, setLoadingDirectoryRiderUsers] = useState(false);
   const [registerOwnerFleet, setRegisterOwnerFleet] = useState(false);
   const [ownerBikes, setOwnerBikes] = useState<OwnerBikeDraft[]>([emptyOwnerBike()]);
   const [files, setFiles] = useState<Record<string, File | null>>({});
@@ -295,6 +332,15 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         { id: "fleet", label: t("create.drawer.tab.fleetBikes") },
       ];
     }
+    if (section === "riders") {
+      if (directoryRegisterKind === "owner") {
+        return [
+          { id: "details", label: t("create.drawer.tab.ownerDetails") },
+          { id: "fleet", label: t("create.drawer.tab.fleetBikes") },
+        ];
+      }
+      return [{ id: "details", label: t("create.drawer.tab.assignment") }];
+    }
     if (section === "stations") {
       return [
         { id: "details", label: t("create.drawer.tab.stationDetails") },
@@ -329,10 +375,10 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       return tabs;
     }
     return [];
-  }, [batteryAttachTarget, section, t, values.type]);
+  }, [batteryAttachTarget, directoryRegisterKind, section, t, values.type]);
 
   const useDrawerTabs =
-    section === "users"
+    section === "users" || section === "riders"
       ? true
       : section === "incidents" || section === "batteries"
         ? drawerTabs.length > 1
@@ -353,9 +399,16 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   useEffect(() => {
     const cfg = getCreateConfig(section);
     if (open && cfg) {
-      setValues(emptyValues(cfg));
+      setValues(
+        section === "riders" || section === "owners" ? {} : emptyValues(cfg),
+      );
       setFiles(emptyFileState(cfg.fields));
       setError(null);
+      setDirectoryRegisterKind("owner");
+      setOwnerPortalUserId(null);
+      setOwnerPortalUserSearch("");
+      setDirectoryRiderUserId(null);
+      setDirectoryRiderUserSearch("");
       setWalletOwnerId(null);
       setWalletOwnerSearch("");
       setAgentUserId(null);
@@ -509,7 +562,171 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
   }, [drawerTab, open, section, values.type]);
 
   useEffect(() => {
-    if (!open || (section !== "wallets" && section !== "bikes" && section !== "users")) {
+    if (!open || section !== "riders") {
+      return;
+    }
+    setDrawerTab("details");
+    if (directoryRegisterKind === "owner") {
+      setDirectoryRiderUserId(null);
+      setDirectoryRiderUserSearch("");
+      setWalletOwnerId(null);
+      setWalletOwnerSearch("");
+      setValues({});
+    } else {
+      setOwnerPortalUserId(null);
+      setOwnerPortalUserSearch("");
+      setRegisterOwnerFleet(false);
+      setOwnerBikes([emptyOwnerBike()]);
+    }
+  }, [directoryRegisterKind, open, section]);
+
+  useEffect(() => {
+    if (!open || (section !== "owners" && section !== "riders")) {
+      return;
+    }
+
+    let active = true;
+    setLoadingOwnerPortalUsers(true);
+
+    const load = async () => {
+      try {
+        const [usersRes, ownersRes] = await Promise.all([
+          authFetch(usersListPath("owner")),
+          authFetch("/owners"),
+        ]);
+        if (!usersRes.ok) {
+          if (active) {
+            setOwnerPortalUsers([]);
+            setError(await userMessageFromResponse("load", usersRes));
+          }
+          return;
+        }
+        const usersRaw = (await usersRes.json()) as unknown;
+        const users = Array.isArray(usersRaw) ? (usersRaw as AgentUserRow[]) : [];
+        let linkedIds = new Set<number>();
+        if (ownersRes.ok) {
+          const ownersRaw = (await ownersRes.json()) as unknown;
+          if (Array.isArray(ownersRaw)) {
+            linkedIds = new Set(
+              (ownersRaw as { userId?: number | null }[])
+                .map((row) => row.userId)
+                .filter((id): id is number => typeof id === "number"),
+            );
+          }
+        }
+        if (!active) {
+          return;
+        }
+        setOwnerPortalUsers(users.filter((user) => !linkedIds.has(user.id)));
+        setError(null);
+      } catch {
+        if (active) {
+          setOwnerPortalUsers([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingOwnerPortalUsers(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "riders" || directoryRegisterKind !== "rider") {
+      return;
+    }
+
+    let active = true;
+    setLoadingDirectoryRiderUsers(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch(usersListPath("rider"));
+        if (!response.ok) {
+          if (active) {
+            setDirectoryRiderUsers([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        const users = Array.isArray(data) ? (data as DirectoryRiderUserRow[]) : [];
+        if (!active) {
+          return;
+        }
+        setDirectoryRiderUsers(users.filter((user) => user.ownerId == null));
+        setError(null);
+      } catch {
+        if (active) {
+          setDirectoryRiderUsers([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingDirectoryRiderUsers(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [directoryRegisterKind, open, section]);
+
+  useEffect(() => {
+    if (!open || section !== "riders" || directoryRegisterKind !== "rider") {
+      return;
+    }
+
+    let active = true;
+    setLoadingWalletUsers(true);
+
+    const load = async () => {
+      try {
+        const response = await authFetch("/owners");
+        if (!response.ok) {
+          if (active) {
+            setWalletOwners([]);
+            setError(await userMessageFromResponse("load", response));
+          }
+          return;
+        }
+        const data = (await response.json()) as unknown;
+        if (!active) {
+          return;
+        }
+        setWalletOwners(Array.isArray(data) ? (data as OwnerListRow[]) : []);
+        setError(null);
+      } catch {
+        if (active) {
+          setWalletOwners([]);
+          setError(userMessageForNetwork("load"));
+        }
+      } finally {
+        if (active) {
+          setLoadingWalletUsers(false);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [directoryRegisterKind, open, section]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      (section !== "wallets" && section !== "bikes" && section !== "users")
+    ) {
       return;
     }
 
@@ -929,24 +1146,44 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     if (!needle) {
       return agentUsers;
     }
-    return agentUsers.filter((user) => {
-      const haystack = [
-        user.username,
-        user.firstName,
-        user.lastName,
-        user.email,
-        user.phone ?? "",
-        String(user.id),
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(needle);
-    });
+    return agentUsers.filter((user) => portalUserSearchHaystack(user).includes(needle));
   }, [agentUserSearch, agentUsers]);
+
+  const filteredOwnerPortalUsers = useMemo(() => {
+    const needle = ownerPortalUserSearch.trim().toLowerCase();
+    if (!needle) {
+      return ownerPortalUsers;
+    }
+    return ownerPortalUsers.filter((user) => portalUserSearchHaystack(user).includes(needle));
+  }, [ownerPortalUserSearch, ownerPortalUsers]);
+
+  const filteredDirectoryRiderUsers = useMemo(() => {
+    const needle = directoryRiderUserSearch.trim().toLowerCase();
+    if (!needle) {
+      return directoryRiderUsers;
+    }
+    return directoryRiderUsers.filter((user) => portalUserSearchHaystack(user).includes(needle));
+  }, [directoryRiderUserSearch, directoryRiderUsers]);
 
   const selectedAgentUser = useMemo(
     () => (agentUserId != null ? agentUsers.find((user) => user.id === agentUserId) : undefined),
     [agentUserId, agentUsers],
+  );
+
+  const selectedOwnerPortalUser = useMemo(
+    () =>
+      ownerPortalUserId != null
+        ? ownerPortalUsers.find((user) => user.id === ownerPortalUserId)
+        : undefined,
+    [ownerPortalUserId, ownerPortalUsers],
+  );
+
+  const selectedDirectoryRiderUser = useMemo(
+    () =>
+      directoryRiderUserId != null
+        ? directoryRiderUsers.find((user) => user.id === directoryRiderUserId)
+        : undefined,
+    [directoryRiderUserId, directoryRiderUsers],
   );
 
   const onStationPlaceSelected = useCallback(
@@ -967,6 +1204,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
 
   const needsOwnerPicker = config.section === "wallets";
   const bikeOwnerPicker = config.section === "bikes";
+  const directoryRiderFleetPicker =
+    config.section === "riders" && directoryRegisterKind === "rider";
   const userCreateAccountType = config.section === "users" ? values.type?.trim() ?? "" : "";
   const userCreateAccountTypeChosen = userCreateAccountType !== "";
   const userCreateIsRider = config.section === "users" && userCreateAccountType === "rider";
@@ -977,7 +1216,15 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     (config.section === "users" && !userCreateAccountTypeChosen) ||
     (needsOwnerPicker && (walletOwnerId === null || loadingWalletUsers)) ||
     (bikeOwnerPicker && (loadingWalletUsers || loadingBikeRiders)) ||
-    (config.section === "agents" && (agentUserId === null || loadingAgentUsers));
+    (config.section === "agents" && (agentUserId === null || loadingAgentUsers)) ||
+    (config.section === "riders" &&
+      directoryRegisterKind === "rider" &&
+      (directoryRiderUserId === null ||
+        walletOwnerId === null ||
+        loadingDirectoryRiderUsers ||
+        loadingWalletUsers)) ||
+    (config.section === "riders" && directoryRegisterKind === "owner" && loadingOwnerPortalUsers) ||
+    (config.section === "owners" && (ownerPortalUserId === null || loadingOwnerPortalUsers));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -993,6 +1240,17 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
     if (config.section === "agents") {
       if (agentUserId === null) {
         setError(t("create.error.selectAgentUser"));
+        setSaving(false);
+        return;
+      }
+    }
+
+    const ownerRegistration =
+      config.section === "owners" ||
+      (config.section === "riders" && directoryRegisterKind === "owner");
+    if (ownerRegistration) {
+      if (ownerPortalUserId === null || !selectedOwnerPortalUser) {
+        setError(t("create.error.selectOwnerPortalUser"));
         setSaving(false);
         return;
       }
@@ -1044,8 +1302,55 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       return;
     }
 
+    if (config.section === "riders" && directoryRegisterKind === "rider") {
+      if (directoryRiderUserId === null) {
+        setError(t("create.error.selectDirectoryRider"));
+        setSaving(false);
+        return;
+      }
+      if (walletOwnerId === null) {
+        setError(t("create.error.selectDirectoryFleetOwner"));
+        setSaving(false);
+        return;
+      }
+      try {
+        const response = await authFetch(`/users/${directoryRiderUserId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ ownerId: walletOwnerId }),
+        });
+        if (!response.ok) {
+          const message = await userMessageFromResponse("create", response);
+          setError(message);
+          onError?.(message);
+          return;
+        }
+        let created: Record<string, unknown> | undefined;
+        try {
+          const data: unknown = await response.json();
+          if (data !== null && typeof data === "object" && !Array.isArray(data)) {
+            created = data as Record<string, unknown>;
+          }
+        } catch {
+          created = undefined;
+        }
+        onCreated?.(created);
+        onClose();
+      } catch {
+        const message = userMessageForNetwork("create");
+        setError(message);
+        onError?.(message);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     let ownerBikesPayload: Record<string, string>[] | undefined;
-    if (config.section === "owners" && registerOwnerFleet) {
+    const registerOwnerFleetNow =
+      registerOwnerFleet &&
+      (config.section === "owners" ||
+        (config.section === "riders" && directoryRegisterKind === "owner"));
+    if (registerOwnerFleetNow) {
       const bikes = buildOwnerBikesPayload(ownerBikes);
       if (bikes === null) {
         setError(t("create.error.fleetBikeFields"));
@@ -1093,7 +1398,12 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         body = { userId: agentUserId };
         body.currency = DEFAULT_CURRENCY;
       } else if (config.section === "owners") {
-        body = buildCreatePayload(config, values);
+        body = ownerCreateBodyFromPortalUser(selectedOwnerPortalUser!);
+        if (ownerBikesPayload?.length) {
+          body.bikes = ownerBikesPayload;
+        }
+      } else if (config.section === "riders" && directoryRegisterKind === "owner") {
+        body = ownerCreateBodyFromPortalUser(selectedOwnerPortalUser!);
         if (ownerBikesPayload?.length) {
           body.bikes = ownerBikesPayload;
         }
@@ -1122,6 +1432,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       await mergeUploadedFiles(config.fields, files, body);
 
       let postPath = config.apiPath;
+      if (config.section === "riders" && directoryRegisterKind === "owner") {
+        postPath = "/owners";
+      }
       if (config.section === "inventory") {
         const kind = values.kind?.trim() === "battery" ? "battery" : "bike";
         postPath = kind === "battery" ? "/inventory/receive/battery" : "/inventory/receive/bike";
@@ -1235,7 +1548,13 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
       ? stationDetailFields.filter((field) => field.name !== "type")
       : stationDetailFields;
   const createDetailFields =
-    config.section === "users" ? userCreateDetailFields : stationDetailFields;
+    config.section === "users"
+      ? userCreateDetailFields
+      : config.section === "owners" ||
+          (config.section === "riders" &&
+            (directoryRegisterKind === "owner" || directoryRegisterKind === "rider"))
+        ? []
+        : stationDetailFields;
 
   return (
     <SlideOverDrawer
@@ -1329,6 +1648,153 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
+        {config.section === "riders" && showDrawerPanel("details") ? (
+          <>
+            <label className="field">
+              <span>{t("create.riders.kindLabel")}</span>
+              <select
+                value={directoryRegisterKind}
+                disabled={saving}
+                onChange={(event) =>
+                  setDirectoryRegisterKind(event.target.value === "rider" ? "rider" : "owner")
+                }
+                aria-label={t("create.riders.kindLabel")}
+              >
+                <option value="owner">{t("create.riders.kindOwner")}</option>
+                <option value="rider">{t("create.riders.kindRider")}</option>
+              </select>
+            </label>
+            <p className="sub">
+              {directoryRegisterKind === "owner"
+                ? t("create.riders.introOwner")
+                : t("create.riders.introRider")}
+            </p>
+          </>
+        ) : null}
+
+        {(config.section === "owners" ||
+          (config.section === "riders" && directoryRegisterKind === "owner")) &&
+        showDrawerPanel("details") ? (
+          <>
+            {config.section === "owners" ? <p className="sub">{t("create.owners.intro")}</p> : null}
+            <label className="field">
+              <span>
+                {t("modals.picker.findAccount")}
+                <span className="col-required" aria-hidden="true">
+                  {" "}
+                  *
+                </span>
+              </span>
+              <input
+                type="search"
+                value={ownerPortalUserSearch}
+                disabled={saving || loadingOwnerPortalUsers}
+                onChange={(event) => setOwnerPortalUserSearch(event.target.value)}
+                placeholder={t("modals.picker.searchOwnerPortalAccount")}
+                autoComplete="off"
+                aria-label={t("modals.picker.searchOwnerPortalAccount")}
+              />
+            </label>
+            {loadingOwnerPortalUsers ? (
+              <p className="sub">{t("modals.picker.loadingAccounts")}</p>
+            ) : (
+              <label className="field">
+                <span>
+                  {t("modals.picker.userAccountOwnerPortal", { count: filteredOwnerPortalUsers.length })}
+                </span>
+                <select
+                  value={ownerPortalUserId != null ? String(ownerPortalUserId) : ""}
+                  disabled={saving || filteredOwnerPortalUsers.length === 0}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setOwnerPortalUserId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredOwnerPortalUsers.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label={t("modals.picker.findAccount")}
+                >
+                  <option value="">
+                    {filteredOwnerPortalUsers.length === 0
+                      ? t("modals.picker.noEligibleAccounts")
+                      : t("modals.picker.chooseAccount")}
+                  </option>
+                  {filteredOwnerPortalUsers.map((user) => (
+                    <option key={user.id} value={String(user.id)}>
+                      {agentUserOptionLine(user)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedOwnerPortalUser ? (
+              <PickerSelectionStatus disabled={saving} onClear={() => setOwnerPortalUserId(null)}>
+                {agentUserOptionLine(selectedOwnerPortalUser)}
+              </PickerSelectionStatus>
+            ) : null}
+          </>
+        ) : null}
+
+        {config.section === "riders" && directoryRegisterKind === "rider" && showDrawerPanel("details") ? (
+          <>
+            <label className="field">
+              <span>
+                {t("modals.picker.findRider")}
+                <span className="col-required" aria-hidden="true">
+                  {" "}
+                  *
+                </span>
+              </span>
+              <input
+                type="search"
+                value={directoryRiderUserSearch}
+                disabled={saving || loadingDirectoryRiderUsers}
+                onChange={(event) => setDirectoryRiderUserSearch(event.target.value)}
+                placeholder={t("modals.picker.searchRiderFull")}
+                autoComplete="off"
+                aria-label={t("modals.picker.searchRiderFull")}
+              />
+            </label>
+            {loadingDirectoryRiderUsers ? (
+              <p className="sub">{t("modals.picker.loadingRiders")}</p>
+            ) : (
+              <label className="field">
+                <span>
+                  {t("modals.picker.userAccountRiderUnassigned", {
+                    count: filteredDirectoryRiderUsers.length,
+                  })}
+                </span>
+                <select
+                  value={directoryRiderUserId != null ? String(directoryRiderUserId) : ""}
+                  disabled={saving || filteredDirectoryRiderUsers.length === 0}
+                  onChange={(event) => {
+                    const v = event.target.value;
+                    setDirectoryRiderUserId(v === "" ? null : Number(v));
+                  }}
+                  size={Math.min(8, Math.max(4, filteredDirectoryRiderUsers.length || 4))}
+                  className="station-picker create-wallet-user-select"
+                  aria-label={t("modals.picker.findRider")}
+                >
+                  <option value="">
+                    {filteredDirectoryRiderUsers.length === 0
+                      ? t("modals.picker.noEligibleAccounts")
+                      : t("modals.picker.chooseAccount")}
+                  </option>
+                  {filteredDirectoryRiderUsers.map((user) => (
+                    <option key={user.id} value={String(user.id)}>
+                      {riderUserOptionLine(user)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {selectedDirectoryRiderUser ? (
+              <PickerSelectionStatus disabled={saving} onClear={() => setDirectoryRiderUserId(null)}>
+                {riderUserOptionLine(selectedDirectoryRiderUser)}
+              </PickerSelectionStatus>
+            ) : null}
+          </>
+        ) : null}
+
         {config.section === "users" && showDrawerPanel("station") && userCreateIsSwapper ? (
           <>
             <label className="field">
@@ -1388,13 +1854,16 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
         ) : null}
 
         {needsOwnerPicker ||
+        directoryRiderFleetPicker ||
         (bikeOwnerPicker && (!useDrawerTabs || showDrawerPanel("assignment"))) ||
         (config.section === "users" && showDrawerPanel("fleet") && userCreateIsRider) ? (
           <>
             <label className="field">
               <span>
                 {t("modals.picker.findOwner")}
-                {needsOwnerPicker || (config.section === "users" && userCreateIsRider) ? (
+                {needsOwnerPicker ||
+                directoryRiderFleetPicker ||
+                (config.section === "users" && userCreateIsRider) ? (
                   <>
                     <span className="col-required" aria-hidden="true">
                       {" "}
@@ -1432,7 +1901,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                     ? t("modals.picker.shownRecentSuffix", { limit: RECENT_PICKER_LIMIT })
                     : ""}
                   )
-                  {needsOwnerPicker || (config.section === "users" && userCreateIsRider) ? (
+                  {needsOwnerPicker ||
+                  directoryRiderFleetPicker ||
+                  (config.section === "users" && userCreateIsRider) ? (
                     <>
                       <span className="col-required" aria-hidden="true">
                         {" "}
@@ -1445,7 +1916,11 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
                 <select
                   value={walletOwnerId != null ? String(walletOwnerId) : ""}
                   disabled={saving || filteredWalletOwners.length === 0}
-                  required={needsOwnerPicker || (config.section === "users" && userCreateIsRider)}
+                  required={
+                    needsOwnerPicker ||
+                    directoryRiderFleetPicker ||
+                    (config.section === "users" && userCreateIsRider)
+                  }
                   onChange={(event) => {
                     const v = event.target.value;
                     setWalletOwnerId(v === "" ? null : Number(v));
@@ -1838,7 +2313,8 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
           </>
         ) : null}
 
-        {(!useDrawerTabs || showDrawerPanel("details"))
+        {(!useDrawerTabs || showDrawerPanel("details")) &&
+        !(config.section === "riders" && directoryRegisterKind === "rider")
           ? createDetailFields.map((field) => (
               <ResourceFormField
                 key={field.name}
@@ -1852,7 +2328,9 @@ export function CreateResourceModal({ open, section, onClose, onCreated, onError
             ))
           : null}
 
-        {config.section === "owners" && (!useDrawerTabs || showDrawerPanel("fleet")) ? (
+        {(config.section === "owners" ||
+          (config.section === "riders" && directoryRegisterKind === "owner")) &&
+        (!useDrawerTabs || showDrawerPanel("fleet")) ? (
           <div className="owner-fleet-block">
             <label className="field field-checkbox">
               <input

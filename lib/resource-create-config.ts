@@ -128,21 +128,10 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
     section: "owners",
     apiPath: "/owners",
     title: "Register owner",
-    description: "Creates a fleet buyer record with a wallet. You can register bikes for the fleet in the same step.",
+    description:
+      "Links an existing owner portal account and opens the fleet wallet. Optional fleet bikes on the next tab.",
     submitLabel: "Create owner",
-    fields: [
-      { name: "name", label: "Display name", type: "text", required: true },
-      { name: "email", label: "Email", type: "email" },
-      { name: "phone", label: "Phone", type: "text" },
-      {
-        name: "currency",
-        label: "Wallet currency",
-        type: "text",
-        placeholder: DEFAULT_CURRENCY,
-        defaultValue: DEFAULT_CURRENCY,
-        readOnly: true,
-      },
-    ],
+    fields: [],
   },
   agents: {
     section: "agents",
@@ -295,10 +284,10 @@ const CONFIGS: Record<ResourceSection, CreateResourceConfig> = {
   },
   riders: {
     section: "riders",
-    apiPath: "/users/riders",
-    title: "Rider",
-    description: "Riders and fleet owners — fleet assignment, wallets, and top-ups.",
-    submitLabel: "Create rider",
+    apiPath: "/owners",
+    title: "Add to directory",
+    description: "Register a fleet owner or link a rider to a fleet for agent top-up.",
+    submitLabel: "Save",
     fields: [],
   },
   companyAccounts: {
@@ -328,7 +317,6 @@ export function getCreateConfig(section: Section): CreateResourceConfig | null {
     section === "overview" ||
     section === "topUp" ||
     section === "agentTransactions" ||
-    section === "riders" ||
     section === "erasureRequests"
   ) {
     return null;

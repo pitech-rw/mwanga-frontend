@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Section } from "../lib/nav";
+import { PERMISSIONS } from "../lib/permission-strings";
 import { sectionWritePermission } from "../lib/nav-permissions";
 import { getCreateConfig } from "../lib/resource-create-config";
 import { userMayUsePermission } from "../lib/table-row-actions";
@@ -18,14 +19,23 @@ type CreateResourceButtonProps = {
 export function CreateResourceButton({ section, permissions = [], onCreated, onError }: CreateResourceButtonProps) {
   const [open, setOpen] = useState(false);
   const config = getCreateConfig(section);
-  const writePerm = sectionWritePermission(section);
-
   if (!config) {
     return null;
   }
 
-  if (writePerm && !userMayUsePermission(permissions, writePerm)) {
-    return null;
+  if (section === "riders") {
+    const allowed =
+      userMayUsePermission(permissions, PERMISSIONS.riders.write) ||
+      userMayUsePermission(permissions, PERMISSIONS.owners.write) ||
+      userMayUsePermission(permissions, PERMISSIONS.users.write);
+    if (!allowed) {
+      return null;
+    }
+  } else {
+    const writePerm = sectionWritePermission(section);
+    if (writePerm && !userMayUsePermission(permissions, writePerm)) {
+      return null;
+    }
   }
 
   return (
