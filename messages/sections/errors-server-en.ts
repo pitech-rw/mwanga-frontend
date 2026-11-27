@@ -149,6 +149,11 @@ export const errorsServerEn = {
   "ledger.insufficientWalletBalance": "Insufficient wallet balance",
   "ledger.floatTopUpAccounts": "Float top-up must debit company account and credit wallet",
   "ledger.floatTopUpReferenceRequired": "externalReference is required for float top-up",
+  "ledger.companyFloatCreditReferenceRequired":
+    "Bank transfer reference is required to credit wallet float",
+  "ledger.companyFloatSourceAccountMissing":
+    "Company float source account is not configured. Run seed:ledger-accounts.",
+  "ledger.currencyMismatchCompanyRevenue": "Company account and float source currency must match",
   "ledger.agentTopUpInvalid": "Agent top-up entries are invalid",
   "ledger.agentTopUpWalletPair":
     "Agent top-up must debit the agent wallet and credit a different wallet",

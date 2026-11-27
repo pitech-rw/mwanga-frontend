@@ -1,6 +1,6 @@
 "use client";
 
-import { useT } from "./locale";
+import { useLocale, useT } from "./locale";
 
 import { FormEvent, useEffect, useState } from "react";
 import { userMessageForNetwork, userMessageFromResponse } from "../lib/api-errors";
@@ -36,6 +36,7 @@ function parseAmount(raw: string): number | null {
 
 export function WalletTopUpModal({ open, wallet, onClose, onSaved, onError }: WalletTopUpModalProps) {
   const t = useT();
+  const { locale } = useLocale();
   const [amount, setAmount] = useState("");
   const [companyAccountId, setCompanyAccountId] = useState("");
   const [externalReference, setExternalReference] = useState("");
@@ -133,7 +134,7 @@ export function WalletTopUpModal({ open, wallet, onClose, onSaved, onError }: Wa
       });
 
       if (!response.ok) {
-        const message = await userMessageFromResponse("create", response);
+        const message = await userMessageFromResponse("create", response, locale);
         setError(message);
         onError?.(message);
         return;

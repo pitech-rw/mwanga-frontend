@@ -9,7 +9,8 @@ export const createFr = {
   "create.bikes.description": "Associe immatriculation et série. Laissez le propriétaire vide pour l'entrepôt.",
   "create.bikes.submitLabel": "Créer la moto",
   "create.owners.title": "Enregistrer un propriétaire",
-  "create.owners.description": "Crée un propriétaire de flotte avec portefeuille.",
+  "create.owners.description":
+    "Associe un compte portail propriétaire et ouvre le portefeuille flotte. Motos facultatives sur l'onglet Flotte.",
   "create.owners.submitLabel": "Créer le propriétaire",
   "create.agents.title": "Enregistrer un agent",
   "create.agents.description": "Associe un compte utilisateur agent et ouvre un flottant.",
@@ -37,9 +38,17 @@ export const createFr = {
   "create.wallets.title": "Créer un portefeuille",
   "create.wallets.description": "Choisissez un propriétaire. Un portefeuille partagé par propriétaire.",
   "create.wallets.submitLabel": "Créer un portefeuille",
-  "create.riders.title": "Rider",
-  "create.riders.description": "Riders and fleet owners — fleet assignment, wallets, and top-ups.",
-  "create.riders.submitLabel": "Create rider",
+  "create.riders.title": "Ajouter au répertoire",
+  "create.riders.description":
+    "Enregistrer un propriétaire de flotte ou rattacher un conducteur à une flotte pour le rechargement agent.",
+  "create.riders.submitLabel": "Enregistrer",
+  "create.riders.kindLabel": "Type d'enregistrement",
+  "create.riders.kindOwner": "Propriétaire de flotte",
+  "create.riders.kindRider": "Conducteur",
+  "create.riders.introOwner":
+    "Créez d'abord les comptes portail propriétaire dans Utilisateurs, puis sélectionnez-en un ci-dessous pour ouvrir le portefeuille flotte.",
+  "create.riders.introRider":
+    "Choisissez un compte conducteur sans flotte, puis un propriétaire de flotte pour l'afficher dans ce répertoire.",
   "create.companyAccounts.title": "Ajouter un compte société",
   "create.companyAccounts.description": "Enregistre un compte bancaire pour la collecte.",
   "create.companyAccounts.submitLabel": "Créer le compte",
@@ -84,6 +93,11 @@ export const createFr = {
   "create.error.selectFleetOwner": "Sélectionnez un propriétaire de flotte.",
   "create.error.selectFleetOwnerTab": "Sélectionnez un propriétaire sur l'onglet Propriétaire de flotte.",
   "create.error.selectAgentUser": "Sélectionnez un compte utilisateur agent.",
+  "create.error.selectDirectoryRider": "Sélectionnez un compte conducteur.",
+  "create.error.selectDirectoryFleetOwner": "Sélectionnez un propriétaire de flotte pour ce conducteur.",
+  "create.owners.intro":
+    "Créez d'abord le compte dans Utilisateurs (type propriétaire), puis sélectionnez-le ci-dessous pour ouvrir le portefeuille flotte.",
+  "create.error.selectOwnerPortalUser": "Sélectionnez un compte portail propriétaire.",
   "create.error.fleetBikeFields": "Chaque moto doit avoir immatriculation, numéro de série et modèle.",
   "create.error.fleetBikeMin": "Ajoutez au moins une moto, ou désactivez l'enregistrement de flotte.",
   "create.error.bikePlateModel": "Les motos nécessitent une immatriculation et un modèle.",

@@ -33,19 +33,46 @@ export function AgentWalletTopUpModal({
 }: AgentWalletTopUpModalProps) {
   const t = useT();
   const [amount, setAmount] = useState("");
-  const [externalReference, setExternalReference] = useState("");
-  const [description, setDescription] = useState("");
+  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agentFloatCurrency, setAgentFloatCurrency] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && target) {
       setAmount("");
-      setExternalReference("");
-      setDescription("");
+      setNote("");
       setError(null);
     }
   }, [open, target]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    let active = true;
+    void (async () => {
+      try {
+        const response = await authFetch("/wallets");
+        if (!response.ok || !active) {
+          return;
+        }
+        const wallets = (await response.json()) as Array<{ currency?: string }>;
+        if (active && wallets[0]?.currency) {
+          setAgentFloatCurrency(wallets[0].currency);
+        } else if (active) {
+          setAgentFloatCurrency(null);
+        }
+      } catch {
+        if (active) {
+          setAgentFloatCurrency(null);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [open]);
 
   if (!target) {
     return null;
@@ -62,9 +89,10 @@ export function AgentWalletTopUpModal({
       return;
     }
 
-    const bankRef = externalReference.trim();
-    if (bankRef.length < 2) {
-      setError("Enter the cash receipt reference.");
+    if (agentFloatCurrency && target.currency !== agentFloatCurrency) {
+      setError(
+        `Currency mismatch: your float is ${agentFloatCurrency} but this wallet is ${target.currency}.`,
+      );
       return;
     }
 
@@ -72,13 +100,13 @@ export function AgentWalletTopUpModal({
     setError(null);
 
     try {
+      const trimmedNote = note.trim();
       const response = await authFetch("/agents/top-ups", {
         method: "POST",
         body: JSON.stringify({
           walletId: target.walletId,
           amount: add,
-          externalReference: bankRef,
-          description: description.trim() || undefined,
+          ...(trimmedNote ? { note: trimmedNote } : {}),
         }),
       });
 
@@ -140,25 +168,13 @@ export function AgentWalletTopUpModal({
         </label>
 
         <label className="field">
-          <span>Receipt reference</span>
-          <input
-            type="text"
-            value={externalReference}
-            disabled={saving}
-            onChange={(event) => setExternalReference(event.target.value)}
-            placeholder="Cash receipt id"
-            aria-label="Receipt reference"
-          />
-        </label>
-
-        <label className="field">
           <span>Notes (optional)</span>
           <input
             type="text"
-            value={description}
+            value={note}
             disabled={saving}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Internal note"
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Internal note for the ledger"
             aria-label="Top-up notes"
           />
         </label>

@@ -17,6 +17,12 @@ type TopUpTarget = {
   kind: "rider" | "owner";
   name: string;
   walletId: number;
+  currency: string;
+};
+
+type AgentTopUpResponse = {
+  transaction: { externalReference?: string | null };
+  receipt: { receiptNumber: string } | null;
 };
 
 function money(value: string | number): string {
@@ -34,8 +40,7 @@ export function AgentTopUpPanel() {
   const [lookup, setLookup] = useState("");
   const [target, setTarget] = useState<TopUpTarget | null>(null);
   const [amount, setAmount] = useState("");
-  const [externalReference, setExternalReference] = useState("");
-  const [description, setDescription] = useState("");
+  const [note, setNote] = useState("");
   const [lookingUp, setLookingUp] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -96,35 +101,40 @@ export function AgentTopUpPanel() {
       setFormError("Look up a rider or owner before applying the top-up.");
       return;
     }
+    if (wallet && target.currency !== wallet.currency) {
+      setFormError(
+        `Currency mismatch: your float is ${wallet.currency} but this wallet is ${target.currency}.`,
+      );
+      return;
+    }
     const parsed = Number(amount.trim());
     if (amount.trim() === "" || Number.isNaN(parsed) || parsed <= 0) {
       setFormError("Enter an amount greater than zero.");
       return;
     }
-    if (externalReference.trim().length < 2) {
-      setFormError("Enter the cash receipt reference.");
-      return;
-    }
     setSaving(true);
     try {
+      const trimmedNote = note.trim();
       const response = await authFetch("/agents/top-ups", {
         method: "POST",
         body: JSON.stringify({
           walletId: target.walletId,
           amount: parsed,
-          externalReference: externalReference.trim(),
-          description: description.trim() || undefined,
+          ...(trimmedNote ? { note: trimmedNote } : {}),
         }),
       });
       if (!response.ok) {
         setFormError(await userMessageFromResponse("create", response));
         return;
       }
-      const created = (await response.json()) as { externalReference?: string | null };
-      setNotice(`Topped up ${target.name} · ${created.externalReference ?? externalReference.trim()}`);
+      const created = (await response.json()) as AgentTopUpResponse;
+      const reference =
+        created.receipt?.receiptNumber ?? created.transaction.externalReference ?? null;
+      setNotice(
+        reference ? `Topped up ${target.name} · ${reference}` : `Topped up ${target.name}`,
+      );
       setAmount("");
-      setExternalReference("");
-      setDescription("");
+      setNote("");
       setLookup("");
       setTarget(null);
       await loadFloat();
@@ -178,12 +188,21 @@ export function AgentTopUpPanel() {
         </button>
         {target ? (
           <p>
-            {target.kind === "rider" ? "Rider" : "Owner"} · {target.name}
+            {target.kind === "rider" ? "Rider" : "Owner"} · {target.name} · {target.currency}
+            {wallet && target.currency !== wallet.currency ? (
+              <span className="login-error"> — does not match your float currency ({wallet.currency})</span>
+            ) : null}
           </p>
         ) : null}
 
         <label className="field">
-          <span>Amount ({wallet?.currency ?? DEFAULT_CURRENCY})</span>
+          <span>
+            Amount (
+            {target && wallet && target.currency === wallet.currency
+              ? wallet.currency
+              : (wallet?.currency ?? target?.currency ?? DEFAULT_CURRENCY)}
+            )
+          </span>
           <input
             type="number"
             min={0}
@@ -195,23 +214,13 @@ export function AgentTopUpPanel() {
           />
         </label>
         <label className="field">
-          <span>Receipt reference</span>
-          <input
-            type="text"
-            value={externalReference}
-            disabled={saving}
-            onChange={(event) => setExternalReference(event.target.value)}
-            placeholder="Cash receipt id"
-            aria-label="Receipt reference"
-          />
-        </label>
-        <label className="field">
           <span>Notes (optional)</span>
           <input
             type="text"
-            value={description}
+            value={note}
             disabled={saving}
-            onChange={(event) => setDescription(event.target.value)}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder="Internal note for the ledger"
             aria-label="Top-up notes"
           />
         </label>

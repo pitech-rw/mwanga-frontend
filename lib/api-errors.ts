@@ -121,13 +121,17 @@ export function resolveUserMessage(
     if (typeof apiCode === "string" && apiCode !== "unknown" && isKnownMessageKey(apiCode)) {
       return translate(loc, apiCode, body.params as TranslateParams | undefined);
     }
-  }
 
-  if (process.env.NODE_ENV === "development") {
-    const legacy = messageFromApiErrorBody(data);
-    if (legacy) {
-      console.warn("[api-errors] Unmapped API message:", legacy);
-      return legacy;
+    const unmappedMessage = messageFromApiErrorBody(data);
+    if (unmappedMessage) {
+      const couldNotMapByCode =
+        typeof apiCode !== "string" || apiCode === "unknown" || !isKnownMessageKey(apiCode);
+      if (couldNotMapByCode) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[api-errors] Unmapped API message:", unmappedMessage);
+        }
+        return unmappedMessage;
+      }
     }
   }
 
