@@ -17,6 +17,7 @@ type TopUpTarget = {
   kind: "rider" | "owner";
   name: string;
   walletId: number;
+  currency: string;
 };
 
 type AgentTopUpResponse = {
@@ -100,6 +101,12 @@ export function AgentTopUpPanel() {
       setFormError("Look up a rider or owner before applying the top-up.");
       return;
     }
+    if (wallet && target.currency !== wallet.currency) {
+      setFormError(
+        `Currency mismatch: your float is ${wallet.currency} but this wallet is ${target.currency}.`,
+      );
+      return;
+    }
     const parsed = Number(amount.trim());
     if (amount.trim() === "" || Number.isNaN(parsed) || parsed <= 0) {
       setFormError("Enter an amount greater than zero.");
@@ -181,12 +188,21 @@ export function AgentTopUpPanel() {
         </button>
         {target ? (
           <p>
-            {target.kind === "rider" ? "Rider" : "Owner"} · {target.name}
+            {target.kind === "rider" ? "Rider" : "Owner"} · {target.name} · {target.currency}
+            {wallet && target.currency !== wallet.currency ? (
+              <span className="login-error"> — does not match your float currency ({wallet.currency})</span>
+            ) : null}
           </p>
         ) : null}
 
         <label className="field">
-          <span>Amount ({wallet?.currency ?? DEFAULT_CURRENCY})</span>
+          <span>
+            Amount (
+            {target && wallet && target.currency === wallet.currency
+              ? wallet.currency
+              : (wallet?.currency ?? target?.currency ?? DEFAULT_CURRENCY)}
+            )
+          </span>
           <input
             type="number"
             min={0}

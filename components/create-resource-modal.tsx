@@ -177,7 +177,6 @@ function ownerCreateBodyFromPortalUser(user: AgentUserRow): Record<string, unkno
   const body: Record<string, unknown> = {
     userId: user.id,
     name,
-    currency: DEFAULT_CURRENCY,
   };
   if (user.email?.trim()) {
     body.email = user.email.trim();

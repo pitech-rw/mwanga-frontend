@@ -36,6 +36,7 @@ export function AgentWalletTopUpModal({
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agentFloatCurrency, setAgentFloatCurrency] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && target) {
@@ -44,6 +45,34 @@ export function AgentWalletTopUpModal({
       setError(null);
     }
   }, [open, target]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    let active = true;
+    void (async () => {
+      try {
+        const response = await authFetch("/wallets");
+        if (!response.ok || !active) {
+          return;
+        }
+        const wallets = (await response.json()) as Array<{ currency?: string }>;
+        if (active && wallets[0]?.currency) {
+          setAgentFloatCurrency(wallets[0].currency);
+        } else if (active) {
+          setAgentFloatCurrency(null);
+        }
+      } catch {
+        if (active) {
+          setAgentFloatCurrency(null);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [open]);
 
   if (!target) {
     return null;
@@ -57,6 +86,13 @@ export function AgentWalletTopUpModal({
     const add = parseAmount(amount);
     if (add === null) {
       setError("Enter a positive amount.");
+      return;
+    }
+
+    if (agentFloatCurrency && target.currency !== agentFloatCurrency) {
+      setError(
+        `Currency mismatch: your float is ${agentFloatCurrency} but this wallet is ${target.currency}.`,
+      );
       return;
     }
 

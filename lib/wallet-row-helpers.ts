@@ -180,7 +180,11 @@ export function walletBalanceNumber(row: Record<string, unknown>): number {
   return 0;
 }
 
-export function walletCurrency(_row: Record<string, unknown>): string {
+export function walletCurrency(row: Record<string, unknown>): string {
+  const raw = row.currency;
+  if (typeof raw === "string" && raw.trim() !== "") {
+    return raw.trim();
+  }
   return DEFAULT_CURRENCY;
 }
 
